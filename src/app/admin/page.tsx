@@ -9,7 +9,7 @@ import {
   Car, Users, FileText, Flag, Building2, BarChart3, TrendingUp,
   DollarSign, Activity, ShieldCheck, Settings, Star, Bell, MessageCircle,
   ShoppingBag, CreditCard, AlertTriangle, CheckCircle, XCircle, Clock, Award, Cpu, TrendingDown,
-  Crown, Tag, ClipboardList, Ticket, Bot, Database, Download, Volume2, MapPin, Store
+  Crown, Tag, ClipboardList, Ticket, Bot, Database, Download, Volume2
 } from 'lucide-react';
 
 interface DashboardStats {
