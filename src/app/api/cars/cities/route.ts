@@ -4,7 +4,7 @@ import { successResponse, errorResponse } from '@/lib/api';
 export async function GET() {
   try {
     const cities = await prisma.city.findMany({
-      where: { isActive: true },
+      where: { isActive: true, parentId: null },
       orderBy: { nameAr: 'asc' },
       include: { _count: { select: { cars: true } } },
     });

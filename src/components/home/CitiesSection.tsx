@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { MapPin, ChevronDown } from 'lucide-react';
+import { MapPin, ChevronDown, AlertCircle } from 'lucide-react';
 
 interface CityData {
   id: string;
@@ -15,16 +15,55 @@ interface CityData {
 export function CitiesSection() {
   const [cities, setCities] = useState<CityData[]>([]);
   const [showAll, setShowAll] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const INITIAL_COUNT = 8;
 
   useEffect(() => {
     fetch('/api/cars/cities')
-      .then(r => r.json())
-      .then(d => setCities(d.data || []))
-      .catch(() => {});
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then(d => {
+        if (d.success && d.data) {
+          setCities(d.data);
+        } else {
+          setError('فشل تحميل البيانات');
+        }
+      })
+      .catch(e => {
+        console.error('Cities fetch error:', e);
+        setError('خطأ في الاتصال');
+      });
   }, []);
 
-  if (cities.length === 0) return null;
+  if (error) {
+    return (
+      <section className="py-16">
+        <div className="container-custom text-center">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <p className="text-red-500">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+          >
+            إعادة المحاولة
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  if (cities.length === 0) {
+    return (
+      <section className="py-16">
+        <div className="container-custom text-center">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-500">جاري تحميل المحافظات...</p>
+        </div>
+      </section>
+    );
+  }
 
   const displayCities = showAll ? cities : cities.slice(0, INITIAL_COUNT);
   const hasMore = cities.length > INITIAL_COUNT;
