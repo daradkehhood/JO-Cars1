@@ -9,7 +9,7 @@ import {
   Car, Users, FileText, Flag, Building2, BarChart3, TrendingUp,
   DollarSign, Activity, ShieldCheck, Settings, Star, Bell, MessageCircle,
   ShoppingBag, CreditCard, AlertTriangle, CheckCircle, XCircle, Clock, Award, Cpu, TrendingDown,
-  Crown, Tag, ClipboardList, Ticket, Bot, Database, Download
+  Crown, Tag, ClipboardList, Ticket, Bot, Database, Download, Volume2, MapPin, Store
 } from 'lucide-react';
 
 interface DashboardStats {
@@ -84,6 +84,7 @@ export default function AdminPage() {
     { href: '/admin/forum-reports', label: 'بلاغات المنتدى', icon: Flag, desc: 'إدارة بلاغات المنتدى' },
     { href: '/admin/provinces', label: 'المحافظات', icon: MapPin, desc: 'إدارة المحافظات والمناطق' },
     { href: '/admin/car-comment-reports', label: 'بلاغات التعليقات', icon: MessageCircle, desc: 'إدارة بلاغات تعليقات السيارات' },
+    { href: '/admin/sounds', label: 'بلاغات الصوت', icon: Volume2, desc: 'إدارة بلاغات تسجيلات الصوت وحظر المستخدمين' },
     { href: '/admin/advanced-stats', label: 'إحصائيات متقدمة', icon: BarChart3, desc: 'رسوم بيانية وتحليلات السوق' },
     { href: '/admin/audit-logs', label: 'سجل النشاطات', icon: ClipboardList, desc: 'تتبع جميع التغييرات والإجراءات' },
     { href: '/admin/content-tools', label: 'المحتوى الذكي', icon: Bot, desc: 'منشئ أوصاف وكشف الصور المكررة' },
