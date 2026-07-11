@@ -23,10 +23,12 @@ interface SoundRecording {
 
 interface EngineSoundSectionProps {
   carId: string;
+  carOwnerId: string;
   currentUserId?: string;
 }
 
-export function EngineSoundSection({ carId, currentUserId }: EngineSoundSectionProps) {
+export function EngineSoundSection({ carId, carOwnerId, currentUserId }: EngineSoundSectionProps) {
+  const isOwner = currentUserId === carOwnerId;
   const [recordings, setRecordings] = useState<SoundRecording[]>([]);
   const [loading, setLoading] = useState(true);
   const [showRecorder, setShowRecorder] = useState(false);
@@ -95,7 +97,7 @@ export function EngineSoundSection({ carId, currentUserId }: EngineSoundSectionP
           </div>
         </div>
         
-        {!showRecorder && (
+        {!showRecorder && isOwner && (
           <button
             onClick={() => setShowRecorder(true)}
             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl text-sm font-medium hover:shadow-lg hover:shadow-red-500/25 transition-all active:scale-95"
@@ -126,14 +128,18 @@ export function EngineSoundSection({ carId, currentUserId }: EngineSoundSectionP
             <Volume2 className="w-8 h-8 text-gray-400" />
           </div>
           <p className="text-gray-500 dark:text-gray-400 mb-4">
-            لا توجد تسجيلات بعد
+            {isOwner 
+              ? 'لا توجد تسجيلات بعد'
+              : 'صاحب الإعلان لم يسجل صوت المحرّك بعد'}
           </p>
-          <button
-            onClick={() => setShowRecorder(true)}
-            className="text-blue-500 hover:text-blue-600 font-medium text-sm"
-          >
-            سجّل أول تسجيل
-          </button>
+          {isOwner && (
+            <button
+              onClick={() => setShowRecorder(true)}
+              className="text-blue-500 hover:text-blue-600 font-medium text-sm"
+            >
+              سجّل أول تسجيل
+            </button>
+          )}
         </div>
       )}
 
@@ -142,8 +148,8 @@ export function EngineSoundSection({ carId, currentUserId }: EngineSoundSectionP
           <SoundAnalysisPlayer
             key={recording.id}
             recording={recording}
-            onDelete={handleDelete}
-            isOwner={currentUserId === recording.user.id}
+            onDelete={isOwner ? handleDelete : undefined}
+            isOwner={isOwner}
           />
         ))}
       </div>
