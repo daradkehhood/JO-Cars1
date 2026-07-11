@@ -366,7 +366,7 @@ export default function CarDetailPage() {
 
             {/* Engine Sound Analysis */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <EngineSoundSection carId={car.id} carOwnerId={car.user.id} currentUserId={currentUser?.id} />
+              <EngineSoundSection carId={car.id} carOwnerId={car.user.id} currentUserId={currentUser?.id} currentUserRole={currentUser?.role} />
             </motion.div>
 
             {/* Specs */}

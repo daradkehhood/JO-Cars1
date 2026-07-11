@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Play, Pause, Volume2, Clock, User, Calendar,
   CheckCircle, AlertTriangle, XCircle, Info,
-  ChevronDown, ChevronUp, Trash2
+  ChevronDown, ChevronUp, Trash2, Flag
 } from 'lucide-react';
 import { cn, formatDate } from '@/lib/utils';
 
@@ -46,7 +46,9 @@ interface SoundRecording {
 interface SoundAnalysisPlayerProps {
   recording: SoundRecording;
   onDelete?: (id: string) => void;
+  onReport?: (recordingId: string, reason: string, description?: string) => void;
   isOwner?: boolean;
+  carId?: string;
 }
 
 const healthConfig = {
@@ -57,10 +59,14 @@ const healthConfig = {
   critical: { color: 'text-red-500', bg: 'bg-red-100 dark:bg-red-500/10', icon: XCircle, label: 'حرج' },
 };
 
-export function SoundAnalysisPlayer({ recording, onDelete, isOwner }: SoundAnalysisPlayerProps) {
+export function SoundAnalysisPlayer({ recording, onDelete, onReport, isOwner, carId }: SoundAnalysisPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportDescription, setReportDescription] = useState('');
+  const [reporting, setReporting] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   const analysis = recording.analysis;
@@ -132,14 +138,25 @@ export function SoundAnalysisPlayer({ recording, onDelete, isOwner }: SoundAnaly
             </div>
           </div>
           
-          {isOwner && onDelete && (
-            <button
-              onClick={() => onDelete(recording.id)}
-              className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {isOwner && onDelete && (
+              <button
+                onClick={() => onDelete(recording.id)}
+                className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+            {!isOwner && (
+              <button
+                onClick={() => setShowReportModal(true)}
+                className="p-2 text-gray-400 hover:text-orange-500 transition-colors"
+                title="الإبلاغ"
+              >
+                <Flag className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
 
         <audio
@@ -270,6 +287,95 @@ export function SoundAnalysisPlayer({ recording, onDelete, isOwner }: SoundAnaly
             />
             <span className="text-sm">جاري التحليل...</span>
           </div>
+        </div>
+      )}
+
+      {showReportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-gray-900 rounded-2xl p-6 w-full max-w-md mx-4"
+          >
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+              الإبلاغ عن مقطع الصوت
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  سبب البلاغ
+                </label>
+                <select
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                >
+                  <option value="">اختر السبب</option>
+                  <option value="inappropriate">محتوى غير لائق</option>
+                  <option value="fake">تسجيل مزيف</option>
+                  <option value="spam">رسائل غير مرغوبة</option>
+                  <option value="offensive">محتوى مسيء</option>
+                  <option value="other">سبب آخر</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  وصف إضافي (اختياري)
+                </label>
+                <textarea
+                  value={reportDescription}
+                  onChange={(e) => setReportDescription(e.target.value)}
+                  placeholder="اكتب تفاصيل إضافية..."
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowReportModal(false);
+                  setReportReason('');
+                  setReportDescription('');
+                }}
+                className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={async () => {
+                  if (!reportReason || !carId) return;
+                  setReporting(true);
+                  try {
+                    await fetch('/api/sounds/reports', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        recordingId: recording.id,
+                        carId,
+                        reason: reportReason,
+                        description: reportDescription || undefined
+                      })
+                    });
+                    setShowReportModal(false);
+                    setReportReason('');
+                    setReportDescription('');
+                  } catch (error) {
+                    console.error('Error reporting:', error);
+                  } finally {
+                    setReporting(false);
+                  }
+                }}
+                disabled={!reportReason || reporting}
+                className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-colors disabled:opacity-50"
+              >
+                {reporting ? 'جاري الإرسال...' : 'إرسال البلاغ'}
+              </button>
+            </div>
+          </motion.div>
         </div>
       )}
     </div>

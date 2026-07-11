@@ -83,6 +83,10 @@ model User {
   garage               UserGarage[]
   carExpenses          CarExpense[]
   soundRecordings      CarSoundRecording[]
+  soundReports         SoundReport[]
+  soundReportsReviewed SoundReport[]    @relation("SoundReportReviewer")
+  soundBans            SoundBan[]
+  soundBansGiven       SoundBan[]       @relation("SoundBanBanner")
 
   @@map("users")
 }
@@ -328,6 +332,7 @@ model Car {
   viewers   CarViewer[]
   soundRecordings CarSoundRecording[]
   soundAnalyses   SoundAnalysis[]
+  soundReports    SoundReport[]
 
   @@index([brandId])
   @@index([modelId])
@@ -1155,6 +1160,7 @@ model CarSoundRecording {
   car      Car       @relation(fields: [carId], references: [id], onDelete: Cascade)
   user     User      @relation(fields: [userId], references: [id])
   analysis SoundAnalysis?
+  reports  SoundReport[]
 
   @@index([carId])
   @@index([userId])
@@ -1209,4 +1215,50 @@ model ReferenceSound {
   @@index([brandId, modelId])
   @@index([fuelType])
   @@map("reference_sounds")
+}
+
+model SoundReport {
+  id          String   @id @default(cuid())
+  recordingId String
+  carId       String
+  reporterId  String
+  reason      String
+  description String?
+  status      String   @default("pending") // pending, reviewed, resolved, dismissed
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  recording CarSoundRecording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  car       Car               @relation(fields: [carId], references: [id], onDelete: Cascade)
+  reporter  User              @relation(fields: [reporterId], references: [id])
+  reviewer  User?             @relation("SoundReportReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([recordingId])
+  @@index([carId])
+  @@index([reporterId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("sound_reports")
+}
+
+model SoundBan {
+  id          String    @id @default(cuid())
+  userId      String
+  bannedBy    String
+  reason      String
+  message     String?   // رسالة المدير لصاحب الإعلان
+  duration    String    // "1hour", "2days", "1week", "2weeks", "1month", "permanent"
+  expiresAt   DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user   User @relation(fields: [userId], references: [id])
+  banner User @relation("SoundBanBanner", fields: [bannedBy], references: [id])
+
+  @@index([userId])
+  @@index([isActive])
+  @@index([expiresAt])
+  @@map("sound_bans")
 }
