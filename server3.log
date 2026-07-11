@@ -1,0 +1,276 @@
+⚠ You are using a non-standard "NODE_ENV" value in your environment. This creates inconsistencies in the project and is strongly advised against. Read more: https://nextjs.org/docs/messages/non-standard-node-env
+⚠ You are using a non-standard "NODE_ENV" value in your environment. This creates inconsistencies in the project and is strongly advised against. Read more: https://nextjs.org/docs/messages/non-standard-node-env
+> Ready on http://localhost:3000 [dev]
+Persisting failed: Unable to commit operations
+
+Caused by:
+    0: Unable to write meta file 00002326.meta
+    1: The requested operation cannot be performed on a file with a user-mapped section open. (os error 1224)
+Compaction failed: Another write batch or compaction is already active (Only a single write operations is allowed at a time)
+Persisting failed: Another write batch or compaction is already active (Only a single write operations is allowed at a time)
+Compaction failed: Another write batch or compaction is already active (Only a single write operations is allowed at a time)
+(node:1264) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ GET / 200 in 327ms (next.js: 117ms, application-code: 210ms)
+Persisting failed: Another write batch or compaction is already active (Only a single write operations is allowed at a time)
+Compaction failed: Another write batch or compaction is already active (Only a single write operations is allowed at a time)
+ GET / 200 in 62ms (next.js: 5ms, application-code: 56ms)
+⚠ Blocked cross-origin request to Next.js dev resource /_next/webpack-hmr from "suspend-passable-thrift.ngrok-free.dev".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['suspend-passable-thrift.ngrok-free.dev'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+Compaction failed: Another write batch or compaction is already active (Only a single write operations is allowed at a time)
+ GET / 200 in 70ms (next.js: 4ms, application-code: 66ms)
+Compaction failed: Another write batch or compaction is already active (Only a single write operations is allowed at a time)
+ GET / 200 in 77ms (next.js: 4ms, application-code: 74ms)
+Compaction failed: Another write batch or compaction is already active (Only a single write operations is allowed at a time)
+ GET / 200 in 91ms (next.js: 6ms, application-code: 85ms)
+prisma:query SELECT COUNT(*) FROM (SELECT `main`.`cars`.`id` FROM `main`.`cars` WHERE (`main`.`cars`.`status` = ? AND `main`.`cars`.`deletedAt` IS NULL AND `main`.`cars`.`featured` = ?) LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT COUNT(*) FROM (SELECT `main`.`cars`.`id` FROM `main`.`cars` WHERE (`main`.`cars`.`status` = ? AND `main`.`cars`.`deletedAt` IS NULL) LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT `main`.`brands`.`id`, `main`.`brands`.`nameAr`, `main`.`brands`.`nameEn`, `main`.`brands`.`slug`, `main`.`brands`.`logo`, `main`.`brands`.`country`, `main`.`brands`.`isActive`, `main`.`brands`.`createdAt`, COALESCE(`aggr_selection_0_Car`.`_aggr_count_cars`, 0) AS `_aggr_count_cars` FROM `main`.`brands` LEFT JOIN (SELECT `main`.`cars`.`brandId`, COUNT(*) AS `_aggr_count_cars` FROM `main`.`cars` WHERE 1=1 GROUP BY `main`.`cars`.`brandId`) AS `aggr_selection_0_Car` ON (`main`.`brands`.`id` = `aggr_selection_0_Car`.`brandId`) WHERE `main`.`brands`.`isActive` = ? ORDER BY `main`.`brands`.`nameAr` ASC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`cars`.`id`, `main`.`cars`.`slug`, `main`.`cars`.`status`, `main`.`cars`.`featured`, `main`.`cars`.`featuredUntil`, `main`.`cars`.`isNew`, `main`.`cars`.`views`, `main`.`cars`.`saves`, `main`.`cars`.`brandId`, `main`.`cars`.`modelId`, `main`.`cars`.`year`, `main`.`cars`.`trim`, `main`.`cars`.`kilometers`, `main`.`cars`.`fuelType`, `main`.`cars`.`transmission`, `main`.`cars`.`color`, `main`.`cars`.`doors`, `main`.`cars`.`engineCapacity`, `main`.`cars`.`cylinders`, `main`.`cars`.`drivetrain`, `main`.`cars`.`condition`, `main`.`cars`.`bodyType`, `main`.`cars`.`lightingType`, `main`.`cars`.`rimType`, `main`.`cars`.`vin`, `main`.`cars`.`description`, `main`.`cars`.`aiDescription`, `main`.`cars`.`price`, `main`.`cars`.`currency`, `main`.`cars`.`cityId`, `main`.`cars`.`locationLat`, `main`.`cars`.`locationLng`, `main`.`cars`.`phone`, `main`.`cars`.`whatsapp`, `main`.`cars`.`coverImage`, `main`.`cars`.`videoUrl`, `main`.`cars`.`isNegotiable`, `main`.`cars`.`hasWarranty`, `main`.`cars`.`hasServiceHistory`, `main`.`cars`.`isDamaged`, `main`.`cars`.`isPaintOriginal`, `main`.`cars`.`ownerCount`, `main`.`cars`.`platesNumber`, `main`.`cars`.`aiScore`, `main`.`cars`.`aiAnalysis`, `main`.`cars`.`model3dUrl`, `main`.`cars`.`model3dStatus`, `main`.`cars`.`video360Url`, `main`.`cars`.`video360Status`, `main`.`cars`.`aiConditionReport`, `main`.`cars`.`refCode`, `main`.`cars`.`createdAt`, `main`.`cars`.`updatedAt`, `main`.`cars`.`expiresAt`, `main`.`cars`.`soldAt`, `main`.`cars`.`deletedAt`, `main`.`cars`.`deletedBy`, `main`.`cars`.`userId` FROM `main`.`cars` WHERE (`main`.`cars`.`status` = ? AND `main`.`cars`.`deletedAt` IS NULL) ORDER BY `main`.`cars`.`featured` DESC, `main`.`cars`.`createdAt` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`cars`.`id`, `main`.`cars`.`slug`, `main`.`cars`.`status`, `main`.`cars`.`featured`, `main`.`cars`.`featuredUntil`, `main`.`cars`.`isNew`, `main`.`cars`.`views`, `main`.`cars`.`saves`, `main`.`cars`.`brandId`, `main`.`cars`.`modelId`, `main`.`cars`.`year`, `main`.`cars`.`trim`, `main`.`cars`.`kilometers`, `main`.`cars`.`fuelType`, `main`.`cars`.`transmission`, `main`.`cars`.`color`, `main`.`cars`.`doors`, `main`.`cars`.`engineCapacity`, `main`.`cars`.`cylinders`, `main`.`cars`.`drivetrain`, `main`.`cars`.`condition`, `main`.`cars`.`bodyType`, `main`.`cars`.`lightingType`, `main`.`cars`.`rimType`, `main`.`cars`.`vin`, `main`.`cars`.`description`, `main`.`cars`.`aiDescription`, `main`.`cars`.`price`, `main`.`cars`.`currency`, `main`.`cars`.`cityId`, `main`.`cars`.`locationLat`, `main`.`cars`.`locationLng`, `main`.`cars`.`phone`, `main`.`cars`.`whatsapp`, `main`.`cars`.`coverImage`, `main`.`cars`.`videoUrl`, `main`.`cars`.`isNegotiable`, `main`.`cars`.`hasWarranty`, `main`.`cars`.`hasServiceHistory`, `main`.`cars`.`isDamaged`, `main`.`cars`.`isPaintOriginal`, `main`.`cars`.`ownerCount`, `main`.`cars`.`platesNumber`, `main`.`cars`.`aiScore`, `main`.`cars`.`aiAnalysis`, `main`.`cars`.`model3dUrl`, `main`.`cars`.`model3dStatus`, `main`.`cars`.`video360Url`, `main`.`cars`.`video360Status`, `main`.`cars`.`aiConditionReport`, `main`.`cars`.`refCode`, `main`.`cars`.`createdAt`, `main`.`cars`.`updatedAt`, `main`.`cars`.`expiresAt`, `main`.`cars`.`soldAt`, `main`.`cars`.`deletedAt`, `main`.`cars`.`deletedBy`, `main`.`cars`.`userId` FROM `main`.`cars` WHERE (`main`.`cars`.`status` = ? AND `main`.`cars`.`deletedAt` IS NULL AND `main`.`cars`.`featured` = ?) ORDER BY `main`.`cars`.`featured` DESC, `main`.`cars`.`createdAt` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`brands`.`id`, `main`.`brands`.`nameAr`, `main`.`brands`.`nameEn`, `main`.`brands`.`slug`, `main`.`brands`.`logo` FROM `main`.`brands` WHERE `main`.`brands`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`car_models`.`id`, `main`.`car_models`.`nameAr`, `main`.`car_models`.`nameEn`, `main`.`car_models`.`slug` FROM `main`.`car_models` WHERE `main`.`car_models`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`cities`.`id`, `main`.`cities`.`nameAr`, `main`.`cities`.`nameEn`, `main`.`cities`.`slug` FROM `main`.`cities` WHERE `main`.`cities`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`car_images`.`id`, `main`.`car_images`.`url`, `main`.`car_images`.`thumbnail`, `main`.`car_images`.`isCover`, `main`.`car_images`.`order`, `main`.`car_images`.`carId` FROM `main`.`car_images` WHERE `main`.`car_images`.`carId` IN (?) ORDER BY `main`.`car_images`.`order` ASC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`name`, `main`.`users`.`dealerName`, `main`.`users`.`dealerLogo`, `main`.`users`.`rating`, `main`.`users`.`badges` FROM `main`.`users` WHERE `main`.`users`.`id` IN (?) LIMIT ? OFFSET ?
+ GET /api/cars/brands 200 in 138ms (next.js: 100ms, application-code: 37ms)
+ GET /api/cars?featured=true&limit=6 200 in 286ms (next.js: 119ms, application-code: 167ms)
+prisma:query SELECT `main`.`brands`.`id`, `main`.`brands`.`nameAr`, `main`.`brands`.`nameEn`, `main`.`brands`.`slug`, `main`.`brands`.`logo` FROM `main`.`brands` WHERE `main`.`brands`.`id` IN (?,?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`car_models`.`id`, `main`.`car_models`.`nameAr`, `main`.`car_models`.`nameEn`, `main`.`car_models`.`slug` FROM `main`.`car_models` WHERE `main`.`car_models`.`id` IN (?,?,?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`cities`.`id`, `main`.`cities`.`nameAr`, `main`.`cities`.`nameEn`, `main`.`cities`.`slug` FROM `main`.`cities` WHERE `main`.`cities`.`id` IN (?,?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`car_images`.`id`, `main`.`car_images`.`url`, `main`.`car_images`.`thumbnail`, `main`.`car_images`.`isCover`, `main`.`car_images`.`order`, `main`.`car_images`.`carId` FROM `main`.`car_images` WHERE `main`.`car_images`.`carId` IN (?,?,?) ORDER BY `main`.`car_images`.`order` ASC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`name`, `main`.`users`.`dealerName`, `main`.`users`.`dealerLogo`, `main`.`users`.`rating`, `main`.`users`.`badges` FROM `main`.`users` WHERE `main`.`users`.`id` IN (?,?,?) LIMIT ? OFFSET ?
+ GET /api/cars?sortBy=createdAt&sortOrder=desc&limit=9 200 in 288ms (next.js: 144ms, application-code: 143ms)
+prisma:query SELECT `main`.`brands`.`id`, `main`.`brands`.`nameAr`, `main`.`brands`.`nameEn`, `main`.`brands`.`slug`, `main`.`brands`.`logo`, `main`.`brands`.`country`, `main`.`brands`.`isActive`, `main`.`brands`.`createdAt`, COALESCE(`aggr_selection_0_Car`.`_aggr_count_cars`, 0) AS `_aggr_count_cars` FROM `main`.`brands` LEFT JOIN (SELECT `main`.`cars`.`brandId`, COUNT(*) AS `_aggr_count_cars` FROM `main`.`cars` WHERE 1=1 GROUP BY `main`.`cars`.`brandId`) AS `aggr_selection_0_Car` ON (`main`.`brands`.`id` = `aggr_selection_0_Car`.`brandId`) WHERE `main`.`brands`.`isActive` = ? ORDER BY `main`.`brands`.`nameAr` ASC LIMIT ? OFFSET ?
+ GET /api/cars/brands 200 in 41ms (next.js: 4ms, application-code: 37ms)
+prisma:query SELECT COUNT(*) FROM (SELECT `main`.`cars`.`id` FROM `main`.`cars` WHERE (`main`.`cars`.`status` = ? AND `main`.`cars`.`deletedAt` IS NULL AND `main`.`cars`.`featured` = ?) LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT `main`.`cars`.`id`, `main`.`cars`.`slug`, `main`.`cars`.`status`, `main`.`cars`.`featured`, `main`.`cars`.`featuredUntil`, `main`.`cars`.`isNew`, `main`.`cars`.`views`, `main`.`cars`.`saves`, `main`.`cars`.`brandId`, `main`.`cars`.`modelId`, `main`.`cars`.`year`, `main`.`cars`.`trim`, `main`.`cars`.`kilometers`, `main`.`cars`.`fuelType`, `main`.`cars`.`transmission`, `main`.`cars`.`color`, `main`.`cars`.`doors`, `main`.`cars`.`engineCapacity`, `main`.`cars`.`cylinders`, `main`.`cars`.`drivetrain`, `main`.`cars`.`condition`, `main`.`cars`.`bodyType`, `main`.`cars`.`lightingType`, `main`.`cars`.`rimType`, `main`.`cars`.`vin`, `main`.`cars`.`description`, `main`.`cars`.`aiDescription`, `main`.`cars`.`price`, `main`.`cars`.`currency`, `main`.`cars`.`cityId`, `main`.`cars`.`locationLat`, `main`.`cars`.`locationLng`, `main`.`cars`.`phone`, `main`.`cars`.`whatsapp`, `main`.`cars`.`coverImage`, `main`.`cars`.`videoUrl`, `main`.`cars`.`isNegotiable`, `main`.`cars`.`hasWarranty`, `main`.`cars`.`hasServiceHistory`, `main`.`cars`.`isDamaged`, `main`.`cars`.`isPaintOriginal`, `main`.`cars`.`ownerCount`, `main`.`cars`.`platesNumber`, `main`.`cars`.`aiScore`, `main`.`cars`.`aiAnalysis`, `main`.`cars`.`model3dUrl`, `main`.`cars`.`model3dStatus`, `main`.`cars`.`video360Url`, `main`.`cars`.`video360Status`, `main`.`cars`.`aiConditionReport`, `main`.`cars`.`refCode`, `main`.`cars`.`createdAt`, `main`.`cars`.`updatedAt`, `main`.`cars`.`expiresAt`, `main`.`cars`.`soldAt`, `main`.`cars`.`deletedAt`, `main`.`cars`.`deletedBy`, `main`.`cars`.`userId` FROM `main`.`cars` WHERE (`main`.`cars`.`status` = ? AND `main`.`cars`.`deletedAt` IS NULL AND `main`.`cars`.`featured` = ?) ORDER BY `main`.`cars`.`featured` DESC, `main`.`cars`.`createdAt` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`brands`.`id`, `main`.`brands`.`nameAr`, `main`.`brands`.`nameEn`, `main`.`brands`.`slug`, `main`.`brands`.`logo` FROM `main`.`brands` WHERE `main`.`brands`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`car_models`.`id`, `main`.`car_models`.`nameAr`, `main`.`car_models`.`nameEn`, `main`.`car_models`.`slug` FROM `main`.`car_models` WHERE `main`.`car_models`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`cities`.`id`, `main`.`cities`.`nameAr`, `main`.`cities`.`nameEn`, `main`.`cities`.`slug` FROM `main`.`cities` WHERE `main`.`cities`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`car_images`.`id`, `main`.`car_images`.`url`, `main`.`car_images`.`thumbnail`, `main`.`car_images`.`isCover`, `main`.`car_images`.`order`, `main`.`car_images`.`carId` FROM `main`.`car_images` WHERE `main`.`car_images`.`carId` IN (?) ORDER BY `main`.`car_images`.`order` ASC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`name`, `main`.`users`.`dealerName`, `main`.`users`.`dealerLogo`, `main`.`users`.`rating`, `main`.`users`.`badges` FROM `main`.`users` WHERE `main`.`users`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT COUNT(*) FROM (SELECT `main`.`cars`.`id` FROM `main`.`cars` WHERE (`main`.`cars`.`status` = ? AND `main`.`cars`.`deletedAt` IS NULL) LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT `main`.`cars`.`id`, `main`.`cars`.`slug`, `main`.`cars`.`status`, `main`.`cars`.`featured`, `main`.`cars`.`featuredUntil`, `main`.`cars`.`isNew`, `main`.`cars`.`views`, `main`.`cars`.`saves`, `main`.`cars`.`brandId`, `main`.`cars`.`modelId`, `main`.`cars`.`year`, `main`.`cars`.`trim`, `main`.`cars`.`kilometers`, `main`.`cars`.`fuelType`, `main`.`cars`.`transmission`, `main`.`cars`.`color`, `main`.`cars`.`doors`, `main`.`cars`.`engineCapacity`, `main`.`cars`.`cylinders`, `main`.`cars`.`drivetrain`, `main`.`cars`.`condition`, `main`.`cars`.`bodyType`, `main`.`cars`.`lightingType`, `main`.`cars`.`rimType`, `main`.`cars`.`vin`, `main`.`cars`.`description`, `main`.`cars`.`aiDescription`, `main`.`cars`.`price`, `main`.`cars`.`currency`, `main`.`cars`.`cityId`, `main`.`cars`.`locationLat`, `main`.`cars`.`locationLng`, `main`.`cars`.`phone`, `main`.`cars`.`whatsapp`, `main`.`cars`.`coverImage`, `main`.`cars`.`videoUrl`, `main`.`cars`.`isNegotiable`, `main`.`cars`.`hasWarranty`, `main`.`cars`.`hasServiceHistory`, `main`.`cars`.`isDamaged`, `main`.`cars`.`isPaintOriginal`, `main`.`cars`.`ownerCount`, `main`.`cars`.`platesNumber`, `main`.`cars`.`aiScore`, `main`.`cars`.`aiAnalysis`, `main`.`cars`.`model3dUrl`, `main`.`cars`.`model3dStatus`, `main`.`cars`.`video360Url`, `main`.`cars`.`video360Status`, `main`.`cars`.`aiConditionReport`, `main`.`cars`.`refCode`, `main`.`cars`.`createdAt`, `main`.`cars`.`updatedAt`, `main`.`cars`.`expiresAt`, `main`.`cars`.`soldAt`, `main`.`cars`.`deletedAt`, `main`.`cars`.`deletedBy`, `main`.`cars`.`userId` FROM `main`.`cars` WHERE (`main`.`cars`.`status` = ? AND `main`.`cars`.`deletedAt` IS NULL) ORDER BY `main`.`cars`.`featured` DESC, `main`.`cars`.`createdAt` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`brands`.`id`, `main`.`brands`.`nameAr`, `main`.`brands`.`nameEn`, `main`.`brands`.`slug`, `main`.`brands`.`logo` FROM `main`.`brands` WHERE `main`.`brands`.`id` IN (?,?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`car_models`.`id`, `main`.`car_models`.`nameAr`, `main`.`car_models`.`nameEn`, `main`.`car_models`.`slug` FROM `main`.`car_models` WHERE `main`.`car_models`.`id` IN (?,?,?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`cities`.`id`, `main`.`cities`.`nameAr`, `main`.`cities`.`nameEn`, `main`.`cities`.`slug` FROM `main`.`cities` WHERE `main`.`cities`.`id` IN (?,?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`car_images`.`id`, `main`.`car_images`.`url`, `main`.`car_images`.`thumbnail`, `main`.`car_images`.`isCover`, `main`.`car_images`.`order`, `main`.`car_images`.`carId` FROM `main`.`car_images` WHERE `main`.`car_images`.`carId` IN (?,?,?) ORDER BY `main`.`car_images`.`order` ASC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`name`, `main`.`users`.`dealerName`, `main`.`users`.`dealerLogo`, `main`.`users`.`rating`, `main`.`users`.`badges` FROM `main`.`users` WHERE `main`.`users`.`id` IN (?,?,?) LIMIT ? OFFSET ?
+ GET /api/cars?featured=true&limit=6 200 in 43ms (next.js: 13ms, application-code: 30ms)
+ GET /api/cars?sortBy=createdAt&sortOrder=desc&limit=9 200 in 37ms (next.js: 15ms, application-code: 23ms)
+prisma:query SELECT `main`.`cities`.`id`, `main`.`cities`.`nameAr`, `main`.`cities`.`nameEn`, `main`.`cities`.`slug`, `main`.`cities`.`isActive`, `main`.`cities`.`createdAt`, COALESCE(`aggr_selection_0_Car`.`_aggr_count_cars`, 0) AS `_aggr_count_cars` FROM `main`.`cities` LEFT JOIN (SELECT `main`.`cars`.`cityId`, COUNT(*) AS `_aggr_count_cars` FROM `main`.`cars` WHERE 1=1 GROUP BY `main`.`cars`.`cityId`) AS `aggr_selection_0_Car` ON (`main`.`cities`.`id` = `aggr_selection_0_Car`.`cityId`) WHERE `main`.`cities`.`isActive` = ? ORDER BY `main`.`cities`.`nameAr` ASC LIMIT ? OFFSET ?
+ GET /api/cars/cities 200 in 228ms (next.js: 218ms, application-code: 10ms)
+prisma:query SELECT `main`.`cities`.`id`, `main`.`cities`.`nameAr`, `main`.`cities`.`nameEn`, `main`.`cities`.`slug`, `main`.`cities`.`isActive`, `main`.`cities`.`createdAt`, COALESCE(`aggr_selection_0_Car`.`_aggr_count_cars`, 0) AS `_aggr_count_cars` FROM `main`.`cities` LEFT JOIN (SELECT `main`.`cars`.`cityId`, COUNT(*) AS `_aggr_count_cars` FROM `main`.`cars` WHERE 1=1 GROUP BY `main`.`cars`.`cityId`) AS `aggr_selection_0_Car` ON (`main`.`cities`.`id` = `aggr_selection_0_Car`.`cityId`) WHERE `main`.`cities`.`isActive` = ? ORDER BY `main`.`cities`.`nameAr` ASC LIMIT ? OFFSET ?
+ GET /api/cars/cities 200 in 10ms (next.js: 3ms, application-code: 8ms)
+[browser] Encountered a script tag while rendering React component. Scripts inside React components are never executed when rendering on the client. Consider using template tag instead (https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template). 
+    at completeWork (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:6945:102)
+    at runWithFiberInDEV (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:965:74)
+    at completeUnitOfWork (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9622:23)
+    at performUnitOfWork (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9557:28)
+    at workLoopSync (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9449:40)
+    at renderRootSync (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9433:13)
+    at performWorkOnRoot (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9098:47)
+    at performWorkOnRootViaSchedulerTask (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_1amofcm._.js:2647:64) (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:6945:102)
+[browser] Uncaught Error: Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <body className="min-h-scre...">
+      <Providers>
+        <z attribute="class" defaultTheme="dark" enableSystem={false} storageKey="jo-cars-theme">
+          <O attribute="class" defaultTheme="dark" enableSystem={false} storageKey="jo-cars-theme">
+            <script>
+            <Header>
+              <header className="fixed top-...">
+                <div className="container-...">
+                  <div className="flex items...">
+                    <div>
+                    <div>
+                    <div className="flex items...">
+                      <button onClick={function onClick} className="p-2.5 roun...">
+                        <Sun className="w-5 h-5">
+                          <svg
+                            ref={null}
+                            xmlns="http://www.w3.org/2000/svg"
+                            width={24}
+                            height={24}
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
++                           className="lucide lucide-sun w-5 h-5"
+-                           className="lucide lucide-moon w-5 h-5"
+                          >
++                           <circle cx="12" cy="12" r="4">
+-                           <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z">
+                            ...
+                      ...
+                ...
+            ...
+            ...
+
+    at <unknown> (https://react.dev/link/hydration-mismatch)
+    at throwOnHydrationMismatch (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:3318:56)
+    at beginWork (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:6758:918)
+    at runWithFiberInDEV (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:965:74)
+    at performUnitOfWork (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9555:97)
+    at workLoopConcurrentByScheduler (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9551:58)
+    at renderRootConcurrent (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9534:71)
+    at performWorkOnRoot (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9061:150)
+    at performWorkOnRootViaSchedulerTask (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_1amofcm._.js:2647:64)
+    at circle (<anonymous>)
+    at <unknown> (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_0inx4a0._.js:6898:220)
+    at Array.map (<anonymous>)
+    at <unknown> (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_0inx4a0._.js:6898:21)
+    at Sun (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_0inx4a0._.js:6925:411)
+    at Header (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/src_0hig-_l._.js:645:268)
+    at RootLayout (about://React/Server/C:%5CUsers%5Czi-jo.com%5COneDrive%5CDocuments%5CCars%20JO%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C_0yab90g._.js?3:201:272)
+prisma:query SELECT `main`.`badges`.`id`, `main`.`badges`.`nameAr`, `main`.`badges`.`nameEn`, `main`.`badges`.`icon`, `main`.`badges`.`color`, `main`.`badges`.`isActive`, `main`.`badges`.`createdAt`, `main`.`badges`.`updatedAt` FROM `main`.`badges` WHERE `main`.`badges`.`isActive` = ? ORDER BY `main`.`badges`.`createdAt` DESC LIMIT ? OFFSET ?
+ GET /api/badges 200 in 135ms (next.js: 122ms, application-code: 13ms)
+Persisting failed: Another write batch or compaction is already active (Only a single write operations is allowed at a time)
+Compaction failed: Another write batch or compaction is already active (Only a single write operations is allowed at a time)
+ GET / 200 in 77ms (next.js: 4ms, application-code: 73ms)
+prisma:query SELECT COUNT(*) FROM (SELECT `main`.`cars`.`id` FROM `main`.`cars` WHERE (`main`.`cars`.`status` = ? AND `main`.`cars`.`deletedAt` IS NULL AND `main`.`cars`.`featured` = ?) LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT `main`.`cars`.`id`, `main`.`cars`.`slug`, `main`.`cars`.`status`, `main`.`cars`.`featured`, `main`.`cars`.`featuredUntil`, `main`.`cars`.`isNew`, `main`.`cars`.`views`, `main`.`cars`.`saves`, `main`.`cars`.`brandId`, `main`.`cars`.`modelId`, `main`.`cars`.`year`, `main`.`cars`.`trim`, `main`.`cars`.`kilometers`, `main`.`cars`.`fuelType`, `main`.`cars`.`transmission`, `main`.`cars`.`color`, `main`.`cars`.`doors`, `main`.`cars`.`engineCapacity`, `main`.`cars`.`cylinders`, `main`.`cars`.`drivetrain`, `main`.`cars`.`condition`, `main`.`cars`.`bodyType`, `main`.`cars`.`lightingType`, `main`.`cars`.`rimType`, `main`.`cars`.`vin`, `main`.`cars`.`description`, `main`.`cars`.`aiDescription`, `main`.`cars`.`price`, `main`.`cars`.`currency`, `main`.`cars`.`cityId`, `main`.`cars`.`locationLat`, `main`.`cars`.`locationLng`, `main`.`cars`.`phone`, `main`.`cars`.`whatsapp`, `main`.`cars`.`coverImage`, `main`.`cars`.`videoUrl`, `main`.`cars`.`isNegotiable`, `main`.`cars`.`hasWarranty`, `main`.`cars`.`hasServiceHistory`, `main`.`cars`.`isDamaged`, `main`.`cars`.`isPaintOriginal`, `main`.`cars`.`ownerCount`, `main`.`cars`.`platesNumber`, `main`.`cars`.`aiScore`, `main`.`cars`.`aiAnalysis`, `main`.`cars`.`model3dUrl`, `main`.`cars`.`model3dStatus`, `main`.`cars`.`video360Url`, `main`.`cars`.`video360Status`, `main`.`cars`.`aiConditionReport`, `main`.`cars`.`refCode`, `main`.`cars`.`createdAt`, `main`.`cars`.`updatedAt`, `main`.`cars`.`expiresAt`, `main`.`cars`.`soldAt`, `main`.`cars`.`deletedAt`, `main`.`cars`.`deletedBy`, `main`.`cars`.`userId` FROM `main`.`cars` WHERE (`main`.`cars`.`status` = ? AND `main`.`cars`.`deletedAt` IS NULL AND `main`.`cars`.`featured` = ?) ORDER BY `main`.`cars`.`featured` DESC, `main`.`cars`.`createdAt` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`brands`.`id`, `main`.`brands`.`nameAr`, `main`.`brands`.`nameEn`, `main`.`brands`.`slug`, `main`.`brands`.`logo` FROM `main`.`brands` WHERE `main`.`brands`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`car_models`.`id`, `main`.`car_models`.`nameAr`, `main`.`car_models`.`nameEn`, `main`.`car_models`.`slug` FROM `main`.`car_models` WHERE `main`.`car_models`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`cities`.`id`, `main`.`cities`.`nameAr`, `main`.`cities`.`nameEn`, `main`.`cities`.`slug` FROM `main`.`cities` WHERE `main`.`cities`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`car_images`.`id`, `main`.`car_images`.`url`, `main`.`car_images`.`thumbnail`, `main`.`car_images`.`isCover`, `main`.`car_images`.`order`, `main`.`car_images`.`carId` FROM `main`.`car_images` WHERE `main`.`car_images`.`carId` IN (?) ORDER BY `main`.`car_images`.`order` ASC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`name`, `main`.`users`.`dealerName`, `main`.`users`.`dealerLogo`, `main`.`users`.`rating`, `main`.`users`.`badges` FROM `main`.`users` WHERE `main`.`users`.`id` IN (?) LIMIT ? OFFSET ?
+ GET /api/cars?featured=true&limit=6 200 in 22ms (next.js: 4ms, application-code: 18ms)
+prisma:query SELECT COUNT(*) FROM (SELECT `main`.`cars`.`id` FROM `main`.`cars` WHERE (`main`.`cars`.`status` = ? AND `main`.`cars`.`deletedAt` IS NULL) LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT `main`.`cars`.`id`, `main`.`cars`.`slug`, `main`.`cars`.`status`, `main`.`cars`.`featured`, `main`.`cars`.`featuredUntil`, `main`.`cars`.`isNew`, `main`.`cars`.`views`, `main`.`cars`.`saves`, `main`.`cars`.`brandId`, `main`.`cars`.`modelId`, `main`.`cars`.`year`, `main`.`cars`.`trim`, `main`.`cars`.`kilometers`, `main`.`cars`.`fuelType`, `main`.`cars`.`transmission`, `main`.`cars`.`color`, `main`.`cars`.`doors`, `main`.`cars`.`engineCapacity`, `main`.`cars`.`cylinders`, `main`.`cars`.`drivetrain`, `main`.`cars`.`condition`, `main`.`cars`.`bodyType`, `main`.`cars`.`lightingType`, `main`.`cars`.`rimType`, `main`.`cars`.`vin`, `main`.`cars`.`description`, `main`.`cars`.`aiDescription`, `main`.`cars`.`price`, `main`.`cars`.`currency`, `main`.`cars`.`cityId`, `main`.`cars`.`locationLat`, `main`.`cars`.`locationLng`, `main`.`cars`.`phone`, `main`.`cars`.`whatsapp`, `main`.`cars`.`coverImage`, `main`.`cars`.`videoUrl`, `main`.`cars`.`isNegotiable`, `main`.`cars`.`hasWarranty`, `main`.`cars`.`hasServiceHistory`, `main`.`cars`.`isDamaged`, `main`.`cars`.`isPaintOriginal`, `main`.`cars`.`ownerCount`, `main`.`cars`.`platesNumber`, `main`.`cars`.`aiScore`, `main`.`cars`.`aiAnalysis`, `main`.`cars`.`model3dUrl`, `main`.`cars`.`model3dStatus`, `main`.`cars`.`video360Url`, `main`.`cars`.`video360Status`, `main`.`cars`.`aiConditionReport`, `main`.`cars`.`refCode`, `main`.`cars`.`createdAt`, `main`.`cars`.`updatedAt`, `main`.`cars`.`expiresAt`, `main`.`cars`.`soldAt`, `main`.`cars`.`deletedAt`, `main`.`cars`.`deletedBy`, `main`.`cars`.`userId` FROM `main`.`cars` WHERE (`main`.`cars`.`status` = ? AND `main`.`cars`.`deletedAt` IS NULL) ORDER BY `main`.`cars`.`featured` DESC, `main`.`cars`.`createdAt` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`brands`.`id`, `main`.`brands`.`nameAr`, `main`.`brands`.`nameEn`, `main`.`brands`.`slug`, `main`.`brands`.`logo` FROM `main`.`brands` WHERE `main`.`brands`.`id` IN (?,?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`car_models`.`id`, `main`.`car_models`.`nameAr`, `main`.`car_models`.`nameEn`, `main`.`car_models`.`slug` FROM `main`.`car_models` WHERE `main`.`car_models`.`id` IN (?,?,?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`cities`.`id`, `main`.`cities`.`nameAr`, `main`.`cities`.`nameEn`, `main`.`cities`.`slug` FROM `main`.`cities` WHERE `main`.`cities`.`id` IN (?,?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`car_images`.`id`, `main`.`car_images`.`url`, `main`.`car_images`.`thumbnail`, `main`.`car_images`.`isCover`, `main`.`car_images`.`order`, `main`.`car_images`.`carId` FROM `main`.`car_images` WHERE `main`.`car_images`.`carId` IN (?,?,?) ORDER BY `main`.`car_images`.`order` ASC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`name`, `main`.`users`.`dealerName`, `main`.`users`.`dealerLogo`, `main`.`users`.`rating`, `main`.`users`.`badges` FROM `main`.`users` WHERE `main`.`users`.`id` IN (?,?,?) LIMIT ? OFFSET ?
+[browser] Encountered a script tag while rendering React component. Scripts inside React components are never executed when rendering on the client. Consider using template tag instead (https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template). 
+    at completeWork (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:6945:102)
+    at runWithFiberInDEV (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:965:74)
+    at completeUnitOfWork (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9622:23)
+    at performUnitOfWork (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9557:28)
+    at workLoopSync (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9449:40)
+    at renderRootSync (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9433:13)
+    at performWorkOnRoot (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9098:47)
+    at performWorkOnRootViaSchedulerTask (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_1amofcm._.js:2647:64) (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:6945:102)
+[browser] Uncaught Error: Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <body className="min-h-scre...">
+      <Providers>
+        <z attribute="class" defaultTheme="dark" enableSystem={false} storageKey="jo-cars-theme">
+          <O attribute="class" defaultTheme="dark" enableSystem={false} storageKey="jo-cars-theme">
+            <script>
+            <Header>
+              <header className="fixed top-...">
+                <div className="container-...">
+                  <div className="flex items...">
+                    <div>
+                    <div>
+                    <div className="flex items...">
+                      <button onClick={function onClick} className="p-2.5 roun...">
+                        <Sun className="w-5 h-5">
+                          <svg
+                            ref={null}
+                            xmlns="http://www.w3.org/2000/svg"
+                            width={24}
+                            height={24}
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
++                           className="lucide lucide-sun w-5 h-5"
+-                           className="lucide lucide-moon w-5 h-5"
+                          >
++                           <circle cx="12" cy="12" r="4">
+-                           <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z">
+                            ...
+                      ...
+                ...
+            ...
+            ...
+
+    at <unknown> (https://react.dev/link/hydration-mismatch)
+    at throwOnHydrationMismatch (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:3318:56)
+    at beginWork (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:6758:918)
+    at runWithFiberInDEV (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:965:74)
+    at performUnitOfWork (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9555:97)
+    at workLoopConcurrentByScheduler (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9551:58)
+    at renderRootConcurrent (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9534:71)
+    at performWorkOnRoot (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9061:150)
+    at performWorkOnRootViaSchedulerTask (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_next_dist_compiled_1amofcm._.js:2647:64)
+    at circle (<anonymous>)
+    at <unknown> (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_0inx4a0._.js:6898:220)
+    at Array.map (<anonymous>)
+    at <unknown> (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_0inx4a0._.js:6898:21)
+    at Sun (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/node_modules_0inx4a0._.js:6925:411)
+    at Header (file://C:/Users/zi-jo.com/OneDrive/Documents/Cars JO/.next/dev/static/chunks/src_0hig-_l._.js:645:268)
+    at RootLayout (about://React/Server/C:%5CUsers%5Czi-jo.com%5COneDrive%5CDocuments%5CCars%20JO%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C_0yab90g._.js?3:201:272)
+ GET /api/cars?sortBy=createdAt&sortOrder=desc&limit=9 200 in 26ms (next.js: 2ms, application-code: 24ms)
+prisma:query SELECT `main`.`brands`.`id`, `main`.`brands`.`nameAr`, `main`.`brands`.`nameEn`, `main`.`brands`.`slug`, `main`.`brands`.`logo`, `main`.`brands`.`country`, `main`.`brands`.`isActive`, `main`.`brands`.`createdAt`, COALESCE(`aggr_selection_0_Car`.`_aggr_count_cars`, 0) AS `_aggr_count_cars` FROM `main`.`brands` LEFT JOIN (SELECT `main`.`cars`.`brandId`, COUNT(*) AS `_aggr_count_cars` FROM `main`.`cars` WHERE 1=1 GROUP BY `main`.`cars`.`brandId`) AS `aggr_selection_0_Car` ON (`main`.`brands`.`id` = `aggr_selection_0_Car`.`brandId`) WHERE `main`.`brands`.`isActive` = ? ORDER BY `main`.`brands`.`nameAr` ASC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`cities`.`id`, `main`.`cities`.`nameAr`, `main`.`cities`.`nameEn`, `main`.`cities`.`slug`, `main`.`cities`.`isActive`, `main`.`cities`.`createdAt`, COALESCE(`aggr_selection_0_Car`.`_aggr_count_cars`, 0) AS `_aggr_count_cars` FROM `main`.`cities` LEFT JOIN (SELECT `main`.`cars`.`cityId`, COUNT(*) AS `_aggr_count_cars` FROM `main`.`cars` WHERE 1=1 GROUP BY `main`.`cars`.`cityId`) AS `aggr_selection_0_Car` ON (`main`.`cities`.`id` = `aggr_selection_0_Car`.`cityId`) WHERE `main`.`cities`.`isActive` = ? ORDER BY `main`.`cities`.`nameAr` ASC LIMIT ? OFFSET ?
+ GET /api/cars/brands 200 in 20ms (next.js: 5ms, application-code: 16ms)
+ GET /api/cars/cities 200 in 21ms (next.js: 10ms, application-code: 11ms)
+prisma:query SELECT COUNT(*) FROM (SELECT `main`.`cars`.`id` FROM `main`.`cars` WHERE (`main`.`cars`.`status` = ? AND `main`.`cars`.`deletedAt` IS NULL AND `main`.`cars`.`featured` = ?) LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT `main`.`cars`.`id`, `main`.`cars`.`slug`, `main`.`cars`.`status`, `main`.`cars`.`featured`, `main`.`cars`.`featuredUntil`, `main`.`cars`.`isNew`, `main`.`cars`.`views`, `main`.`cars`.`saves`, `main`.`cars`.`brandId`, `main`.`cars`.`modelId`, `main`.`cars`.`year`, `main`.`cars`.`trim`, `main`.`cars`.`kilometers`, `main`.`cars`.`fuelType`, `main`.`cars`.`transmission`, `main`.`cars`.`color`, `main`.`cars`.`doors`, `main`.`cars`.`engineCapacity`, `main`.`cars`.`cylinders`, `main`.`cars`.`drivetrain`, `main`.`cars`.`condition`, `main`.`cars`.`bodyType`, `main`.`cars`.`lightingType`, `main`.`cars`.`rimType`, `main`.`cars`.`vin`, `main`.`cars`.`description`, `main`.`cars`.`aiDescription`, `main`.`cars`.`price`, `main`.`cars`.`currency`, `main`.`cars`.`cityId`, `main`.`cars`.`locationLat`, `main`.`cars`.`locationLng`, `main`.`cars`.`phone`, `main`.`cars`.`whatsapp`, `main`.`cars`.`coverImage`, `main`.`cars`.`videoUrl`, `main`.`cars`.`isNegotiable`, `main`.`cars`.`hasWarranty`, `main`.`cars`.`hasServiceHistory`, `main`.`cars`.`isDamaged`, `main`.`cars`.`isPaintOriginal`, `main`.`cars`.`ownerCount`, `main`.`cars`.`platesNumber`, `main`.`cars`.`aiScore`, `main`.`cars`.`aiAnalysis`, `main`.`cars`.`model3dUrl`, `main`.`cars`.`model3dStatus`, `main`.`cars`.`video360Url`, `main`.`cars`.`video360Status`, `main`.`cars`.`aiConditionReport`, `main`.`cars`.`refCode`, `main`.`cars`.`createdAt`, `main`.`cars`.`updatedAt`, `main`.`cars`.`expiresAt`, `main`.`cars`.`soldAt`, `main`.`cars`.`deletedAt`, `main`.`cars`.`deletedBy`, `main`.`cars`.`userId` FROM `main`.`cars` WHERE (`main`.`cars`.`status` = ? AND `main`.`cars`.`deletedAt` IS NULL AND `main`.`cars`.`featured` = ?) ORDER BY `main`.`cars`.`featured` DESC, `main`.`cars`.`createdAt` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`brands`.`id`, `main`.`brands`.`nameAr`, `main`.`brands`.`nameEn`, `main`.`brands`.`slug`, `main`.`brands`.`logo` FROM `main`.`brands` WHERE `main`.`brands`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`car_models`.`id`, `main`.`car_models`.`nameAr`, `main`.`car_models`.`nameEn`, `main`.`car_models`.`slug` FROM `main`.`car_models` WHERE `main`.`car_models`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`cities`.`id`, `main`.`cities`.`nameAr`, `main`.`cities`.`nameEn`, `main`.`cities`.`slug` FROM `main`.`cities` WHERE `main`.`cities`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`car_images`.`id`, `main`.`car_images`.`url`, `main`.`car_images`.`thumbnail`, `main`.`car_images`.`isCover`, `main`.`car_images`.`order`, `main`.`car_images`.`carId` FROM `main`.`car_images` WHERE `main`.`car_images`.`carId` IN (?) ORDER BY `main`.`car_images`.`order` ASC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`name`, `main`.`users`.`dealerName`, `main`.`users`.`dealerLogo`, `main`.`users`.`rating`, `main`.`users`.`badges` FROM `main`.`users` WHERE `main`.`users`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT COUNT(*) FROM (SELECT `main`.`cars`.`id` FROM `main`.`cars` WHERE (`main`.`cars`.`status` = ? AND `main`.`cars`.`deletedAt` IS NULL) LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT `main`.`cars`.`id`, `main`.`cars`.`slug`, `main`.`cars`.`status`, `main`.`cars`.`featured`, `main`.`cars`.`featuredUntil`, `main`.`cars`.`isNew`, `main`.`cars`.`views`, `main`.`cars`.`saves`, `main`.`cars`.`brandId`, `main`.`cars`.`modelId`, `main`.`cars`.`year`, `main`.`cars`.`trim`, `main`.`cars`.`kilometers`, `main`.`cars`.`fuelType`, `main`.`cars`.`transmission`, `main`.`cars`.`color`, `main`.`cars`.`doors`, `main`.`cars`.`engineCapacity`, `main`.`cars`.`cylinders`, `main`.`cars`.`drivetrain`, `main`.`cars`.`condition`, `main`.`cars`.`bodyType`, `main`.`cars`.`lightingType`, `main`.`cars`.`rimType`, `main`.`cars`.`vin`, `main`.`cars`.`description`, `main`.`cars`.`aiDescription`, `main`.`cars`.`price`, `main`.`cars`.`currency`, `main`.`cars`.`cityId`, `main`.`cars`.`locationLat`, `main`.`cars`.`locationLng`, `main`.`cars`.`phone`, `main`.`cars`.`whatsapp`, `main`.`cars`.`coverImage`, `main`.`cars`.`videoUrl`, `main`.`cars`.`isNegotiable`, `main`.`cars`.`hasWarranty`, `main`.`cars`.`hasServiceHistory`, `main`.`cars`.`isDamaged`, `main`.`cars`.`isPaintOriginal`, `main`.`cars`.`ownerCount`, `main`.`cars`.`platesNumber`, `main`.`cars`.`aiScore`, `main`.`cars`.`aiAnalysis`, `main`.`cars`.`model3dUrl`, `main`.`cars`.`model3dStatus`, `main`.`cars`.`video360Url`, `main`.`cars`.`video360Status`, `main`.`cars`.`aiConditionReport`, `main`.`cars`.`refCode`, `main`.`cars`.`createdAt`, `main`.`cars`.`updatedAt`, `main`.`cars`.`expiresAt`, `main`.`cars`.`soldAt`, `main`.`cars`.`deletedAt`, `main`.`cars`.`deletedBy`, `main`.`cars`.`userId` FROM `main`.`cars` WHERE (`main`.`cars`.`status` = ? AND `main`.`cars`.`deletedAt` IS NULL) ORDER BY `main`.`cars`.`featured` DESC, `main`.`cars`.`createdAt` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`brands`.`id`, `main`.`brands`.`nameAr`, `main`.`brands`.`nameEn`, `main`.`brands`.`slug`, `main`.`brands`.`logo` FROM `main`.`brands` WHERE `main`.`brands`.`id` IN (?,?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`car_models`.`id`, `main`.`car_models`.`nameAr`, `main`.`car_models`.`nameEn`, `main`.`car_models`.`slug` FROM `main`.`car_models` WHERE `main`.`car_models`.`id` IN (?,?,?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`cities`.`id`, `main`.`cities`.`nameAr`, `main`.`cities`.`nameEn`, `main`.`cities`.`slug` FROM `main`.`cities` WHERE `main`.`cities`.`id` IN (?,?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`car_images`.`id`, `main`.`car_images`.`url`, `main`.`car_images`.`thumbnail`, `main`.`car_images`.`isCover`, `main`.`car_images`.`order`, `main`.`car_images`.`carId` FROM `main`.`car_images` WHERE `main`.`car_images`.`carId` IN (?,?,?) ORDER BY `main`.`car_images`.`order` ASC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`name`, `main`.`users`.`dealerName`, `main`.`users`.`dealerLogo`, `main`.`users`.`rating`, `main`.`users`.`badges` FROM `main`.`users` WHERE `main`.`users`.`id` IN (?,?,?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`brands`.`id`, `main`.`brands`.`nameAr`, `main`.`brands`.`nameEn`, `main`.`brands`.`slug`, `main`.`brands`.`logo`, `main`.`brands`.`country`, `main`.`brands`.`isActive`, `main`.`brands`.`createdAt`, COALESCE(`aggr_selection_0_Car`.`_aggr_count_cars`, 0) AS `_aggr_count_cars` FROM `main`.`brands` LEFT JOIN (SELECT `main`.`cars`.`brandId`, COUNT(*) AS `_aggr_count_cars` FROM `main`.`cars` WHERE 1=1 GROUP BY `main`.`cars`.`brandId`) AS `aggr_selection_0_Car` ON (`main`.`brands`.`id` = `aggr_selection_0_Car`.`brandId`) WHERE `main`.`brands`.`isActive` = ? ORDER BY `main`.`brands`.`nameAr` ASC LIMIT ? OFFSET ?
+ GET /api/cars?featured=true&limit=6 200 in 36ms (next.js: 3ms, application-code: 33ms)
+ GET /api/cars?sortBy=createdAt&sortOrder=desc&limit=9 200 in 37ms (next.js: 13ms, application-code: 24ms)
+ GET /api/cars/brands 200 in 38ms (next.js: 21ms, application-code: 18ms)
+prisma:query SELECT `main`.`cities`.`id`, `main`.`cities`.`nameAr`, `main`.`cities`.`nameEn`, `main`.`cities`.`slug`, `main`.`cities`.`isActive`, `main`.`cities`.`createdAt`, COALESCE(`aggr_selection_0_Car`.`_aggr_count_cars`, 0) AS `_aggr_count_cars` FROM `main`.`cities` LEFT JOIN (SELECT `main`.`cars`.`cityId`, COUNT(*) AS `_aggr_count_cars` FROM `main`.`cars` WHERE 1=1 GROUP BY `main`.`cars`.`cityId`) AS `aggr_selection_0_Car` ON (`main`.`cities`.`id` = `aggr_selection_0_Car`.`cityId`) WHERE `main`.`cities`.`isActive` = ? ORDER BY `main`.`cities`.`nameAr` ASC LIMIT ? OFFSET ?
+ GET /api/cars/cities 200 in 30ms (next.js: 18ms, application-code: 12ms)
+prisma:query SELECT `main`.`badges`.`id`, `main`.`badges`.`nameAr`, `main`.`badges`.`nameEn`, `main`.`badges`.`icon`, `main`.`badges`.`color`, `main`.`badges`.`isActive`, `main`.`badges`.`createdAt`, `main`.`badges`.`updatedAt` FROM `main`.`badges` WHERE `main`.`badges`.`isActive` = ? ORDER BY `main`.`badges`.`createdAt` DESC LIMIT ? OFFSET ?
+ GET /api/badges 200 in 13ms (next.js: 3ms, application-code: 10ms)
+ GET / 200 in 76ms (next.js: 4ms, application-code: 72ms)
+Persisting failed: Another write batch or compaction is already active (Only a single write operations is allowed at a time)
+Compaction failed: Another write batch or compaction is already active (Only a single write operations is allowed at a time)
