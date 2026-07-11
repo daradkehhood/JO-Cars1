@@ -156,6 +156,29 @@
   .text-balance {
     text-wrap: balance;
   }
+  .touch-target {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  input, textarea, select {
+    font-size: 16px !important;
+  }
 }
 
 .swiper-pagination-bullet {
