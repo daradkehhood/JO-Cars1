@@ -3,7 +3,6 @@ import { Providers } from '@/components/layout/Providers';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
-import { AIAssistant } from '@/components/ai/AIAssistant';
 import '@/styles/globals.css';
 
 export const metadata: Metadata = {
@@ -28,7 +27,6 @@ export const metadata: Metadata = {
     width: 'device-width',
     initialScale: 1,
     maximumScale: 5,
-    themeColor: '#2563eb',
   },
 };
 
@@ -47,7 +45,6 @@ export default function RootLayout({
           </main>
           <Footer />
           <MobileBottomNav />
-          <AIAssistant />
         </Providers>
       </body>
     </html>

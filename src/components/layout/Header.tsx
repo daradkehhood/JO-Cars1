@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -9,12 +9,11 @@ import { useTheme } from 'next-themes';
 import { useAuth } from '@/hooks/useAuth';
 import { useUIStore, useNotificationStore, useCompareStore } from '@/store';
 import { cn } from '@/lib/utils';
-import { createPortal } from 'react-dom';
 import {
   Search, Menu, X, User, Heart, MessageCircle, Plus, Moon, Sun,
   ChevronDown, LogOut, Settings, Car, Store, Bell, GitCompare,
   ShieldCheck, SlidersHorizontal, Cpu, Hammer, Gavel, Ticket,
-  Calculator, BadgePercent, Newspaper, Star as StarIcon, ChevronLeft, Tag, Wrench, DollarSign,
+  Calculator, BadgePercent, Newspaper, Star as StarIcon, ChevronLeft, Tag, Wrench, DollarSign, Bot,
 } from 'lucide-react';
 
 export function Header() {
@@ -49,6 +48,7 @@ export function Header() {
 
   const primaryLinks = [
     { href: '/cars', label: 'جميع السيارات', icon: Car },
+    { href: '/ai', label: 'المساعد الذكي', icon: Bot },
     { href: '/parts', label: 'قطع غيار', icon: Cpu },
     { href: '/financing', label: 'التمويل', icon: Calculator },
     { href: '/forum', label: 'المنتدى', icon: MessageCircle },
@@ -202,73 +202,164 @@ export function Header() {
 
                 <AnimatePresence>
                   {userMenuOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute left-0 top-full mt-2 w-64 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl shadow-black/10 overflow-hidden"
-                    >
-                      <div className="p-4 border-b border-gray-100 dark:border-gray-800">
-                        <p className="font-medium text-gray-900 dark:text-white">{user?.name}</p>
-                        <p className="text-sm text-gray-500">{user?.email}</p>
-                      </div>
-                      <div className="p-2">
-                        {[
-                          { href: '/auth/profile', label: 'الملف الشخصي', icon: User },
-                          { href: '/favorites', label: 'المفضلة', icon: Heart },
-                          { href: '/price-alerts', label: 'تنبيهات الأسعار', icon: Bell },
-                          { href: '/messages', label: 'الرسائل', icon: MessageCircle, badge: unreadCount },
-                          { href: '/my-cars', label: 'سياراتي', icon: Car },
-                          { href: '/my-garage', label: 'مرآبي', icon: Wrench },
-                          { href: '/my-auctions', label: 'مزاداتي', icon: Hammer },
-                          { href: '/my-bids', label: 'المزادات', icon: Gavel },
-                          { href: '/my-wants', label: 'إعلاناتي المطلوبة', icon: Tag },
-                          { href: '/my-services', label: 'خدماتي', icon: Wrench },
-                          { href: '/my-plates', label: 'لوحاتي', icon: BadgePercent },
-                          { href: '/parts', label: 'قطع غيار', icon: Cpu },
-                          { href: '/cars/add', label: 'إضافة سيارة', icon: Plus },
-                        ].map((item) => {
-                          const Icon = item.icon;
-                          return (
-                            <Link
-                              key={item.href}
-                              href={item.href}
-                              onClick={() => setUserMenuOpen(false)}
-                              className="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
-                            >
-                              <span className="flex items-center gap-3">
-                                <Icon className="w-4 h-4" />
-                                {item.label}
-                              </span>
-                              {item.badge ? (
-                                <span className="w-5 h-5 rounded-full bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center">
-                                  {item.badge}
+                    <>
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        className="hidden md:block absolute left-0 top-full mt-2 w-64 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl shadow-black/10 overflow-hidden"
+                      >
+                        <div className="p-4 border-b border-gray-100 dark:border-gray-800">
+                          <p className="font-medium text-gray-900 dark:text-white">{user?.name}</p>
+                          <p className="text-sm text-gray-500">{user?.email}</p>
+                        </div>
+                        <div className="p-2 max-h-[400px] overflow-y-auto">
+                          {[
+                            { href: '/auth/profile', label: 'الملف الشخصي', icon: User },
+                            { href: '/favorites', label: 'المفضلة', icon: Heart },
+                            { href: '/price-alerts', label: 'تنبيهات الأسعار', icon: Bell },
+                            { href: '/messages', label: 'الرسائل', icon: MessageCircle, badge: unreadCount },
+                            { href: '/my-cars', label: 'سياراتي', icon: Car },
+                            { href: '/my-garage', label: 'مرآبي', icon: Wrench },
+                            { href: '/my-auctions', label: 'مزاداتي', icon: Hammer },
+                            { href: '/my-bids', label: 'المزادات', icon: Gavel },
+                            { href: '/my-wants', label: 'إعلاناتي المطلوبة', icon: Tag },
+                            { href: '/my-services', label: 'خدماتي', icon: Wrench },
+                            { href: '/my-plates', label: 'لوحاتي', icon: BadgePercent },
+                            { href: '/parts', label: 'قطع غيار', icon: Cpu },
+                            { href: '/cars/add', label: 'إضافة سيارة', icon: Plus },
+                          ].map((item) => {
+                            const Icon = item.icon;
+                            return (
+                              <Link
+                                key={item.href}
+                                href={item.href}
+                                onClick={() => setUserMenuOpen(false)}
+                                className="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
+                              >
+                                <span className="flex items-center gap-3">
+                                  <Icon className="w-4 h-4" />
+                                  {item.label}
                                 </span>
-                              ) : null}
+                                {item.badge ? (
+                                  <span className="w-5 h-5 rounded-full bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center">
+                                    {item.badge}
+                                  </span>
+                                ) : null}
+                              </Link>
+                            );
+                          })}
+                          {user?.role === 'ADMIN' && (
+                            <Link
+                              href="/admin"
+                              onClick={() => setUserMenuOpen(false)}
+                              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
+                            >
+                              <ShieldCheck className="w-4 h-4" />
+                              لوحة التحكم
                             </Link>
-                          );
-                        })}
-                        {user?.role === 'ADMIN' && (
-                          <Link
-                            href="/admin"
-                            onClick={() => setUserMenuOpen(false)}
-                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
+                          )}
+                        </div>
+                        <div className="p-2 border-t border-gray-100 dark:border-gray-800">
+                          <button
+                            onClick={() => { logout(); setUserMenuOpen(false); }}
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 w-full transition-all"
                           >
-                            <ShieldCheck className="w-4 h-4" />
-                            لوحة التحكم
-                          </Link>
-                        )}
-                      </div>
-                      <div className="p-2 border-t border-gray-100 dark:border-gray-800">
-                        <button
-                          onClick={() => { logout(); setUserMenuOpen(false); }}
-                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 w-full transition-all"
+                            <LogOut className="w-4 h-4" />
+                            تسجيل خروج
+                          </button>
+                        </div>
+                      </motion.div>
+
+                      {createPortal(
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="md:hidden fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm"
+                          onClick={() => setUserMenuOpen(false)}
                         >
-                          <LogOut className="w-4 h-4" />
-                          تسجيل خروج
-                        </button>
-                      </div>
-                    </motion.div>
+                          <motion.div
+                            initial={{ y: '100%' }}
+                            animate={{ y: 0 }}
+                            exit={{ y: '100%' }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                            className="absolute bottom-0 left-0 right-0 max-h-[85dvh] bg-white dark:bg-gray-900 rounded-t-3xl overflow-hidden flex flex-col"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
+                              <div>
+                                <p className="font-medium text-gray-900 dark:text-white">{user?.name}</p>
+                                <p className="text-sm text-gray-500">{user?.email}</p>
+                              </div>
+                              <button
+                                onClick={() => setUserMenuOpen(false)}
+                                className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800"
+                              >
+                                <X className="w-5 h-5 text-gray-500" />
+                              </button>
+                            </div>
+                            <div className="flex-1 overflow-y-auto overscroll-contain p-2">
+                              {[
+                                { href: '/auth/profile', label: 'الملف الشخصي', icon: User },
+                                { href: '/favorites', label: 'المفضلة', icon: Heart },
+                                { href: '/price-alerts', label: 'تنبيهات الأسعار', icon: Bell },
+                                { href: '/messages', label: 'الرسائل', icon: MessageCircle, badge: unreadCount },
+                                { href: '/my-cars', label: 'سياراتي', icon: Car },
+                                { href: '/my-garage', label: 'مرآبي', icon: Wrench },
+                                { href: '/my-auctions', label: 'مزاداتي', icon: Hammer },
+                                { href: '/my-bids', label: 'المزادات', icon: Gavel },
+                                { href: '/my-wants', label: 'إعلاناتي المطلوبة', icon: Tag },
+                                { href: '/my-services', label: 'خدماتي', icon: Wrench },
+                                { href: '/my-plates', label: 'لوحاتي', icon: BadgePercent },
+                                { href: '/parts', label: 'قطع غيار', icon: Cpu },
+                                { href: '/cars/add', label: 'إضافة سيارة', icon: Plus },
+                              ].map((item) => {
+                                const Icon = item.icon;
+                                return (
+                                  <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    onClick={() => setUserMenuOpen(false)}
+                                    className="flex items-center justify-between px-4 py-3 rounded-xl text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
+                                  >
+                                    <span className="flex items-center gap-3">
+                                      <Icon className="w-5 h-5" />
+                                      {item.label}
+                                    </span>
+                                    {item.badge ? (
+                                      <span className="w-5 h-5 rounded-full bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center">
+                                        {item.badge}
+                                      </span>
+                                    ) : null}
+                                  </Link>
+                                );
+                              })}
+                              {user?.role === 'ADMIN' && (
+                                <Link
+                                  href="/admin"
+                                  onClick={() => setUserMenuOpen(false)}
+                                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
+                                >
+                                  <ShieldCheck className="w-5 h-5" />
+                                  لوحة التحكم
+                                </Link>
+                              )}
+                            </div>
+                            <div className="p-2 border-t border-gray-100 dark:border-gray-800">
+                              <button
+                                onClick={() => { logout(); setUserMenuOpen(false); }}
+                                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 w-full transition-all"
+                              >
+                                <LogOut className="w-5 h-5" />
+                                تسجيل خروج
+                              </button>
+                            </div>
+                          </motion.div>
+                        </motion.div>,
+                        document.body
+                      )}
+                    </>
                   )}
                 </AnimatePresence>
               </div>
@@ -301,17 +392,29 @@ export function Header() {
         </div>
       </div>
 
-      <AnimatePresence>
-        {mobileMenuOpen && createPortal((
+      {mobileMenuOpen && (
+        <div className="lg:hidden fixed inset-0 z-[95]">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setMobileMenuOpen(false)}
+          />
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-black backdrop-blur-xl fixed inset-x-0 bottom-0 z-50 max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain"
-            style={{ overscrollBehavior: 'contain' }}
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="absolute bottom-0 left-0 right-0 max-h-[85dvh] bg-white dark:bg-gray-900 rounded-t-3xl overflow-hidden flex flex-col"
           >
-            <div className="container-custom py-4 space-y-3 pb-20">
-              <form onSubmit={handleSearch}>
+            <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
+              <h3 className="font-semibold text-gray-900 dark:text-white">القائمة</h3>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto overscroll-contain p-2">
+              <form onSubmit={handleSearch} className="px-2 mb-3">
                 <div className="relative">
                   <input
                     type="text"
@@ -325,24 +428,57 @@ export function Header() {
                   </button>
                 </div>
               </form>
-              {[...primaryLinks, ...secondaryLinks].map((link) => {
-                const Icon = link.icon;
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
-                  >
-                    <Icon className="w-4 h-4" />
-                    {link.label}
-                  </Link>
-                );
-              })}
+              <div className="space-y-1">
+                {[...primaryLinks, ...secondaryLinks].map((link) => {
+                  const Icon = link.icon;
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
+                    >
+                      <Icon className="w-5 h-5" />
+                      {link.label}
+                    </Link>
+                  );
+                })}
+                {isAuthenticated && (
+                  <>
+                    <div className="border-t border-gray-100 dark:border-gray-800 my-2" />
+                    <Link
+                      href="/auth/profile"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
+                    >
+                      <User className="w-5 h-5" />
+                      حسابي
+                    </Link>
+                    <Link
+                      href="/my-cars"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
+                    >
+                      <Car className="w-5 h-5" />
+                      سياراتي
+                    </Link>
+                    {user?.role === 'ADMIN' && (
+                      <Link
+                        href="/admin"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
+                      >
+                        <ShieldCheck className="w-5 h-5" />
+                        لوحة التحكم
+                      </Link>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </motion.div>
-        ), document.body)}
-      </AnimatePresence>
+        </div>
+      )}
     </header>
   );
 }
