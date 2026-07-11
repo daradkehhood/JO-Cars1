@@ -7,10 +7,10 @@ import { join } from 'path';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string; soundId: string } }
+  { params }: { params: Promise<{ id: string; soundId: string }> }
 ) {
   try {
-    const { id, soundId } = params;
+    const { id, soundId } = await params;
 
     const recording = await prisma.carSoundRecording.findFirst({
       where: { id: soundId, carId: id },
@@ -35,13 +35,13 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; soundId: string } }
+  { params }: { params: Promise<{ id: string; soundId: string }> }
 ) {
   try {
     const user = await authenticateRequest(request);
     if (!user) return unauthorizedResponse();
 
-    const { id, soundId } = params;
+    const { id, soundId } = await params;
 
     const recording = await prisma.carSoundRecording.findFirst({
       where: { id: soundId, carId: id }

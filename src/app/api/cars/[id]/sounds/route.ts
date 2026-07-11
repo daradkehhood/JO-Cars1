@@ -7,10 +7,10 @@ import { join } from 'path';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     
     const recordings = await prisma.carSoundRecording.findMany({
       where: { carId: id },
@@ -32,13 +32,13 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await authenticateRequest(request);
     if (!user) return unauthorizedResponse();
 
-    const { id } = params;
+    const { id } = await params;
     
     const car = await prisma.car.findUnique({ where: { id } });
     if (!car) return notFoundResponse('السيارة');
