@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { MapPin } from 'lucide-react';
+import { MapPin, ChevronDown } from 'lucide-react';
 
 interface CityData {
   id: string;
@@ -14,6 +14,8 @@ interface CityData {
 
 export function CitiesSection() {
   const [cities, setCities] = useState<CityData[]>([]);
+  const [showAll, setShowAll] = useState(false);
+  const INITIAL_COUNT = 8;
 
   useEffect(() => {
     fetch('/api/cars/cities')
@@ -23,6 +25,9 @@ export function CitiesSection() {
   }, []);
 
   if (cities.length === 0) return null;
+
+  const displayCities = showAll ? cities : cities.slice(0, INITIAL_COUNT);
+  const hasMore = cities.length > INITIAL_COUNT;
 
   return (
     <section className="py-16">
@@ -37,7 +42,7 @@ export function CitiesSection() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {cities.map((city, i) => (
+          {displayCities.map((city, i) => (
             <motion.div
               key={city.slug || city.id}
               initial={{ opacity: 0, y: 20 }}
@@ -68,6 +73,18 @@ export function CitiesSection() {
             </motion.div>
           ))}
         </div>
+
+        {hasMore && (
+          <div className="text-center mt-8">
+            <button
+              onClick={() => setShowAll(!showAll)}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-blue-200 dark:hover:border-blue-500/20 hover:shadow-lg transition-all duration-300 text-blue-600 dark:text-blue-400 font-medium"
+            >
+              {showAll ? 'إظهار أقل' : 'المزيد من المحافظات'}
+              <ChevronDown className={`w-5 h-5 transition-transform ${showAll ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );
