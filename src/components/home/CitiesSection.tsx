@@ -41,7 +41,7 @@ export function CitiesSection() {
           <p className="section-subtitle">اعثر على سيارتك في محافظتك</p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-h-[calc(8*84px)] overflow-hidden">
           {displayCities.map((city, i) => (
             <motion.div
               key={city.slug || city.id}
