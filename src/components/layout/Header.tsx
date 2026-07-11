@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,6 +9,7 @@ import { useTheme } from 'next-themes';
 import { useAuth } from '@/hooks/useAuth';
 import { useUIStore, useNotificationStore, useCompareStore } from '@/store';
 import { cn } from '@/lib/utils';
+import { createPortal } from 'react-dom';
 import {
   Search, Menu, X, User, Heart, MessageCircle, Plus, Moon, Sun,
   ChevronDown, LogOut, Settings, Car, Store, Bell, GitCompare,
@@ -300,7 +302,7 @@ export function Header() {
       </div>
 
       <AnimatePresence>
-        {mobileMenuOpen && (
+        {mobileMenuOpen && createPortal((
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
@@ -338,7 +340,7 @@ export function Header() {
               })}
             </div>
           </motion.div>
-        )}
+        ), document.body)}
       </AnimatePresence>
     </header>
   );
