@@ -2,7 +2,7 @@ node_modules/
 .next/
 .git/
 backups/
-uploads/
+/uploads/
 *.log
 .env
 .env.local
