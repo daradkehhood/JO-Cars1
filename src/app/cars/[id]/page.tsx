@@ -20,6 +20,7 @@ import { CarHistorySection } from '@/components/cars/CarHistorySection';
 import { AiAnalysisContent } from '@/components/cars/AiAnalysisContent';
 import { CustomsCalculator } from '@/components/cars/CustomsCalculator';
 import { ConditionDetails } from '@/components/cars/ConditionDetails';
+import { EngineSoundSection } from '@/components/cars/EngineSoundSection';
 import { useAuth } from '@/hooks/useAuth';
 import { useCompareStore } from '@/store';
 import { ReportModal } from '@/components/cars/ReportModal';
@@ -361,6 +362,11 @@ export default function CarDetailPage() {
             {/* Car History (Carfax) */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
               <CarHistorySection vin={car.vin} carId={car.id} />
+            </motion.div>
+
+            {/* Engine Sound Analysis */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <EngineSoundSection carId={car.id} currentUserId={currentUser?.id} />
             </motion.div>
 
             {/* Specs */}

@@ -82,6 +82,7 @@ model User {
   carReminders         CarReminder[]
   garage               UserGarage[]
   carExpenses          CarExpense[]
+  soundRecordings      CarSoundRecording[]
 
   @@map("users")
 }
@@ -325,6 +326,8 @@ model Car {
   comments CarComment[]
   reminders CarReminder[]
   viewers   CarViewer[]
+  soundRecordings CarSoundRecording[]
+  soundAnalyses   SoundAnalysis[]
 
   @@index([brandId])
   @@index([modelId])
@@ -1134,4 +1137,76 @@ model GarageImage {
 
   @@index([garageId])
   @@map("garage_images")
+}
+
+model CarSoundRecording {
+  id          String   @id @default(cuid())
+  carId       String
+  userId      String
+  url         String
+  fileName    String
+  duration    Float
+  fileSize    Int
+  mimeType    String   @default("audio/webm")
+  status      String   @default("pending") // pending, analyzing, completed, failed
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  car      Car       @relation(fields: [carId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id])
+  analysis SoundAnalysis?
+
+  @@index([carId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("car_sound_recordings")
+}
+
+model SoundAnalysis {
+  id               String   @id @default(cuid())
+  recordingId      String   @unique
+  carId            String
+  overallScore     Float
+  engineHealth     String   // excellent, good, fair, poor, critical
+  engineScore      Float
+  transmissionScore Float?
+  exhaustScore     Float?
+  beltScore        Float?
+  bearingScore     Float?
+  anomalyScore     Float
+  anomalyDetected  Boolean  @default(false)
+  anomalyDetails   String?
+  estimatedRepairCost Float?
+  repairCostCurrency  String @default("JOD")
+  diagnosis        String
+  recommendations  String
+  comparisonResult String?
+  referenceMatch   String?
+  modelYearMatch   String?
+  rawAnalysis      String?
+  analyzedAt       DateTime @default(now())
+
+  recording CarSoundRecording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  car       Car               @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@index([carId])
+  @@index([analyzedAt])
+  @@map("sound_analyses")
+}
+
+model ReferenceSound {
+  id          String   @id @default(cuid())
+  brandId     String
+  modelId     String
+  yearFrom    Int
+  yearTo      Int
+  fuelType    String
+  url         String
+  fileName    String
+  description String?
+  createdAt   DateTime @default(now())
+
+  @@index([brandId, modelId])
+  @@index([fuelType])
+  @@map("reference_sounds")
 }
