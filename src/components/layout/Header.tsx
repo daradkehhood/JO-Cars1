@@ -48,7 +48,6 @@ export function Header() {
 
   const primaryLinks = [
     { href: '/cars', label: 'جميع السيارات', icon: Car },
-    { href: '/ai', label: 'المساعد الذكي', icon: Bot },
     { href: '/parts', label: 'قطع غيار', icon: Cpu },
     { href: '/financing', label: 'التمويل', icon: Calculator },
     { href: '/forum', label: 'المنتدى', icon: MessageCircle },
@@ -56,6 +55,7 @@ export function Header() {
   ];
 
   const secondaryLinks = [
+    { href: '/ai', label: 'المساعد الذكي', icon: Bot },
     { href: '/cars?featured=true', label: 'مميزة', icon: StarIcon },
     { href: '/car-finder', label: 'هل تناسبني؟', icon: Car },
     { href: '/resale-value', label: 'قيمة إعادة البيع', icon: DollarSign },

@@ -12,7 +12,7 @@ import {
   Calendar, Settings, Star, ChevronLeft, ChevronRight, Maximize2,
   Shield, CheckCircle, AlertTriangle, BarChart3, Bot, Sparkles, Eye,
   Clock, Building2, Palette, DoorOpen, Cpu, Bike, Loader2, GitCompare, ChevronDown,
-  RotateCcw, Trash2, Crown, Send, Car as CarIcon
+  RotateCcw, Trash2, Crown, Send, Car as CarIcon, X
 } from 'lucide-react';
 import { formatPrice, formatDistance, getFuelTypeLabel, getTransmissionLabel, getDrivetrainLabel, getConditionLabel, formatDate } from '@/lib/utils';
 import { AuctionSection } from '@/components/auctions/AuctionSection';
@@ -46,6 +46,8 @@ export default function CarDetailPage() {
   const [reportOpen, setReportOpen] = useState(false);
   const [ratingOpen, setRatingOpen] = useState(false);
   const [carTags, setCarTags] = useState<{ id: string; nameAr: string; slug: string; icon: string; color: string }[]>([]);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   useEffect(() => {
     const carId = params.id;
@@ -156,7 +158,7 @@ export default function CarDetailPage() {
     <div className="min-h-screen pb-16">
       <div className="container-custom">
         {/* Image Gallery */}
-        <div className="relative h-[70vh] min-h-[400px] rounded-3xl overflow-hidden mb-8 mt-4 group">
+        <div className="relative h-[70vh] min-h-[400px] rounded-3xl overflow-hidden mb-8 mt-4 group cursor-pointer" onClick={() => { setLightboxIndex(currentImage); setLightboxOpen(true); }}>
           {allImages.length > 0 ? (
             <>
               <Image
@@ -168,6 +170,13 @@ export default function CarDetailPage() {
                 sizes="100vw"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
+
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-sm text-white text-xs">
+                  <Maximize2 className="w-3.5 h-3.5" />
+                  <span>اضغط للعرض بالكامل</span>
+                </div>
+              </div>
 
               {allImages.length > 1 && (
                 <>
@@ -637,6 +646,62 @@ export default function CarDetailPage() {
         targetUserId={car.user.id}
         carId={car.id}
         carName={`${car.brand?.nameAr || ''} ${car.model?.nameAr || ''} ${car.year}`} />
+
+      {lightboxOpen && allImages.length > 0 && (
+        <div className="fixed inset-0 z-[200] bg-black/95 flex flex-col" onClick={() => setLightboxOpen(false)}>
+          <div className="flex items-center justify-between p-4 text-white">
+            <button onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }}
+              className="p-2 rounded-xl hover:bg-white/10 transition-colors">
+              <X className="w-6 h-6" />
+            </button>
+            <span className="text-sm font-medium">{lightboxIndex + 1} / {allImages.length}</span>
+            <div className="w-10" />
+          </div>
+
+          <div className="flex-1 flex items-center justify-center px-4 pb-4 min-h-0"
+            onClick={(e) => e.stopPropagation()}>
+            {allImages.length > 1 && (
+              <button onClick={() => setLightboxIndex(prev => (prev - 1 + allImages.length) % allImages.length)}
+                className="absolute left-2 md:left-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-colors z-10">
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            )}
+
+            <div className="relative w-full h-full max-w-5xl max-h-full">
+              <Image
+                src={allImages[lightboxIndex]?.url || '/images/placeholder-car.svg'}
+                alt={`${car.brand?.nameAr} ${car.model?.nameAr} - صورة ${lightboxIndex + 1}`}
+                fill
+                className="object-contain"
+                sizes="100vw"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+
+            {allImages.length > 1 && (
+              <button onClick={() => setLightboxIndex(prev => (prev + 1) % allImages.length)}
+                className="absolute right-2 md:right-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-colors z-10">
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+            )}
+          </div>
+
+          {allImages.length > 1 && (
+            <div className="flex justify-center gap-2 p-4 overflow-x-auto"
+              onClick={(e) => e.stopPropagation()}>
+              {allImages.map((img, i) => (
+                <button key={i} onClick={() => setLightboxIndex(i)}
+                  className={`flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all ${
+                    i === lightboxIndex ? 'border-white shadow-lg scale-110' : 'border-transparent opacity-50 hover:opacity-75'
+                  }`}>
+                  <Image src={img.url || '/images/placeholder-car.svg'} alt="" width={64} height={48}
+                    className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
