@@ -305,9 +305,9 @@ export function Header() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-black backdrop-blur-xl"
+            className="lg:hidden border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-black backdrop-blur-xl fixed inset-x-0 bottom-0 z-50 max-h-[calc(100vh-4rem)] overflow-y-auto"
           >
-            <div className="container-custom py-4 space-y-3">
+            <div className="container-custom py-4 space-y-3 pb-20">
               <form onSubmit={handleSearch}>
                 <div className="relative">
                   <input
