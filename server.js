@@ -11,8 +11,9 @@ const port = parseInt(process.env.PORT || '3000', 10);
 
 const uploadsDir = path.join(__dirname, 'public', 'uploads');
 const mimeTypes = {
-  '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
-  '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml',
+  '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.jfif': 'image/jpeg', '.png': 'image/png',
+  '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.avif': 'image/avif',
+  '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.ogg': 'audio/ogg', '.webm': 'audio/webm',
 };
 
 function log(level, msg, extra) {

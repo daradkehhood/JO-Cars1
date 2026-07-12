@@ -1153,6 +1153,7 @@ model CarSoundRecording {
   duration    Float
   fileSize    Int
   mimeType    String   @default("audio/webm")
+  audioData   Bytes?
   status      String   @default("pending") // pending, analyzing, completed, failed
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

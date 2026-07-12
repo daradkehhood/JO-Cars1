@@ -108,9 +108,10 @@ export default function SoundReportsAdmin() {
     }
   };
 
-  const handlePlay = (url: string, id: string) => {
+  const handlePlay = async (recordingId: string, id: string) => {
     if (audioRef) {
       audioRef.pause();
+      audioRef.src = '';
     }
     
     if (playingId === id) {
@@ -119,11 +120,20 @@ export default function SoundReportsAdmin() {
       return;
     }
 
-    const audio = new Audio(url);
+    const audio = new Audio(`/api/sounds/stream/${recordingId}`);
+    audio.onerror = () => {
+      setPlayingId(null);
+      setAudioRef(null);
+    };
     audio.onended = () => setPlayingId(null);
-    audio.play();
-    setAudioRef(audio);
-    setPlayingId(id);
+    try {
+      await audio.play();
+      setAudioRef(audio);
+      setPlayingId(id);
+    } catch {
+      setPlayingId(null);
+      setAudioRef(null);
+    }
   };
 
   const handleBanUser = async () => {
@@ -244,7 +254,7 @@ export default function SoundReportsAdmin() {
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-4">
                     <button
-                      onClick={() => handlePlay(report.recording.url, report.id)}
+                      onClick={() => handlePlay(report.recording.id, report.id)}
                       className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-500/10 flex items-center justify-center flex-shrink-0"
                     >
                       {playingId === report.id ? (

@@ -161,7 +161,7 @@ export function SoundAnalysisPlayer({ recording, onDelete, onReport, isOwner, ca
 
         <audio
           ref={audioRef}
-          src={recording.url}
+          src={`/api/sounds/stream/${recording.id}`}
           onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime || 0)}
           onEnded={() => setIsPlaying(false)}
           className="hidden"

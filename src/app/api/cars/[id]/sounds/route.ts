@@ -2,8 +2,6 @@ import { NextRequest } from 'next/server';
 import { authenticateRequest } from '@/lib/auth';
 import { successResponse, errorResponse, unauthorizedResponse, notFoundResponse } from '@/lib/api';
 import prisma from '@/lib/prisma';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
 
 export async function GET(
   request: NextRequest,
@@ -56,30 +54,35 @@ export async function POST(
 
     const ext = audioFile.name.split('.').pop() || 'webm';
     const fileName = `engine-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-    
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'sounds');
-    await mkdir(uploadsDir, { recursive: true });
-    
-    const filePath = join(uploadsDir, fileName);
-    await writeFile(filePath, buffer);
+    const streamUrl = `/api/sounds/stream/${Date.now()}`;
 
     const recording = await prisma.carSoundRecording.create({
       data: {
         carId: id,
         userId: user.id,
-        url: `/uploads/sounds/${fileName}`,
+        url: streamUrl,
         fileName,
         duration,
         fileSize: buffer.length,
         mimeType: audioFile.type || 'audio/webm',
+        audioData: buffer,
         status: 'pending'
       },
       include: {
-        analysis: true
+        analysis: true,
+        user: {
+          select: { id: true, name: true, image: true }
+        }
       }
     });
 
-    return successResponse(recording, 201);
+    const finalUrl = `/api/sounds/stream/${recording.id}`;
+    await prisma.carSoundRecording.update({
+      where: { id: recording.id },
+      data: { url: finalUrl }
+    });
+
+    return successResponse({ ...recording, url: finalUrl }, 201);
   } catch (error) {
     console.error('Error uploading sound recording:', error);
     return errorResponse('فشل في رفع التسجيل', 500);
