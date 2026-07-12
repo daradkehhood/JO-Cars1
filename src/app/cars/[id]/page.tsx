@@ -31,6 +31,7 @@ import { StarRating } from '@/components/ratings/StarRating';
 import { RatingModal } from '@/components/ratings/RatingModal';
 import type { Car } from '@/types';
 import { CarComments } from '@/components/cars/CarComments';
+import { CarReviewGenerator } from '@/components/cars/CarReviewGenerator';
 import toast from 'react-hot-toast';
 
 export default function CarDetailPage() {
@@ -654,6 +655,15 @@ export default function CarDetailPage() {
             )}
           </div>
         </div>
+
+        {/* Review Generator */}
+        <section className="mt-12">
+          <CarReviewGenerator
+            brand={car.brand?.nameAr}
+            model={car.model?.nameAr}
+            year={car.year}
+          />
+        </section>
 
         {/* Comments */}
         <section className="mt-12">

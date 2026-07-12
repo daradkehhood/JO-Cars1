@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { PriceEvaluation } from '@/components/cars/PriceEvaluation';
 import { MapPicker } from '@/components/cars/MapPicker';
+import { CarReviewGenerator } from '@/components/cars/CarReviewGenerator';
 import toast from 'react-hot-toast';
 
 interface Brand { id: string; nameAr: string; nameEn: string; slug: string; }
@@ -452,6 +453,13 @@ export default function AddCarPage() {
                     icon={<Sparkles className="w-4 h-4" />} className="w-full">
                     تحسين الوصف بالذكاء الاصطناعي
                   </Button>
+
+                  <CarReviewGenerator
+                    brand={brands.find(b => b.id === form.brandId)?.nameAr}
+                    model={models.find(m => m.id === form.modelId)?.nameAr}
+                    year={form.year}
+                    onReviewGenerated={(review) => updateForm('description', review.structured.summary)}
+                  />
 
                   <ConditionEditor value={conditionDetails} onChange={setConditionDetails} />
 
