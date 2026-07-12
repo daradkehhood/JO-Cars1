@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, X, Send, Sparkles, Car, HelpCircle, Search, TrendingUp, MessageCircle, ShoppingBag, Fuel, Shield, DollarSign, BarChart3, ChevronDown } from 'lucide-react';
+import { Bot, X, Send, Sparkles, Car, HelpCircle, Search, TrendingUp, MessageCircle, ShoppingBag, Fuel, Shield, DollarSign, BarChart3, ChevronDown, Zap } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface CarSuggestion {
@@ -27,13 +27,22 @@ interface MarketPriceResult {
 
 interface Message {
   id: string; type: 'user' | 'bot'; content: string;
-  cars?: CarSuggestion[]; marketPriceResult?: MarketPriceResult; timestamp: Date;
+  cars?: CarSuggestion[]; marketPriceResult?: MarketPriceResult; personalityResult?: any; timestamp: Date;
 }
 
 type MpStep = 'brand' | 'model' | 'year' | 'kilometers' | 'condition';
 type MpStepOrNull = MpStep | null;
 
+const personalityQuestions = [
+  { id: 'q1', text: 'إيش نوع الطقس اللي تحبه؟', options: [{ label: '☀️ مشمس ودافئ', value: 'A' }, { label: '🌧️ ممطر ورومانسي', value: 'B' }, { label: '❄️ بارد ومشوق', value: 'C' }] },
+  { id: 'q2', text: 'كيف تشرب قهوتك؟', options: [{ label: '☕ قهوة عربية تقليدية', value: 'A' }, { label: '🥛 لاتيه حلو وحلات', value: 'B' }, { label: '💪 اسبريسو قوي وسريع', value: 'C' }] },
+  { id: 'q3', text: 'إيش أغنية حياتك؟', options: [{ label: '🎵 أغنية هادية وعميقة', value: 'A' }, { label: '🎸 أغنية حماسية وصاخبة', value: 'B' }, { label: '🎹 أغنية كلاسيكية أنيقة', value: 'C' }] },
+  { id: 'q4', text: 'لو سافرت، وين تروح؟', options: [{ label: '🏔️ بر وصحراء ومغامرة', value: 'A' }, { label: '🏖️ شاطئ وهدوء واسترخاء', value: 'B' }, { label: '🏙️ مدينة كبيرة وفخمة', value: 'C' }] },
+  { id: 'q5', text: 'كيف تنظّم يومك؟', options: [{ label: '📋 كل شي مخطط ومرتب', value: 'A' }, { label: '🎲 عشوائي وتفاجئ نفسي', value: 'B' }, { label: '👥 مع الأهل والأصدقاء', value: 'C' }] },
+];
+
 const quickActions = [
+  { label: 'مطابقة الروح', icon: Zap, action: '__personality_match__' },
   { label: 'مساعد شراء', icon: ShoppingBag, action: 'عندي 9000 دينار وأريد سيارة عائلية اقتصادية' },
   { label: 'اقترح سيارة', icon: Car, action: 'أقترح علي سيارة مناسبة لميزانية 15000 دينار' },
   { label: 'تسعير السوق', icon: BarChart3, action: '__market_price__' },
@@ -41,7 +50,6 @@ const quickActions = [
   { label: 'مقارنة', icon: Search, action: 'كيف أقارن بين سيارتين في الموقع؟' },
   { label: 'اقتصادية', icon: Fuel, action: 'أفضل السيارات الاقتصادية في استهلاك البنزين؟' },
   { label: 'مستعملة', icon: TrendingUp, action: 'نصائح عند شراء سيارة مستعملة' },
-  { label: 'تمويل', icon: DollarSign, action: 'خيارات التمويل والتقسيط المتاحة؟' },
 ];
 
 const mpQuestions: Record<MpStep, string> = {
@@ -66,6 +74,9 @@ export function AIAssistant() {
   const [isTyping, setIsTyping] = useState(false);
   const [mpStep, setMpStep] = useState<MpStepOrNull>(null);
   const [mpData, setMpData] = useState({ brand: '', model: '', year: '', kilometers: '', condition: '' });
+  const [personalityStep, setPersonalityStep] = useState<number | null>(null);
+  const [personalityAnswers, setPersonalityAnswers] = useState<string[]>([]);
+  const [personalityResult, setPersonalityResult] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -77,10 +88,10 @@ export function AIAssistant() {
     if (isOpen) inputRef.current?.focus();
   }, [isOpen]);
 
-  const botReply = (content: string, options?: { cars?: CarSuggestion[]; marketPriceResult?: MarketPriceResult }) => {
+  const botReply = (content: string, options?: { cars?: CarSuggestion[]; marketPriceResult?: MarketPriceResult; personalityResult?: any }) => {
     setMessages(prev => [...prev, {
       id: (Date.now() + 1).toString(), type: 'bot', content,
-      cars: options?.cars, marketPriceResult: options?.marketPriceResult, timestamp: new Date(),
+      cars: options?.cars, marketPriceResult: options?.marketPriceResult, personalityResult: options?.personalityResult, timestamp: new Date(),
     }]);
   };
 
@@ -161,6 +172,55 @@ export function AIAssistant() {
     setIsTyping(false);
   };
 
+  const fetchPersonalityMatch = async (answers: string[]) => {
+    setIsTyping(true);
+    try {
+      const res = await fetch('/api/ai/personality-match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers }),
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        const d = data.data;
+        setPersonalityResult(d);
+
+        let msg = `${d.personality.emoji} **شخصيتك هي: ${d.personality.type}**\n\n`;
+        msg += `${d.personality.description}\n\n`;
+
+        msg += '**📊 تحليل شخصيتك:**\n';
+        msg += `⚡ الطاقة: ${d.personality.dimensions.energy > 0 ? 'نشيط' : 'هادئ'}\n`;
+        msg += `✨ الأناقة: ${d.personality.dimensions.style > 0 ? 'فاخر' : 'عملي'}\n`;
+        msg += `🏔️ المغامرة: ${d.personality.dimensions.adventure > 0 ? 'جريء' : 'هاديء'}\n`;
+        msg += `👥 الاجتماعي: ${d.personality.dimensions.social > 0 ? 'عائلي' : 'فردي'}\n`;
+        msg += `🏎️ السرعة: ${d.personality.dimensions.pace > 0 ? 'سريع' : 'اقتصادي'}\n\n`;
+
+        if (d.recommendedCars && d.recommendedCars.length > 0) {
+          msg += '**🚗 سيارات ننصحك تبحث عنها بالسوق:**\n\n';
+          d.recommendedCars.forEach((car: any, i: number) => {
+            msg += `${i + 1}. **${car.brand} ${car.model}** (${car.yearRange})\n`;
+            msg += `   💰 ${car.priceRange}\n`;
+            msg += `   📝 ${car.reason}\n`;
+            msg += `   🏷️ ${car.category}\n\n`;
+          });
+        }
+
+        if (d.cars && d.cars.length > 0) {
+          msg += '**📦 سيارات متوفرة حالياً في موقعنا:**';
+        } else {
+          msg += '\n💡 **ملاحظة:** ما لقينا سيارات مطابقة في قاعدة بياناتنا حالياً، لكن السيارات اللي فوق متاحة بالسوق الأردني وتقدر تدور عليها!';
+        }
+
+        botReply(msg, { cars: d.cars, personalityResult: d.personality });
+      } else {
+        botReply('عذراً، ما قدرت أحلل شخصيتك. حاول مرة أخرى.');
+      }
+    } catch {
+      botReply('حدث خطأ أثناء تحليل الشخصية. حاول مرة أخرى.');
+    }
+    setIsTyping(false);
+  };
+
   const handleSend = async (content: string) => {
     if (!content.trim() || isTyping) return;
 
@@ -178,6 +238,41 @@ export function AIAssistant() {
         botReply(mpQuestions.brand);
         setIsTyping(false);
       }, 400);
+      return;
+    }
+
+    if (content === '__personality_match__') {
+      setPersonalityStep(0);
+      setPersonalityAnswers([]);
+      setPersonalityResult(null);
+      setIsTyping(true);
+      setTimeout(() => {
+        botReply('🔮 راح أسوي لك اختبار شخصية بسيط عشان ألاقي السيارة اللي تناسبك! جاهز؟');
+        setTimeout(() => {
+          botReply(`**السؤال 1 من 5:**\n\n${personalityQuestions[0].text}`);
+          setIsTyping(false);
+        }, 600);
+      }, 400);
+      return;
+    }
+
+    if (personalityStep !== null) {
+      const answer = content.trim();
+      if (!['A', 'B', 'C'].includes(answer)) {
+        botReply('اختار أحد الخيارات: A أو B أو C');
+        return;
+      }
+      const newAnswers = [...personalityAnswers, answer];
+      setPersonalityAnswers(newAnswers);
+
+      const nextStep = personalityStep + 1;
+      if (nextStep < 5) {
+        setPersonalityStep(nextStep);
+        botReply(`**السؤال ${nextStep + 1} من 5:**\n\n${personalityQuestions[nextStep].text}`);
+      } else {
+        setPersonalityStep(null);
+        fetchPersonalityMatch(newAnswers);
+      }
       return;
     }
 
@@ -221,6 +316,9 @@ export function AIAssistant() {
   const resetMp = () => {
     setMpStep(null);
     setMpData({ brand: '', model: '', year: '', kilometers: '', condition: '' });
+    setPersonalityStep(null);
+    setPersonalityAnswers([]);
+    setPersonalityResult(null);
   };
 
   return (
@@ -292,6 +390,34 @@ export function AIAssistant() {
                             <span className="text-gray-500">عدد الإعلانات:</span>
                             <span className="text-gray-900 dark:text-white">{msg.marketPriceResult.stats.totalListings}</span>
                           </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {msg.personalityResult && (
+                      <div className="mt-2 mx-1 p-3 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800/30">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-xl">{msg.personalityResult.emoji}</span>
+                          <div>
+                            <p className="text-xs font-bold text-gray-900 dark:text-white">{msg.personalityResult.type}</p>
+                            <p className="text-[10px] text-gray-500">{msg.personalityResult.typeEn}</p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-5 gap-1 text-center">
+                          {[
+                            { label: 'الطاقة', value: msg.personalityResult.dimensions.energy },
+                            { label: 'الأناقة', value: msg.personalityResult.dimensions.style },
+                            { label: 'المغامرة', value: msg.personalityResult.dimensions.adventure },
+                            { label: 'الاجتماعي', value: msg.personalityResult.dimensions.social },
+                            { label: 'السرعة', value: msg.personalityResult.dimensions.pace },
+                          ].map(d => (
+                            <div key={d.label} className="p-1 rounded bg-white/50 dark:bg-black/10">
+                              <div className="text-[9px] text-gray-500 mb-0.5">{d.label}</div>
+                              <div className={`text-[10px] font-bold ${d.value > 0.3 ? 'text-red-500' : d.value < -0.3 ? 'text-blue-500' : 'text-gray-500'}`}>
+                                {d.value > 0.3 ? '★★★' : d.value > 0 ? '★★' : d.value > -0.3 ? '★☆' : '☆'}
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
@@ -370,6 +496,33 @@ export function AIAssistant() {
                           <div key={s} className={`h-1.5 rounded-full transition-all duration-300 ${current ? 'w-6 bg-purple-500' : filled ? 'w-3 bg-purple-300' : 'w-3 bg-gray-200 dark:bg-gray-700'}`} />
                         );
                       })}
+                    </div>
+                  </div>
+                )}
+
+                {personalityStep !== null && (
+                  <div className="mt-3">
+                    <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 mb-2">
+                      <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium text-center">
+                        🔮 مطابقة الروح — سؤال {personalityStep + 1} من 5
+                      </p>
+                      <div className="flex justify-center gap-1 mt-1.5">
+                        {personalityQuestions.map((_, i) => {
+                          const filled = i <= personalityStep;
+                          const current = i === personalityStep;
+                          return (
+                            <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${current ? 'w-6 bg-amber-500' : filled ? 'w-3 bg-amber-300' : 'w-3 bg-gray-200 dark:bg-gray-700'}`} />
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1.5 px-2">
+                      {personalityQuestions[personalityStep]?.options.map((opt) => (
+                        <button key={opt.value} onClick={() => handleSend(opt.value)}
+                          className="flex items-center gap-2 p-2.5 rounded-xl bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-700/50 hover:bg-amber-50 dark:hover:bg-amber-500/10 hover:border-amber-400 dark:hover:border-amber-500/50 transition-all text-right">
+                          <span className="text-[11px] font-medium text-gray-700 dark:text-gray-300">{opt.label}</span>
+                        </button>
+                      ))}
                     </div>
                   </div>
                 )}
