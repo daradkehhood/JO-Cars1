@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TrendingUp, TrendingDown, Minus, Loader2, BarChart3, DollarSign, AlertTriangle, CheckCircle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Loader2, BarChart3, DollarSign, AlertTriangle, CheckCircle, Globe, ExternalLink, Database } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface PriceData {
@@ -11,13 +11,15 @@ interface PriceData {
     totalListings: number;
     priceRange: { min: number; max: number; avg: number; median: number };
     estimatedPrice: number;
-    pricePosition: { label: string; color: string };
+    pricePosition: { label: string; color: string; icon: string };
     conditionAdjustment: number;
+    sources: string[];
   };
   trend: { direction: string; percent: number; emoji: string };
   similarCars: Array<{
     id: string; slug: string; title: string; price: number; year: number;
     kilometers: number; condition: string; image: string | null; city: string;
+    source?: string; url?: string;
   }>;
 }
 
@@ -66,6 +68,7 @@ export function PriceEvaluation({ brandId, modelId, year, kilometers, condition,
   const getPriceDiff = () => {
     if (!data || !currentPrice) return null;
     const avg = data.stats.priceRange.avg;
+    if (avg === 0) return null;
     const diff = ((currentPrice - avg) / avg) * 100;
     return diff;
   };
@@ -77,7 +80,7 @@ export function PriceEvaluation({ brandId, modelId, year, kilometers, condition,
       <button type="button" onClick={evaluate} disabled={loading}
         className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium text-sm hover:from-emerald-600 hover:to-teal-600 transition-all disabled:opacity-50">
         {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <BarChart3 className="w-5 h-5" />}
-        {loading ? 'جاري تحليل السوق...' : 'تقييم السعر بالذكاء الاصطناعي'}
+        {loading ? 'جاري البحث في الأسواق...' : 'تقييم السعر بالذكاء الاصطناعي'}
       </button>
 
       <AnimatePresence>
@@ -95,6 +98,12 @@ export function PriceEvaluation({ brandId, modelId, year, kilometers, condition,
                 <p className="text-sm text-white/80">
                   {data.query.brand} {data.query.model} {data.query.year} — {data.query.kilometers.toLocaleString()} كم
                 </p>
+                {data.stats.sources.length > 0 && (
+                  <div className="flex items-center gap-1.5 mt-2 text-xs text-white/70">
+                    <Globe className="w-3.5 h-3.5" />
+                    <span>مصادر: {data.stats.sources.join(' • ')}</span>
+                  </div>
+                )}
               </div>
 
               {/* Price Range Bar */}
@@ -106,7 +115,7 @@ export function PriceEvaluation({ brandId, modelId, year, kilometers, condition,
                   </div>
                   <div className="relative h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-r from-green-400 via-yellow-400 to-red-400 rounded-full" />
-                    {currentPrice > 0 && (
+                    {currentPrice > 0 && data.stats.priceRange.max > data.stats.priceRange.min && (
                       <div className="absolute top-0 h-full w-1 bg-gray-900 dark:bg-white rounded-full"
                         style={{ left: `${Math.min(Math.max(((currentPrice - data.stats.priceRange.min) / (data.stats.priceRange.max - data.stats.priceRange.min)) * 100, 0), 100)}%` }} />
                     )}
@@ -184,26 +193,33 @@ export function PriceEvaluation({ brandId, modelId, year, kilometers, condition,
                   </div>
                 )}
 
-                {/* Similar Cars */}
+                {/* Similar Cars from Web */}
                 {data.similarCars.length > 0 && (
                   <div>
-                    <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">إعلانات مشابهة ({data.similarCars.length})</h4>
+                    <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                      <Globe className="w-4 h-4" />
+                      إعلانات مشابهة من الإنترنت ({data.similarCars.length})
+                    </h4>
                     <div className="space-y-2 max-h-60 overflow-y-auto">
-                      {data.similarCars.map(car => (
-                        <a key={car.id} href={`/cars/${car.slug || car.id}`} target="_blank" rel="noopener"
+                      {data.similarCars.map((car, i) => (
+                        <a key={i} href={car.url || '#'} target="_blank" rel="noopener"
                           className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                          {car.image ? (
-                            <img src={car.image} alt={car.title} className="w-12 h-12 rounded-lg object-cover" />
-                          ) : (
-                            <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 text-xs">صورة</div>
-                          )}
+                          <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 flex items-center justify-center">
+                            <Database className="w-5 h-5 text-blue-500" />
+                          </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{car.title}</p>
-                            <p className="text-xs text-gray-500">{car.kilometers.toLocaleString()} كم • {car.city}</p>
+                            <p className="text-xs text-gray-500">
+                              {car.kilometers > 0 ? `${car.kilometers.toLocaleString()} كم` : ''} • {car.city}
+                              {car.source && <span className="mr-1 text-blue-500">• {car.source}</span>}
+                            </p>
                           </div>
-                          <div className="text-right">
-                            <p className="text-sm font-bold text-gray-900 dark:text-white">{car.price.toLocaleString()}</p>
-                            <p className="text-[10px] text-gray-400">دينار</p>
+                          <div className="text-right flex items-center gap-1.5">
+                            <div>
+                              <p className="text-sm font-bold text-gray-900 dark:text-white">{car.price.toLocaleString()}</p>
+                              <p className="text-[10px] text-gray-400">دينار</p>
+                            </div>
+                            <ExternalLink className="w-3.5 h-3.5 text-gray-400" />
                           </div>
                         </a>
                       ))}

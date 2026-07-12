@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { successResponse, errorResponse } from '@/lib/api';
+import { getMarketPrices } from '@/lib/market-scrape';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -37,22 +38,53 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       select: { price: true, year: true, kilometers: true, condition: true, fuelType: true, transmission: true, engineCapacity: true, drivetrain: true, createdAt: true },
     });
 
-    // Market analysis
+    // Market analysis - combine DB data with web data
     let marketMin = car.price;
     let marketMax = car.price;
     let avgPrice = car.price;
     let similarCount = similarCars.length;
 
-    if (similarCars.length >= 2) {
+    // Try to get web market prices
+    let webEstimate = 0;
+    try {
+      const webPrices = await getMarketPrices(
+        car.brand?.nameAr || '',
+        car.model?.nameAr || '',
+        car.year,
+        car.kilometers,
+        car.condition
+      );
+      if (webPrices.estimatedPrice > 0) {
+        webEstimate = webPrices.estimatedPrice;
+        // Blend web estimate with DB data
+        if (similarCars.length >= 2) {
+          const prices = similarCars.map(c => c.price).sort((a, b) => a - b);
+          avgPrice = Math.round(prices.reduce((s, p) => s + p, 0) / prices.length);
+          marketMin = prices[0];
+          marketMax = prices[prices.length - 1];
+          // Blend: 60% DB + 40% web
+          avgPrice = Math.round(avgPrice * 0.6 + webEstimate * 0.4);
+        } else {
+          avgPrice = webEstimate;
+          marketMin = Math.round(webEstimate * 0.85);
+          marketMax = Math.round(webEstimate * 1.15);
+        }
+        similarCount = Math.max(similarCount, webPrices.stats.count);
+      }
+    } catch {
+      // Web scraping failed, use DB only
+    }
+
+    if (similarCars.length >= 2 && webEstimate === 0) {
       const prices = similarCars.map(c => c.price).sort((a, b) => a - b);
       avgPrice = Math.round(prices.reduce((s, p) => s + p, 0) / prices.length);
       marketMin = prices[0];
       marketMax = prices[prices.length - 1];
-    } else if (similarCars.length === 1) {
+    } else if (similarCars.length === 1 && webEstimate === 0) {
       avgPrice = similarCars[0].price;
       marketMin = Math.min(car.price, avgPrice);
       marketMax = Math.max(car.price, avgPrice);
-    } else {
+    } else if (similarCars.length === 0 && webEstimate === 0) {
       // Broader search - brand only
       const brandCars = await prisma.car.findMany({
         where: {
