@@ -8,6 +8,7 @@ import { generateRefCode } from '@/lib/generate-refcode';
 import { uploadMultipleImages, uploadImage } from '@/lib/cloudinary';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
+import { analyzeCarPrice } from '@/ai/price-analysis';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -265,6 +266,39 @@ export async function POST(request: NextRequest) {
         brand: true, model: true, city: true, images: true,
       },
     });
+
+    // Calculate and store fair price estimate
+    try {
+      const analysis = await analyzeCarPrice({
+        brand: car.brand?.nameAr || car.brand?.nameEn || '',
+        model: car.model?.nameAr || car.model?.nameEn || '',
+        year: car.year,
+        trim: car.trim || undefined,
+        kilometers: car.kilometers,
+        condition: car.condition,
+        fuelType: car.fuelType,
+        transmission: car.transmission,
+        bodyType: car.bodyType || undefined,
+        engineCapacity: car.engineCapacity?.toString() || undefined,
+        cylinders: car.cylinders?.toString() || undefined,
+        drivetrain: car.drivetrain,
+        color: car.color || undefined,
+        ownerCount: car.ownerCount || undefined,
+        isDamaged: car.isDamaged,
+        isPaintOriginal: car.isPaintOriginal,
+        hasWarranty: car.hasWarranty,
+        hasServiceHistory: car.hasServiceHistory,
+      });
+      await prisma.car.update({
+        where: { id: car.id },
+        data: {
+          fairPriceEstimate: analysis.valuation.fairPrice,
+          aiScore: analysis.valuation.confidence,
+        },
+      });
+    } catch {
+      // Fair price calculation failed silently — non-critical
+    }
 
     invalidateCache('cars');
 

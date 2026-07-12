@@ -32,6 +32,7 @@ import { RatingModal } from '@/components/ratings/RatingModal';
 import type { Car } from '@/types';
 import { CarComments } from '@/components/cars/CarComments';
 import { CarReviewGenerator } from '@/components/cars/CarReviewGenerator';
+import { CarPriceAnalysis } from '@/components/cars/CarPriceAnalysis';
 import toast from 'react-hot-toast';
 
 export default function CarDetailPage() {
@@ -358,6 +359,32 @@ export default function CarDetailPage() {
             {/* Customs Calculator */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
               <CustomsCalculator year={car.year} engineCapacity={car.engineCapacity ?? null} price={car.price} />
+            </motion.div>
+
+            {/* AI Price Analysis */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <CarPriceAnalysis
+                brand={car.brand?.nameAr || car.brand?.nameEn || ''}
+                model={car.model?.nameAr || car.model?.nameEn || ''}
+                year={car.year}
+                trim={car.trim || undefined}
+                kilometers={car.kilometers}
+                condition={car.condition}
+                fuelType={car.fuelType}
+                transmission={car.transmission}
+                bodyType={car.bodyType || undefined}
+                engineCapacity={car.engineCapacity?.toString() || undefined}
+                cylinders={car.cylinders?.toString() || undefined}
+                drivetrain={car.drivetrain}
+                color={car.color || undefined}
+                ownerCount={car.ownerCount || undefined}
+                isDamaged={car.isDamaged}
+                isPaintOriginal={car.isPaintOriginal}
+                hasWarranty={car.hasWarranty}
+                hasServiceHistory={car.hasServiceHistory}
+                currentPrice={car.price}
+                compact
+              />
             </motion.div>
 
             {/* Car History (Carfax) */}
