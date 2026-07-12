@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Search, Sparkles, MapPin, SlidersHorizontal, Car, TrendingUp, Shield, Smartphone } from 'lucide-react';
+import { Search, Sparkles, MapPin, SlidersHorizontal } from 'lucide-react';
 
 export function HeroSection() {
   const router = useRouter();
@@ -15,13 +15,6 @@ export function HeroSection() {
       router.push(`/cars?search=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
-
-  const stats = [
-    { icon: Car, label: 'سيارة معروضة', value: '+5,000' },
-    { icon: TrendingUp, label: 'مستخدم نشط', value: '+50,000' },
-    { icon: Shield, label: 'عملية ناجحة', value: '+10,000' },
-    { icon: Smartphone, label: 'مشاهدات يومية', value: '+100,000' },
-  ];
 
   return (
     <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
@@ -116,24 +109,6 @@ export function HeroSection() {
               </div>
             </div>
           </motion.form>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.7 }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto"
-          >
-            {stats.map((stat, i) => {
-              const Icon = stat.icon;
-              return (
-                <div key={stat.label} className="text-center p-3 rounded-xl bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border border-gray-100 dark:border-gray-800">
-                  <Icon className="w-5 h-5 text-blue-500 mx-auto mb-1" />
-                  <p className="text-lg font-bold text-gray-900 dark:text-white">{stat.value}</p>
-                  <p className="text-xs text-gray-500">{stat.label}</p>
-                </div>
-              );
-            })}
-          </motion.div>
         </motion.div>
       </div>
     </section>
