@@ -81,8 +81,8 @@ export function CarReviewGenerator({ brand, model, year, onReviewGenerated }: Pr
     </div>
   );
 
-  const confidenceColor = result.confidence >= 0.7 ? 'text-green-600' : result.confidence >= 0.4 ? 'text-yellow-600' : 'text-red-500';
-  const confidenceLabel = result.confidence >= 0.7 ? 'مفصلة وواضحة' : result.confidence >= 0.4 ? 'متوسطة التفاصيل' : 'مختصرة';
+  const confidenceColor = (result?.confidence ?? 0) >= 0.7 ? 'text-green-600' : (result?.confidence ?? 0) >= 0.4 ? 'text-yellow-600' : 'text-red-500';
+  const confidenceLabel = (result?.confidence ?? 0) >= 0.7 ? 'مفصلة وواضحة' : (result?.confidence ?? 0) >= 0.4 ? 'متوسطة التفاصيل' : 'مختصرة';
 
   return (
     <div className="bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-2xl border border-purple-200 dark:border-purple-800 p-5">
