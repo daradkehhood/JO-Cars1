@@ -65,7 +65,7 @@ export async function POST(
         duration,
         fileSize: buffer.length,
         mimeType: audioFile.type || 'audio/webm',
-        audioData: buffer,
+        audioData: buffer as any,
         status: 'pending'
       },
       include: {

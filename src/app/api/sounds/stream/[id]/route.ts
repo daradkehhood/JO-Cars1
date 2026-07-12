@@ -17,7 +17,7 @@ export async function GET(
       return new Response('Not found', { status: 404 });
     }
 
-    return new Response(recording.audioData, {
+    return new Response(recording.audioData as unknown as BodyInit, {
       headers: {
         'Content-Type': recording.mimeType || 'audio/webm',
         'Cache-Control': 'public, max-age=31536000',
