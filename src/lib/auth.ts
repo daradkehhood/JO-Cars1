@@ -3,8 +3,11 @@ import bcrypt from 'bcryptjs';
 import { NextRequest } from 'next/server';
 import prisma from './prisma';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-change-in-production';
-const TOKEN_EXPIRY = '7d';
+const JWT_SECRET = process.env.JWT_SECRET as string;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
+const TOKEN_EXPIRY = '24h';
 
 export interface JWTPayload {
   userId: string;
@@ -83,6 +86,6 @@ export function requireRole(...roles: string[]) {
 export function setAuthCookie(response: Response, token: string) {
   response.headers.set(
     'Set-Cookie',
-    `token=${token}; HttpOnly; Path=/; Max-Age=${60 * 60 * 24 * 7}; SameSite=Lax${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`
+    `token=${token}; HttpOnly; Path=/; Max-Age=${60 * 60 * 24}; SameSite=Strict${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`
   );
 }

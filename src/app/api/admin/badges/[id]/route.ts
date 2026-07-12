@@ -10,7 +10,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
   try {
     const body = await request.json();
-    const badge = await prisma.badge.update({ where: { id }, data: body });
+    const allowedFields = ['name', 'nameAr', 'description', 'icon', 'color', 'criteria', 'isActive'];
+    const safeData: Record<string, any> = {};
+    for (const key of allowedFields) {
+      if (key in body) safeData[key] = body[key];
+    }
+    const badge = await prisma.badge.update({ where: { id }, data: safeData });
     return successResponse(badge);
   } catch { return errorResponse('فشل تحديث الشارة', 500); }
 }

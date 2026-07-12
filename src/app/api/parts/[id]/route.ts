@@ -31,7 +31,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (part.userId !== user.id && user.role !== 'ADMIN') return NextResponse.json({ error: 'لا تملك صلاحية' }, { status: 403 });
 
   const body = await request.json();
-  const updated = await prisma.usedPart.update({ where: { id }, data: body });
+  const allowedFields = [
+    'title', 'description', 'price', 'brandId', 'modelId', 'year', 'condition',
+    'partNumber', 'phone', 'whatsapp', 'cityId', 'slug', 'status',
+  ];
+  const safeData: Record<string, any> = {};
+  for (const key of allowedFields) {
+    if (key in body) safeData[key] = body[key];
+  }
+  const updated = await prisma.usedPart.update({ where: { id }, data: safeData });
 
   return NextResponse.json({ success: true, data: updated });
 }

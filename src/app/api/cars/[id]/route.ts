@@ -16,7 +16,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         images: { orderBy: { order: 'asc' } },
         user: {
           select: {
-            id: true, name: true, email: true, phone: true, whatsapp: true,
+            id: true, name: true, phone: true, whatsapp: true,
             image: true, dealerName: true, dealerLogo: true, rating: true,
             ratingCount: true, createdAt: true, badges: true,
           },
@@ -57,9 +57,20 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (car.userId !== user.id && user.role !== 'ADMIN') return errorResponse('لا تملك صلاحية تعديل هذه السيارة', 403);
 
     const body = await request.json();
+    const allowedFields = [
+      'title', 'description', 'price', 'brandId', 'modelId', 'year', 'km',
+      'fuelType', 'transmission', 'bodyType', 'color', 'engineSize', 'cylinders',
+      'cityId', 'latitude', 'longitude', 'phone', 'whatsapp', 'slug',
+      'status', 'featured', 'featuredUntil', 'soldAt',
+    ];
+    const safeData: Record<string, any> = {};
+    for (const key of allowedFields) {
+      if (key in body) safeData[key] = body[key];
+    }
+
     const updated = await prisma.car.update({
       where: { id },
-      data: body,
+      data: safeData,
       include: { brand: true, model: true, city: true, images: true },
     });
 

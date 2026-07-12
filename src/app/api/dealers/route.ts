@@ -6,7 +6,7 @@ export async function GET() {
     const dealers = await prisma.user.findMany({
       where: { role: 'DEALER', isActive: true },
       select: {
-        id: true, name: true, email: true, phone: true, image: true,
+        id: true, name: true, phone: true, image: true,
         dealerName: true, dealerLogo: true, dealerDescription: true,
         dealerAddress: true, rating: true, ratingCount: true,
         badges: true,

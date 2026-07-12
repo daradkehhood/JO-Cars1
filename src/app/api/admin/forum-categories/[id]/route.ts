@@ -10,7 +10,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
   try {
     const body = await request.json();
-    const updated = await prisma.forumCategory.update({ where: { id }, data: body });
+    const allowedFields = ['nameAr', 'nameEn', 'slug', 'description', 'icon', 'color', 'isActive', 'order'];
+    const safeData: Record<string, any> = {};
+    for (const key of allowedFields) {
+      if (key in body) safeData[key] = body[key];
+    }
+    const updated = await prisma.forumCategory.update({ where: { id }, data: safeData });
     return successResponse(updated);
   } catch {
     return errorResponse('فشل التحديث', 500);

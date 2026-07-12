@@ -35,6 +35,8 @@ model User {
   banUntil          DateTime?
   lastLoginAt       DateTime?
   lastLoginIp       String?
+  failedLoginAttempts Int      @default(0)
+  lockedUntil       DateTime?
   badges            String   @default("[]")
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt

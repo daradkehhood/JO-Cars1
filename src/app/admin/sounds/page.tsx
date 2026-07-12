@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 import { motion } from 'framer-motion';
 import { 
   Volume2, AlertTriangle, CheckCircle, XCircle, Clock, 
@@ -62,6 +64,8 @@ const durationLabels: Record<string, string> = {
 };
 
 export default function SoundReportsAdmin() {
+  const { user, isAuthenticated } = useAuth();
+  const router = useRouter();
   const [reports, setReports] = useState<SoundReport[]>([]);
   const [bans, setBans] = useState<SoundBan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,6 +84,10 @@ export default function SoundReportsAdmin() {
     reason: '',
     message: ''
   });
+
+  useEffect(() => {
+    if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/'); return; }
+  }, [isAuthenticated, user, router]);
 
   useEffect(() => {
     fetchReports();

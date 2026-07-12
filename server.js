@@ -70,7 +70,10 @@ app.prepare().then(() => {
   httpServer.headersTimeout = 70000;
 
   const io = new Server(httpServer, {
-    cors: { origin: '*', methods: ['GET', 'POST'] },
+    cors: { 
+      origin: process.env.NEXT_PUBLIC_APP_URL || 'https://jo-cars-production.up.railway.app',
+      methods: ['GET', 'POST'] 
+    },
     pingTimeout: 20000,
     pingInterval: 10000,
     maxHttpBufferSize: 1e6,

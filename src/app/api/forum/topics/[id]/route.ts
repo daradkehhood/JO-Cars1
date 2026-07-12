@@ -35,7 +35,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (!user || user.role !== 'ADMIN') return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const updated = await prisma.forumTopic.update({ where: { id }, data: body });
+  const allowedFields = ['title', 'content', 'categoryId', 'isPinned', 'isLocked'];
+  const safeData: Record<string, any> = {};
+  for (const key of allowedFields) {
+    if (key in body) safeData[key] = body[key];
+  }
+  const updated = await prisma.forumTopic.update({ where: { id }, data: safeData });
 
   return Response.json({ success: true, data: updated });
 }

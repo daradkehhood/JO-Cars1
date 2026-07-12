@@ -16,9 +16,18 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const oldCar = await prisma.car.findUnique({ where: { id }, include: { brand: true, model: true, user: true } });
     if (!oldCar) return notFoundResponse('السيارة');
 
+    const allowedFields = [
+      'title', 'description', 'price', 'status', 'featured', 'featuredUntil',
+      'views', 'slug', 'refCode', 'deletedAt', 'deletedBy',
+    ];
+    const safeData: Record<string, any> = {};
+    for (const key of allowedFields) {
+      if (key in body) safeData[key] = body[key];
+    }
+
     const updated = await prisma.car.update({
       where: { id },
-      data: body,
+      data: safeData,
       include: { brand: { select: { nameAr: true } }, model: { select: { nameAr: true } }, user: { select: { name: true } } },
     });
 
