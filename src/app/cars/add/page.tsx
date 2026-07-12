@@ -14,6 +14,7 @@ import {
   Sparkles, Loader2, AlertCircle, Check, Camera, Star, Search
 } from 'lucide-react';
 import { PriceEvaluation } from '@/components/cars/PriceEvaluation';
+import { MapPicker } from '@/components/cars/MapPicker';
 import toast from 'react-hot-toast';
 
 interface Brand { id: string; nameAr: string; nameEn: string; slug: string; }
@@ -551,9 +552,23 @@ export default function AddCarPage() {
                     <CitySelector value={form.cityId} onChange={v => updateForm('cityId', v)} error={fieldError('cityId')} />
                     <Input label="رقم الهاتف" value={form.phone} onChange={e => updateForm('phone', e.target.value)} placeholder="07XXXXXXXX" error={fieldError('phone')} />
                     <Input label="رقم واتساب" value={form.whatsapp} onChange={e => updateForm('whatsapp', e.target.value)} placeholder="07XXXXXXXX" error={fieldError('whatsapp')} />
-                    <Input label="خط العرض" value={form.locationLat} onChange={e => updateForm('locationLat', e.target.value)} placeholder="مثال: 31.963" error={fieldError('locationLat')} />
-                    <Input label="خط الطول" value={form.locationLng} onChange={e => updateForm('locationLng', e.target.value)} placeholder="مثال: 35.930" error={fieldError('locationLng')} />
                     <Input label="رابط الفيديو" value={form.videoUrl} onChange={e => updateForm('videoUrl', e.target.value)} error={fieldError('videoUrl')} />
+                  </div>
+
+                  {/* Map Picker */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <MapPin className="w-4 h-4 inline ml-1" />
+                      موقع السيارة على الخريطة
+                    </label>
+                    <MapPicker
+                      lat={form.locationLat ? parseFloat(form.locationLat) : null}
+                      lng={form.locationLng ? parseFloat(form.locationLng) : null}
+                      onChange={(lat, lng) => {
+                        updateForm('locationLat', lat.toString());
+                        updateForm('locationLng', lng.toString());
+                      }}
+                    />
                   </div>
 
                   <div className="flex justify-between pt-4">

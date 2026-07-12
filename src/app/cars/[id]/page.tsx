@@ -618,11 +618,37 @@ export default function CarDetailPage() {
             {/* Location */}
             {car.locationLat && car.locationLng && (
               <div className="card p-6">
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-4">الموقع</h3>
-                <div className="h-48 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">الموقع</h3>
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${car.locationLat},${car.locationLng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-500 hover:text-blue-600 flex items-center gap-1"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                    </svg>
+                    اتجاهات
+                  </a>
+                </div>
+                <div className="h-56 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 relative">
                   <iframe
                     src={`https://maps.google.com/maps?q=${car.locationLat},${car.locationLng}&z=15&output=embed`}
-                    className="w-full h-full" loading="lazy" />
+                    className="w-full h-full border-0" loading="lazy"
+                    title="موقع السيارة"
+                  />
+                </div>
+                <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
+                  <span>{car.locationLat?.toFixed(4)}, {car.locationLng?.toFixed(4)}</span>
+                  <a
+                    href={`https://www.google.com/maps?q=${car.locationLat},${car.locationLng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 hover:underline"
+                  >
+                    فتح في Google Maps
+                  </a>
                 </div>
               </div>
             )}

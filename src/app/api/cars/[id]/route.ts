@@ -60,7 +60,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const allowedFields = [
       'title', 'description', 'price', 'brandId', 'modelId', 'year', 'km',
       'fuelType', 'transmission', 'bodyType', 'color', 'engineSize', 'cylinders',
-      'cityId', 'latitude', 'longitude', 'phone', 'whatsapp', 'slug',
+      'cityId', 'locationLat', 'locationLng', 'phone', 'whatsapp', 'slug',
       'status', 'featured', 'featuredUntil', 'soldAt',
     ];
     const safeData: Record<string, any> = {};
