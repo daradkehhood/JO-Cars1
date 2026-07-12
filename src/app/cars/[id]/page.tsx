@@ -634,7 +634,7 @@ export default function CarDetailPage() {
                 </div>
                 <div className="h-56 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 relative">
                   <iframe
-                    src={`https://maps.google.com/maps?q=${car.locationLat},${car.locationLng}&z=15&output=embed`}
+                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${car.locationLng - 0.015}%2C${car.locationLat - 0.01}%2C${car.locationLng + 0.015}%2C${car.locationLat + 0.01}&layer=mapnik&marker=${car.locationLat}%2C${car.locationLng}`}
                     className="w-full h-full border-0" loading="lazy"
                     title="موقع السيارة"
                   />

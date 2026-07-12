@@ -224,6 +224,9 @@ export interface Subscription {
   endDate: Date;
   autoRenew: boolean;
   price: number;
+  userId: string;
+  user?: { id: string; name: string; email: string; image?: string | null };
+  planDetails?: { id: string; nameAr: string; nameEn: string; price: number; durationDays: number };
 }
 
 export interface Plan {
