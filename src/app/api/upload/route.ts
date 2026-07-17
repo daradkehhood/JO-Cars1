@@ -8,6 +8,15 @@ const ALLOWED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif']);
 const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
+function isCloudinaryConfigured(): boolean {
+  return Boolean(
+    process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME &&
+      process.env.CLOUDINARY_API_KEY &&
+      process.env.CLOUDINARY_API_SECRET &&
+      process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME !== 'your-cloud-name'
+  );
+}
+
 export async function POST(request: NextRequest) {
   try {
     const user = await authenticateRequest(request);
@@ -23,7 +32,9 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
-    if (!file) return NextResponse.json({ success: false, error: 'لم يتم رفع الملف' }, { status: 400 });
+    if (!file) {
+      return NextResponse.json({ success: false, error: 'لم يتم رفع الملف' }, { status: 400 });
+    }
 
     const ext = file.name.split('.').pop()?.toLowerCase() || '';
     if (!ALLOWED_EXTENSIONS.has(ext)) {
@@ -40,13 +51,34 @@ export async function POST(request: NextRequest) {
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+
+    // Preferred: Cloudinary (persistent across deploys, CDN-served)
+    if (isCloudinaryConfigured()) {
+      const { uploadImage } = await import('@/lib/cloudinary');
+      const dataUri = `data:${file.type};base64,${buffer.toString('base64')}`;
+      const folder = user.role === 'DEALER' ? 'jo-cars/dealers' : 'jo-cars/users';
+      const result = await uploadImage(dataUri, { folder });
+      return NextResponse.json({ success: true, data: { url: result.secure_url, provider: 'cloudinary' } });
+    }
+
+    // Fallback: local filesystem.
+    // WARNING: on Railway, the container filesystem is ephemeral. For production
+    // you MUST either set Cloudinary credentials or mount a Volume at
+    // /app/public/uploads so images survive redeploys.
     const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const dir = path.join(process.cwd(), 'public', 'uploads');
     await mkdir(dir, { recursive: true });
     await writeFile(path.join(dir, filename), buffer);
 
-    return NextResponse.json({ success: true, data: { url: `/uploads/${filename}` } });
-  } catch {
+    if (process.env.NODE_ENV === 'production' && process.env.RAILWAY_ENVIRONMENT) {
+      console.warn(
+        '[upload] Saved to ephemeral Railway filesystem. Configure Cloudinary or mount a Volume at /app/public/uploads to persist images across redeploys.'
+      );
+    }
+
+    return NextResponse.json({ success: true, data: { url: `/uploads/${filename}`, provider: 'local' } });
+  } catch (err) {
+    console.error('Upload error:', err);
     return NextResponse.json({ success: false, error: 'فشل رفع الملف' }, { status: 500 });
   }
 }

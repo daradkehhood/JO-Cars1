@@ -13,6 +13,7 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed:cars": "tsx prisma/seed-cars.ts",
     "db:reset": "prisma migrate reset --force",
     "db:studio": "prisma studio",
     "ai:test": "tsx src/ai/test.ts"
@@ -26,6 +27,7 @@
     "compression": "^1.7.4",
     "date-fns": "^3.6.0",
     "dompurify": "^3.1.0",
+    "emoji-picker-react": "^4.19.1",
     "express-rate-limit": "^7.2.0",
     "framer-motion": "^11.2.0",
     "helmet": "^7.1.0",

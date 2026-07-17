@@ -41,8 +41,6 @@ export default function AdminSettingsPage() {
     setSaving(true);
     try {
       const fd = new FormData();
-      // logo files are handled by file inputs separately
-      // send all text fields
       const textFields = [
         'siteName', 'siteNameAr', 'metaDescription', 'metaKeywords',
         'currency', 'currencyAr', 'taxPercent',

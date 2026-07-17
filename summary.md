@@ -2,12 +2,12 @@
 - Build a full-featured Jordanian car marketplace with AI assistant, admin panel, real-time chat, price alerts, user ratings, used parts, advanced comparison, and community forum.
 
 ## Important Details
-- Database: SQLite via Prisma at `prisma/schema.prisma`. Run `prisma db push` then `prisma generate`. If generate fails with EPERM, kill node processes and remove `node_modules/.prisma/client/query_engine-windows.dll.node*` first.
+- Database: PostgreSQL via Prisma at `prisma/schema.prisma`. Run `prisma db push` then `prisma generate`. If generate fails with EPERM, kill node processes and remove `node_modules/.prisma/client/query_engine-windows.dll.node*` first.
 - Server: Custom `server.js` wraps Next.js + Socket.io. Build with `next build`, run with `node server.js` under `NODE_ENV=production`. Port 3000.
-- Images stored in `public/uploads/`. Auth via JWT token in cookie or `Authorization: Bearer` header. Admin accounts: `admin@jocars.com` / `admin2@jocars.com` (password `admin123`).
+- Images stored in `public/uploads/`. **Note:** Railway uses an ephemeral filesystem, so uploaded images are lost on every redeploy unless you mount a Volume at `/app/public/uploads` or switch to Cloudinary. Auth via JWT token in cookie or `Authorization: Bearer` header.
 - Car `refCode`: unique 6-char `XXX-XXX` code displayed on cards and detail page.
 - Admin dashboard `/admin` has links to all management sections. Theme: `next-themes` with `attribute="class"`, `defaultTheme="dark"`, `storageKey="jo-cars-theme"`.
-- Footer contact: `+962 7 7145 8569`, `daradkehhood@gmail.com`, `الأردن-إربد`.
+- Footer contact: see `SiteSettings` model — never hardcode in source files.
 
 ## Work State
 - Completed:

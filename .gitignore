@@ -22,6 +22,20 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# server logs (debug + production)
+*.log
+!prisma/.gitkeep
+server.log
+server*.log
+server_*.log
+dev-*.log
+lt.log
+ngrok*.log
+debug-output.log
+server-crash.log
+server-out.log
+server-err.log
+
 # local env files
 .env*.local
 .env
@@ -36,8 +50,15 @@ next-env.d.ts
 # prisma
 prisma/migrations/
 
-# uploads
-uploads/
+# uploads (kept out of git but kept on disk for dev)
+public/uploads/*
+!public/uploads/.gitkeep
 
 # backups
 backups/
+
+# OS / editor
+Thumbs.db
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json

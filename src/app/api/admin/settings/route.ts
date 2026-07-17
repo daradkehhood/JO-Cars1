@@ -48,6 +48,12 @@ export async function PUT(request: NextRequest) {
           await writeFile(path.join(dir, filename), Buffer.from(bytes));
           data[key] = `/uploads/settings/${filename}`;
         }
+      } else if (key === 'taxPercent') {
+        data[key] = parseFloat(value as string) || 0;
+      } else if (key === 'maintenance') {
+        data[key] = value === 'true';
+      } else if (key === 'homeShowFeatured' || key === 'homeShowCities' || key === 'homeShowBrands' || key === 'homeShowStats') {
+        data[key] = value === 'true';
       } else if (value !== 'undefined' && value !== 'null') {
         data[key] = value;
       }

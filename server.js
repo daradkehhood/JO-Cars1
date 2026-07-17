@@ -80,10 +80,17 @@ app.prepare().then(() => {
     transports: ['websocket', 'polling'],
   });
 
-  const connectedSockets = new Map();
+  const onlineUsers = new Map();
 
   io.on('connection', (socket) => {
-    connectedSockets.set(socket.id, Date.now());
+    let userId = null;
+
+    socket.on('register', (uid) => {
+      if (!uid) return;
+      userId = uid;
+      onlineUsers.set(uid, { socketId: socket.id, joinedAt: Date.now() });
+      io.emit('user-online', { userId: uid });
+    });
 
     socket.on('join-conversation', (id) => { if (id) socket.join(`conversation:${id}`); });
     socket.on('leave-conversation', (id) => { if (id) socket.leave(`conversation:${id}`); });
@@ -96,13 +103,20 @@ app.prepare().then(() => {
     socket.on('stop-typing', (data) => {
       if (data?.conversationId) socket.to(`conversation:${data.conversationId}`).emit('user-stop-typing', {});
     });
-    socket.on('disconnect', () => { connectedSockets.delete(socket.id); });
-    socket.on('error', () => { connectedSockets.delete(socket.id); });
+    socket.on('check-online', (targetUserId) => {
+      if (targetUserId) socket.emit('user-status', { userId: targetUserId, online: onlineUsers.has(targetUserId) });
+    });
+    socket.on('disconnect', () => {
+      if (userId) { onlineUsers.delete(userId); io.emit('user-offline', { userId }); }
+    });
+    socket.on('error', () => {
+      if (userId) { onlineUsers.delete(userId); io.emit('user-offline', { userId }); }
+    });
   });
 
   setInterval(() => {
     const mem = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
-    log('INFO', `sockets=${connectedSockets.size} mem=${mem}MB`);
+    log('INFO', `online=${onlineUsers.size} mem=${mem}MB`);
     if (mem > 500 && global.gc) global.gc();
   }, 60000);
 

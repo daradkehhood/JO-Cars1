@@ -2,44 +2,48 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticateRequest } from '@/lib/auth';
 import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api';
-import fs from 'fs';
-import path from 'path';
 
-const BACKUPS_DIR = path.join(process.cwd(), 'backups');
-const DB_PATH = path.join(process.cwd(), 'prisma', 'dev.db');
+const MODELS = [
+  'user', 'car', 'carImage', 'carTag', 'carTagAssignment', 'favorite',
+  'message', 'conversation', 'report', 'notification', 'subscription',
+  'savedSearch', 'carView', 'carLog', 'priceAlert', 'userRating',
+  'usedPart', 'forumCategory', 'forumTopic', 'forumPost', 'forumPostReport',
+  'auction', 'bid', 'carHistory', 'premiumRequest', 'auditLog',
+  'ticket', 'ticketMessage', 'plate', 'article', 'wantedAd', 'wantedOffer',
+  'carComment', 'carCommentReport', 'maintenanceService', 'carReminder',
+  'userGarage', 'carExpense', 'carSoundRecording', 'soundReport', 'soundBan',
+  'siteSettings', 'brand', 'model', 'city', 'province', 'carReminder',
+];
 
 export async function GET(request: NextRequest) {
   const user = await authenticateRequest(request);
   if (!user || user.role !== 'ADMIN') return unauthorizedResponse();
 
   try {
-    if (!fs.existsSync(BACKUPS_DIR)) fs.mkdirSync(BACKUPS_DIR, { recursive: true });
+    const counts: Record<string, number> = {};
+    let totalRecords = 0;
 
-    const files = fs.readdirSync(BACKUPS_DIR)
-      .filter(f => f.endsWith('.db') || f.endsWith('.sqlite') || f.endsWith('.backup'))
-      .map(f => {
-        const stats = fs.statSync(path.join(BACKUPS_DIR, f));
-        return {
-          name: f,
-          size: stats.size,
-          sizeFormatted: formatSize(stats.size),
-          createdAt: stats.birthtime.toISOString(),
-          modifiedAt: stats.mtime.toISOString(),
-        };
-      })
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    for (const modelName of MODELS) {
+      try {
+        const model = (prisma as any)[modelName];
+        if (model && typeof model.count === 'function') {
+          const count = await model.count();
+          counts[modelName] = count;
+          totalRecords += count;
+        }
+      } catch {}
+    }
 
-    const dbStats = fs.statSync(DB_PATH);
-    const currentDb = {
-      size: dbStats.size,
-      sizeFormatted: formatSize(dbStats.size),
-      modifiedAt: dbStats.mtime.toISOString(),
-      path: DB_PATH,
-    };
+    const tables = Object.keys(counts).length;
 
-    return successResponse({ backups: files, currentDb });
+    return successResponse({
+      tables,
+      totalRecords,
+      counts,
+      backups: [],
+    });
   } catch (error) {
-    return errorResponse('فشل تحميل قائمة النسخ الاحتياطية', 500);
+    return errorResponse('فشل تحميل إحصائيات قاعدة البيانات', 500);
   }
 }
 
@@ -48,62 +52,86 @@ export async function POST(request: NextRequest) {
   if (!user || user.role !== 'ADMIN') return unauthorizedResponse();
 
   try {
-    const formData = await request.formData();
-    const action = formData.get('action') as string;
+    const body = await request.json();
+    const { action } = body;
 
     if (action === 'export') {
-      if (!fs.existsSync(BACKUPS_DIR)) fs.mkdirSync(BACKUPS_DIR, { recursive: true });
+      const exportData: Record<string, any> = {
+        version: '1.0',
+        createdAt: new Date().toISOString(),
+        tables: {},
+      };
 
-      const now = new Date();
-      const timestamp = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}-${String(now.getSeconds()).padStart(2,'0')}`;
-      const backupName = `backup-${timestamp}.db`;
-      const backupPath = path.join(BACKUPS_DIR, backupName);
+      for (const modelName of MODELS) {
+        try {
+          const model = (prisma as any)[modelName];
+          if (model && typeof model.findMany === 'function') {
+            const records = await model.findMany({ take: 10000 });
+            if (records.length > 0) {
+              exportData.tables[modelName] = records;
+            }
+          }
+        } catch {}
+      }
 
-      fs.copyFileSync(DB_PATH, backupPath);
+      const jsonStr = JSON.stringify(exportData, null, 2);
+      const sizeBytes = Buffer.byteLength(jsonStr, 'utf-8');
+      const sizeFormatted = sizeBytes < 1024 * 1024
+        ? `${(sizeBytes / 1024).toFixed(1)} KB`
+        : `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
 
-      const stats = fs.statSync(backupPath);
-      return successResponse({
-        name: backupName,
-        size: stats.size,
-        sizeFormatted: formatSize(stats.size),
-        createdAt: stats.birthtime.toISOString(),
-        message: 'تم إنشاء النسخة الاحتياطية بنجاح',
+      return new NextResponse(jsonStr, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Disposition': `attachment; filename="jocars-backup-${new Date().toISOString().slice(0, 10)}.json"`,
+        },
       });
     }
 
     if (action === 'import') {
-      const file = formData.get('file') as File | null;
-      if (!file) return errorResponse('الرجاء رفع ملف النسخة الاحتياطية');
+      const { data } = body;
+      if (!data || !data.tables) return errorResponse('بيانات غير صالحة');
 
-      const buffer = Buffer.from(await file.arrayBuffer());
-      if (buffer.length === 0) return errorResponse('الملف فارغ');
+      let imported = 0;
+      const errors: string[] = [];
 
-      const uploadPath = path.join(BACKUPS_DIR, `upload-${Date.now()}.db`);
-      fs.writeFileSync(uploadPath, buffer);
-
-      const autoBackupName = `pre-import-${Date.now()}.db`;
-      const autoBackupPath = path.join(BACKUPS_DIR, autoBackupName);
-      fs.copyFileSync(DB_PATH, autoBackupPath);
-
-      await prisma.$disconnect();
-      fs.copyFileSync(uploadPath, DB_PATH);
-
-      try { fs.unlinkSync(uploadPath); } catch {}
+      for (const [modelName, records] of Object.entries(data.tables)) {
+        try {
+          const model = (prisma as any)[modelName];
+          if (model && Array.isArray(records) && records.length > 0) {
+            for (const record of records) {
+              try {
+                await model.upsert({
+                  where: { id: record.id || 'non-existent' },
+                  update: record,
+                  create: record,
+                });
+                imported++;
+              } catch {
+                try {
+                  await model.create({ data: record });
+                  imported++;
+                } catch {
+                  errors.push(modelName);
+                }
+              }
+            }
+          }
+        } catch {
+          errors.push(modelName);
+        }
+      }
 
       return successResponse({
-        message: 'تم استيراد قاعدة البيانات بنجاح. قد تحتاج إعادة تشغيل الخادم.',
-        autoBackup: autoBackupName,
+        message: `تم استيراد ${imported} سجل${errors.length > 0 ? ` (${errors.length} جدول به أخطاء)` : ''}`,
+        imported,
+        errors,
       });
     }
 
     return errorResponse('إجراء غير معروف');
   } catch (error) {
-    return errorResponse('فشل تنفيذ العملية', 500);
+    return errorResponse('فشل تنفيذ العملية: ' + (error as Error).message, 500);
   }
-}
-
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }

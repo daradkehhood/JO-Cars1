@@ -31,7 +31,6 @@ import { StarRating } from '@/components/ratings/StarRating';
 import { RatingModal } from '@/components/ratings/RatingModal';
 import type { Car } from '@/types';
 import { CarComments } from '@/components/cars/CarComments';
-import { CarReviewGenerator } from '@/components/cars/CarReviewGenerator';
 import { CarPriceAnalysis } from '@/components/cars/CarPriceAnalysis';
 import toast from 'react-hot-toast';
 
@@ -481,11 +480,19 @@ export default function CarDetailPage() {
           <div className="space-y-6">
             <div className="card p-6">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold shadow-lg">
-                  {car.user?.name?.charAt(0) || 'U'}
-                </div>
+                <Link href={`/profile/${car.user.id}`} className="flex-shrink-0">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold shadow-lg hover:ring-2 hover:ring-blue-500/50 transition-all">
+                    {car.user?.image ? (
+                      <img src={car.user.image} alt="" className="w-full h-full rounded-xl object-cover" />
+                    ) : (
+                      car.user?.name?.charAt(0) || 'U'
+                    )}
+                  </div>
+                </Link>
                   <div>
-                    <p className="font-semibold text-gray-900 dark:text-white">{car.user?.dealerName || car.user?.name}</p>
+                    <Link href={`/profile/${car.user.id}`}>
+                      <p className="font-semibold text-gray-900 dark:text-white hover:text-blue-500 transition-colors">{car.user?.dealerName || car.user?.name}</p>
+                    </Link>
                     <div className="flex items-center gap-1 mt-0.5">
                       <BadgeDisplay badges={(car.user as any)?.badges} />
                       {car.user?.dealerName && <p className="text-xs text-gray-500">تاجر معتمد</p>}
@@ -566,7 +573,12 @@ export default function CarDetailPage() {
                 </button>
               )}
 
-              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 space-y-2">
+                  <Link href={`/profile/${car.user.id}`}
+                  className="flex items-center justify-between text-sm text-blue-500 hover:text-blue-600 transition-colors">
+                  <span>عرض الملف الشخصي</span>
+                  <ChevronLeft className="w-4 h-4" />
+                </Link>
                   <Link href={`/dealers/${car.user.id}`}
                   className="flex items-center justify-between text-sm text-blue-500 hover:text-blue-600 transition-colors">
                   <span>جميع سيارات {car.user?.dealerName || car.user?.name}</span>
@@ -682,15 +694,6 @@ export default function CarDetailPage() {
             )}
           </div>
         </div>
-
-        {/* Review Generator */}
-        <section className="mt-12">
-          <CarReviewGenerator
-            brand={car.brand?.nameAr}
-            model={car.model?.nameAr}
-            year={car.year}
-          />
-        </section>
 
         {/* Comments */}
         <section className="mt-12">

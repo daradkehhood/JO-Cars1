@@ -1,8 +1,6 @@
 import type { Metadata } from 'next';
 import { Providers } from '@/components/layout/Providers';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
-import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
+import { LayoutWrapper } from '@/components/layout/LayoutWrapper';
 import '@/styles/globals.css';
 
 export const metadata: Metadata = {
@@ -12,6 +10,13 @@ export const metadata: Metadata = {
   },
   description: 'أفضل منصة أردنية متخصصة في بيع وشراء السيارات. ابحث عن سيارتك المثالية من آلاف السيارات الجديدة والمستعملة في الأردن.',
   keywords: ['سيارات', 'بيع سيارات', 'شراء سيارات', 'الأردن', 'سوق السيارات', 'JO Cars'],
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
   openGraph: {
     type: 'website',
     locale: 'ar_JO',
@@ -37,14 +42,19 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Tajawal:wght@300;400;500;700;800&display=swap"
+        />
+      </head>
       <body className="min-h-screen antialiased">
         <Providers>
-          <Header />
-          <main className="pt-20 min-h-screen pb-16 lg:pb-0">
+          <LayoutWrapper>
             {children}
-          </main>
-          <Footer />
-          <MobileBottomNav />
+          </LayoutWrapper>
         </Providers>
       </body>
     </html>

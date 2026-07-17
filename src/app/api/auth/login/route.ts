@@ -65,6 +65,8 @@ export async function POST(request: NextRequest) {
         id: user.id, name: user.name, email: user.email, role: user.role,
         image: user.image, phone: user.phone, whatsapp: user.whatsapp,
         whatsappNotifications: user.whatsappNotifications, dealerName: user.dealerName,
+        bio: user.bio, dealerDescription: user.dealerDescription, dealerAddress: user.dealerAddress,
+        rating: user.rating, ratingCount: user.ratingCount,
       },
       token,
     });

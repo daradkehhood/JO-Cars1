@@ -62,12 +62,18 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Touch conversation
     if (body.conversationId) {
       await prisma.conversation.update({
         where: { id: body.conversationId },
         data: { updatedAt: new Date() },
       });
     }
+
+    // Notification
+    const msgPreview = validation.data.content.startsWith('📷')
+      ? '📷 صورة'
+      : validation.data.content.slice(0, 100);
 
     await prisma.notification.create({
       data: {
@@ -96,12 +102,12 @@ export async function POST(request: NextRequest) {
         senderName: user.name,
         carTitle,
         carPrice: car?.price,
-        messagePreview: validation.data.content.slice(0, 100),
+        messagePreview: msgPreview,
         carUrl: message.car?.slug,
       }));
     }
 
-    notifyAdmins('NEW_MESSAGE', 'رسالة جديدة', `رسالة جديدة من ${user.name}: ${validation.data.content.slice(0, 80)}...`, getAdminNotifyLink('NEW_MESSAGE'));
+    notifyAdmins('NEW_MESSAGE', 'رسالة جديدة', `رسالة جديدة من ${user.name}: ${msgPreview.slice(0, 80)}`, getAdminNotifyLink('NEW_MESSAGE'));
 
     return successResponse(message, 201);
   } catch (error) {

@@ -14,6 +14,11 @@ interface AuthState {
     whatsapp?: string | null;
     whatsappNotifications?: boolean;
     dealerName?: string | null;
+    bio?: string | null;
+    dealerDescription?: string | null;
+    dealerAddress?: string | null;
+    rating?: number;
+    ratingCount?: number;
   } | null;
   token: string | null;
   isAuthenticated: boolean;
