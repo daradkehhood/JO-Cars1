@@ -26,6 +26,16 @@ function log(level, msg, extra) {
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
+// Run prisma db push on startup to ensure all tables exist
+const { execSync } = require('child_process');
+try {
+  log('INFO', 'Running prisma db push...');
+  execSync('./node_modules/.bin/prisma db push --accept-data-loss --skip-generate', { stdio: 'inherit', timeout: 120000 });
+  log('INFO', 'Prisma db push completed');
+} catch (e) {
+  log('ERROR', 'Prisma db push failed (non-fatal)', e.message);
+}
+
 app.prepare().then(() => {
   const httpServer = createServer((req, res) => {
     req.setTimeout(30000, () => {

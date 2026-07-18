@@ -15,7 +15,5 @@ RUN npx prisma generate
 COPY . .
 RUN rm -rf tsconfig.tsbuildinfo .next
 RUN npm run build
-COPY start.sh .
-RUN chmod +x start.sh
 EXPOSE 8080
-CMD ["./start.sh"]
+CMD ["node", "server.js"]
