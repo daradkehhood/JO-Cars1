@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import {
   Wrench, ArrowRight, Plus, X, Loader2, CheckCircle2,
-  MapPin, Phone, Clock, DollarSign, Upload, AlertCircle,
+  MapPin, Phone, Clock, DollarSign, AlertCircle,
   Camera, Image as ImageIcon,
 } from 'lucide-react';
 
@@ -84,12 +84,14 @@ export default function CreateWorkshopPage() {
     if (_hydrated && !isAuthenticated) {
       router.push('/auth/login?redirect=/workshops/create');
     }
-  }, [isAuthenticated, _hydrated, router]);
+  }, [_hydrated, isAuthenticated, router]);
 
-  const update = (key: string, value: unknown) => {
-    setForm((p) => ({ ...p, [key]: value }));
-    setErrors((prev) => prev.filter((e) => e.field !== key));
-  };
+  const clearError = useCallback((field: string) => {
+    setErrors((prev) => {
+      if (!prev.some((e) => e.field === field)) return prev;
+      return prev.filter((e) => e.field !== field);
+    });
+  }, []);
 
   const getFieldError = (field: string) => errors.find((e) => e.field === field);
 
@@ -102,7 +104,7 @@ export default function CreateWorkshopPage() {
     }
     setLogoFile(file);
     setLogoPreview(URL.createObjectURL(file));
-    setErrors((prev) => prev.filter((e) => e.field !== 'logo'));
+    clearError('logo');
   };
 
   const handleCover = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,7 +116,7 @@ export default function CreateWorkshopPage() {
     }
     setCoverFile(file);
     setCoverPreview(URL.createObjectURL(file));
-    setErrors((prev) => prev.filter((e) => e.field !== 'coverImage'));
+    clearError('coverImage');
   };
 
   const uploadImage = async (file: File): Promise<string | null> => {
@@ -135,7 +137,7 @@ export default function CreateWorkshopPage() {
         ? p.services.filter((s) => s !== name)
         : [...p.services, name],
     }));
-    setErrors((prev) => prev.filter((e) => e.field !== 'services'));
+    clearError('services');
   };
 
   const toggleBrand = (brand: string) => {
@@ -239,6 +241,7 @@ export default function CreateWorkshopPage() {
       if (!res.ok || !data.success) {
         if (res.status === 401) {
           setErrors([{ field: 'auth', message: 'يجب تسجيل الدخول أولاً' }]);
+          setTimeout(() => router.push('/auth/login?redirect=/workshops/create'), 2000);
           return;
         }
         setErrors([{ field: 'submit', message: data.error || 'فشل إنشاء الورشة' }]);
@@ -253,7 +256,7 @@ export default function CreateWorkshopPage() {
     }
   };
 
-  if (!isAuthenticated) {
+  if (!_hydrated || !isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: '#1a1a2e' }}>
         <div className="text-center">
@@ -263,30 +266,6 @@ export default function CreateWorkshopPage() {
       </div>
     );
   }
-
-  const ErrorTag = ({ field }: { field: string }) => {
-    const err = getFieldError(field);
-    if (!err) return null;
-    return (
-      <div className="flex items-center gap-1.5 mt-1.5 text-red-400 text-xs">
-        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-        <span>{err.message}</span>
-      </div>
-    );
-  };
-
-  const FieldWrapper = ({ field, label, required, children }: { field: string; label: string; required?: boolean; children: React.ReactNode }) => {
-    const hasError = !!getFieldError(field);
-    return (
-      <div>
-        <label className="block text-sm text-gray-400 mb-1.5">
-          {label} {required && <span className="text-red-400">*</span>}
-        </label>
-        {children}
-        <ErrorTag field={field} />
-      </div>
-    );
-  };
 
   return (
     <div className="min-h-screen" style={{ background: '#1a1a2e' }}>
@@ -374,7 +353,12 @@ export default function CreateWorkshopPage() {
                       </>
                     )}
                   </button>
-                  <ErrorTag field="logo" />
+                  {getFieldError('logo') && (
+                    <div className="flex items-center gap-1.5 mt-1.5 text-red-400 text-xs">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{getFieldError('logo')!.message}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -400,64 +384,91 @@ export default function CreateWorkshopPage() {
                       </>
                     )}
                   </button>
-                  <ErrorTag field="coverImage" />
+                  {getFieldError('coverImage') && (
+                    <div className="flex items-center gap-1.5 mt-1.5 text-red-400 text-xs">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{getFieldError('coverImage')!.message}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <FieldWrapper field="name" label="اسم الورشة" required>
+              {/* Name */}
+              <div>
+                <label className="block text-sm text-gray-400 mb-1.5">
+                  اسم الورشة <span className="text-red-400">*</span>
+                </label>
                 <input
                   type="text"
                   value={form.name}
-                  onChange={(e) => update('name', e.target.value)}
+                  onChange={(e) => { setForm((p) => ({ ...p, name: e.target.value })); clearError('name'); }}
                   placeholder="مثال: ورشة أحمد للميكانيك"
                   className={`w-full rounded-xl border bg-[#0f3460] text-white px-4 py-3 text-sm outline-none transition-colors ${
                     getFieldError('name') ? 'border-red-500 focus:border-red-500' : 'border-gray-700 focus:border-[#0084ff]'
                   }`}
                 />
-              </FieldWrapper>
+                {getFieldError('name') && (
+                  <div className="flex items-center gap-1.5 mt-1.5 text-red-400 text-xs">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{getFieldError('name')!.message}</span>
+                  </div>
+                )}
+              </div>
 
+              {/* Description */}
               <div>
                 <label className="block text-sm text-gray-400 mb-1.5">وصف الورشة</label>
                 <textarea
                   value={form.description}
-                  onChange={(e) => update('description', e.target.value)}
+                  onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
                   placeholder="اكتب وصفاً مختصراً عن ورشتك..."
                   rows={3}
                   className="w-full rounded-xl border border-gray-700 bg-[#0f3460] text-white px-4 py-3 text-sm outline-none focus:border-[#0084ff] transition-colors resize-none"
                 />
               </div>
 
+              {/* Phone & WhatsApp */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FieldWrapper field="phone" label="رقم الهاتف" required>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1.5">
+                    رقم الهاتف <span className="text-red-400">*</span>
+                  </label>
                   <input
                     type="tel"
                     value={form.phone}
-                    onChange={(e) => update('phone', e.target.value)}
+                    onChange={(e) => { setForm((p) => ({ ...p, phone: e.target.value })); clearError('phone'); }}
                     placeholder="07XXXXXXXX"
                     className={`w-full rounded-xl border bg-[#0f3460] text-white px-4 py-3 text-sm outline-none transition-colors ${
                       getFieldError('phone') ? 'border-red-500 focus:border-red-500' : 'border-gray-700 focus:border-[#0084ff]'
                     }`}
                   />
-                </FieldWrapper>
+                  {getFieldError('phone') && (
+                    <div className="flex items-center gap-1.5 mt-1.5 text-red-400 text-xs">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{getFieldError('phone')!.message}</span>
+                    </div>
+                  )}
+                </div>
                 <div>
                   <label className="block text-sm text-gray-400 mb-1.5">رقم الواتساب</label>
                   <input
                     type="tel"
                     value={form.whatsapp}
-                    onChange={(e) => update('whatsapp', e.target.value)}
+                    onChange={(e) => setForm((p) => ({ ...p, whatsapp: e.target.value }))}
                     placeholder="9627XXXXXXXX"
                     className="w-full rounded-xl border border-gray-700 bg-[#0f3460] text-white px-4 py-3 text-sm outline-none focus:border-[#0084ff] transition-colors"
                   />
                 </div>
               </div>
 
+              {/* Email & Website */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-gray-400 mb-1.5">البريد الإلكتروني</label>
                   <input
                     type="email"
                     value={form.email}
-                    onChange={(e) => update('email', e.target.value)}
+                    onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
                     placeholder="workshop@example.com"
                     className="w-full rounded-xl border border-gray-700 bg-[#0f3460] text-white px-4 py-3 text-sm outline-none focus:border-[#0084ff] transition-colors"
                   />
@@ -467,31 +478,33 @@ export default function CreateWorkshopPage() {
                   <input
                     type="url"
                     value={form.website}
-                    onChange={(e) => update('website', e.target.value)}
+                    onChange={(e) => setForm((p) => ({ ...p, website: e.target.value }))}
                     placeholder="https://..."
                     className="w-full rounded-xl border border-gray-700 bg-[#0f3460] text-white px-4 py-3 text-sm outline-none focus:border-[#0084ff] transition-colors"
                   />
                 </div>
               </div>
 
+              {/* Address */}
               <div>
                 <label className="block text-sm text-gray-400 mb-1.5">العنوان</label>
                 <input
                   type="text"
                   value={form.address}
-                  onChange={(e) => update('address', e.target.value)}
+                  onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))}
                   placeholder="المحافظة، المدينة، الشارع"
                   className="w-full rounded-xl border border-gray-700 bg-[#0f3460] text-white px-4 py-3 text-sm outline-none focus:border-[#0084ff] transition-colors"
                 />
               </div>
 
+              {/* Working hours, days, experience */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm text-gray-400 mb-1.5">ساعات العمل</label>
                   <input
                     type="text"
                     value={form.workingHours}
-                    onChange={(e) => update('workingHours', e.target.value)}
+                    onChange={(e) => setForm((p) => ({ ...p, workingHours: e.target.value }))}
                     placeholder="08:00-17:00"
                     className="w-full rounded-xl border border-gray-700 bg-[#0f3460] text-white px-4 py-3 text-sm outline-none focus:border-[#0084ff] transition-colors"
                   />
@@ -501,7 +514,7 @@ export default function CreateWorkshopPage() {
                   <input
                     type="text"
                     value={form.workingDays}
-                    onChange={(e) => update('workingDays', e.target.value)}
+                    onChange={(e) => setForm((p) => ({ ...p, workingDays: e.target.value }))}
                     placeholder="Sun-Thu"
                     className="w-full rounded-xl border border-gray-700 bg-[#0f3460] text-white px-4 py-3 text-sm outline-none focus:border-[#0084ff] transition-colors"
                   />
@@ -511,19 +524,20 @@ export default function CreateWorkshopPage() {
                   <input
                     type="number"
                     value={form.yearsOfExperience}
-                    onChange={(e) => update('yearsOfExperience', parseInt(e.target.value) || 0)}
+                    onChange={(e) => setForm((p) => ({ ...p, yearsOfExperience: parseInt(e.target.value) || 0 }))}
                     min={0}
                     className="w-full rounded-xl border border-gray-700 bg-[#0f3460] text-white px-4 py-3 text-sm outline-none focus:border-[#0084ff] transition-colors"
                   />
                 </div>
               </div>
 
+              {/* Employee count */}
               <div>
                 <label className="block text-sm text-gray-400 mb-1.5">عدد الموظفين</label>
                 <input
                   type="number"
                   value={form.employeeCount}
-                  onChange={(e) => update('employeeCount', parseInt(e.target.value) || 1)}
+                  onChange={(e) => setForm((p) => ({ ...p, employeeCount: parseInt(e.target.value) || 1 }))}
                   min={1}
                   className="w-full rounded-xl border border-gray-700 bg-[#0f3460] text-white px-4 py-3 text-sm outline-none focus:border-[#0084ff] transition-colors md:w-1/3"
                 />
@@ -539,7 +553,10 @@ export default function CreateWorkshopPage() {
                 الخدمات والماركات
               </h2>
 
-              <FieldWrapper field="services" label="الخدمات المقدمة" required>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1.5">
+                  الخدمات المقدمة <span className="text-red-400">*</span>
+                </label>
                 <div className="flex flex-wrap gap-2">
                   {SERVICE_OPTIONS.map((s) => (
                     <button
@@ -559,7 +576,13 @@ export default function CreateWorkshopPage() {
                 {form.services.length > 0 && (
                   <p className="text-xs text-[#0084ff] mt-2">{form.services.length} خدمة محددة</p>
                 )}
-              </FieldWrapper>
+                {getFieldError('services') && (
+                  <div className="flex items-center gap-1.5 mt-1.5 text-red-400 text-xs">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{getFieldError('services')!.message}</span>
+                  </div>
+                )}
+              </div>
 
               <div>
                 <label className="block text-sm text-gray-400 mb-3">الماركات المدعومة</label>
