@@ -5,24 +5,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import {
-  Search,
-  SlidersHorizontal,
-  X,
-  MapPin,
-  Star,
-  Clock,
-  Phone,
-  MessageCircle,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Loader2,
-  Wrench,
-  Store,
-  Filter,
-  ArrowUpDown,
-  DollarSign,
-  Calendar,
+  Search, SlidersHorizontal, X, MapPin, Star, Wrench, Store,
+  Filter, DollarSign, Calendar, MessageCircle, ChevronDown,
+  ChevronLeft, ChevronRight, Phone, ShieldCheck, Clock,
 } from 'lucide-react';
 
 interface Workshop {
@@ -33,50 +18,32 @@ interface Workshop {
   description: string | null;
   phone: string | null;
   whatsapp: string | null;
-  email: string | null;
-  website: string | null;
   address: string | null;
-  latitude: number | null;
-  longitude: number | null;
+  lat: number | null;
+  lng: number | null;
+  workingHours: string;
   rating: number;
   reviewCount: number;
-  isOpen: boolean;
-  priceRange: string | null;
-  distance: number | null;
-  province: { id: string; nameAr: string } | null;
-  city: { id: string; nameAr: string } | null;
-  services: { id: string; nameAr: string }[];
-  brands: { id: string; nameAr: string }[];
   isVerified: boolean;
-  createdAt: string;
-}
-
-interface Province {
-  id: string;
-  nameAr: string;
-}
-
-interface CityOption {
-  id: string;
-  nameAr: string;
-  provinceId: string;
-}
-
-interface ServiceType {
-  id: string;
-  nameAr: string;
-}
-
-interface Brand {
-  id: string;
-  nameAr: string;
+  priceRange: string | null;
+  recommendPercent: number;
+  provinceId: string | null;
+  cityId: string | null;
+  services: { id: string; name: string; category: string | null }[];
+  brands: { id: string; brand: string }[];
+  user: { id: string; name: string; image: string | null };
 }
 
 const SORT_OPTIONS = [
   { value: 'rating', label: 'الأعلى تقييماً' },
-  { value: 'distance', label: 'الأقرب' },
   { value: 'reviews', label: 'الأكثر تقييمات' },
   { value: 'newest', label: 'الأحدث' },
+];
+
+const SERVICE_OPTIONS = [
+  'ميكانيك', 'كهرباء', 'برمجة', 'تغيير زيت', 'ميزان',
+  'فحص كمبيوتر', 'سمكرة', 'دهان', 'بطاريات', 'إطارات',
+  'تكييف', 'هايبرد', 'سيارات كهربائية', 'خدمات متنقلة', 'سحب سيارات',
 ];
 
 export default function WorkshopsPage() {
@@ -88,85 +55,48 @@ export default function WorkshopsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
-  const [provinces, setProvinces] = useState<Province[]>([]);
-  const [cities, setCities] = useState<CityOption[]>([]);
-  const [filteredCities, setFilteredCities] = useState<CityOption[]>([]);
-  const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
-  const [brands, setBrands] = useState<Brand[]>([]);
-
-  const [provinceId, setProvinceId] = useState('');
-  const [cityId, setCityId] = useState('');
-  const [serviceType, setServiceType] = useState('');
-  const [brandId, setBrandId] = useState('');
   const [sortBy, setSortBy] = useState('rating');
-
-  useEffect(() => {
-    fetch('/api/cars/provinces')
-      .then((r) => r.json())
-      .then((d) => setProvinces(d.data || []))
-      .catch(() => {});
-    fetch('/api/cars/cities')
-      .then((r) => r.json())
-      .then((d) => setCities(d.data || []))
-      .catch(() => {});
-    fetch('/api/workshops/service-types')
-      .then((r) => r.json())
-      .then((d) => setServiceTypes(d.data || []))
-      .catch(() => {});
-    fetch('/api/cars/brands')
-      .then((r) => r.json())
-      .then((d) => setBrands(d.data || []))
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    if (provinceId) {
-      setFilteredCities(cities.filter((c) => c.provinceId === provinceId));
-      setCityId('');
-    } else {
-      setFilteredCities(cities);
-    }
-  }, [provinceId, cities]);
+  const [filterService, setFilterService] = useState('');
+  const [filterProvince, setFilterProvince] = useState('');
 
   const fetchWorkshops = useCallback(async () => {
     setLoading(true);
-    const params = new URLSearchParams();
-    if (search) params.append('search', search);
-    if (provinceId) params.append('provinceId', provinceId);
-    if (cityId) params.append('cityId', cityId);
-    if (serviceType) params.append('serviceType', serviceType);
-    if (brandId) params.append('brandId', brandId);
-    params.append('sortBy', sortBy);
-    params.append('page', page.toString());
-    params.append('limit', '12');
     try {
+      const params = new URLSearchParams();
+      if (search) params.append('search', search);
+      if (filterService) params.append('service', filterService);
+      if (filterProvince) params.append('province', filterProvince);
+      params.append('sortBy', sortBy);
+      params.append('page', page.toString());
+      params.append('limit', '12');
+
       const res = await fetch(`/api/workshops?${params}`);
-      const data = await res.json();
-      setWorkshops(data.data || []);
-      setTotalPages(data.totalPages || 1);
-      setTotal(data.total || 0);
+      const json = await res.json();
+      if (json.success && json.data) {
+        setWorkshops(json.data.workshops || []);
+        setTotalPages(json.data.pagination?.totalPages || 1);
+        setTotal(json.data.pagination?.total || 0);
+      } else {
+        setWorkshops([]);
+      }
     } catch {
       setWorkshops([]);
     } finally {
       setLoading(false);
     }
-  }, [search, provinceId, cityId, serviceType, brandId, sortBy, page]);
+  }, [search, filterService, filterProvince, sortBy, page]);
 
-  useEffect(() => {
-    fetchWorkshops();
-  }, [fetchWorkshops]);
+  useEffect(() => { fetchWorkshops(); }, [fetchWorkshops]);
 
   const resetFilters = () => {
     setSearch('');
-    setProvinceId('');
-    setCityId('');
-    setServiceType('');
-    setBrandId('');
+    setFilterService('');
+    setFilterProvince('');
     setSortBy('rating');
     setPage(1);
   };
 
-  const activeFilterCount = [provinceId, cityId, serviceType, brandId].filter(Boolean).length;
+  const activeFilterCount = [filterService, filterProvince].filter(Boolean).length;
 
   return (
     <div className="min-h-screen" style={{ background: '#1a1a2e' }}>
@@ -185,7 +115,7 @@ export default function WorkshopsPage() {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && fetchWorkshops()}
+                onKeyDown={(e) => { if (e.key === 'Enter') { setPage(1); fetchWorkshops(); } }}
                 placeholder="ابحث عن ورشة..."
                 className="w-full rounded-xl border border-gray-700 bg-[#16213e] text-white px-4 py-3 pr-12 text-sm outline-none focus:border-[#0084ff] transition-colors"
               />
@@ -214,7 +144,7 @@ export default function WorkshopsPage() {
                 ))}
               </select>
               <button
-                onClick={fetchWorkshops}
+                onClick={() => { setPage(1); fetchWorkshops(); }}
                 className="px-6 py-3 bg-[#0084ff] text-white rounded-xl text-sm font-medium hover:bg-[#006cd9] transition-colors"
               >
                 بحث
@@ -222,12 +152,11 @@ export default function WorkshopsPage() {
             </div>
           </div>
 
-          {/* Advanced Filters Panel */}
+          {/* Advanced Filters */}
           {showFilters && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
               className="mt-4 p-5 rounded-xl border border-gray-700 bg-[#16213e]"
             >
               <div className="flex items-center justify-between mb-4">
@@ -241,57 +170,41 @@ export default function WorkshopsPage() {
                   </button>
                 )}
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1">المحافظة</label>
-                  <select
-                    value={provinceId}
-                    onChange={(e) => { setProvinceId(e.target.value); setPage(1); }}
-                    className="w-full h-10 px-3 rounded-lg border border-gray-700 bg-[#0f3460] text-white text-sm outline-none focus:border-[#0084ff]"
-                  >
-                    <option value="">كل المحافظات</option>
-                    {provinces.map((p) => (
-                      <option key={p.id} value={p.id}>{p.nameAr}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1">المدينة</label>
-                  <select
-                    value={cityId}
-                    onChange={(e) => { setCityId(e.target.value); setPage(1); }}
-                    className="w-full h-10 px-3 rounded-lg border border-gray-700 bg-[#0f3460] text-white text-sm outline-none focus:border-[#0084ff]"
-                  >
-                    <option value="">كل المدن</option>
-                    {filteredCities.map((c) => (
-                      <option key={c.id} value={c.id}>{c.nameAr}</option>
-                    ))}
-                  </select>
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">نوع الخدمة</label>
                   <select
-                    value={serviceType}
-                    onChange={(e) => { setServiceType(e.target.value); setPage(1); }}
+                    value={filterService}
+                    onChange={(e) => { setFilterService(e.target.value); setPage(1); }}
                     className="w-full h-10 px-3 rounded-lg border border-gray-700 bg-[#0f3460] text-white text-sm outline-none focus:border-[#0084ff]"
                   >
                     <option value="">كل الخدمات</option>
-                    {serviceTypes.map((s) => (
-                      <option key={s.id} value={s.id}>{s.nameAr}</option>
+                    {SERVICE_OPTIONS.map((s) => (
+                      <option key={s} value={s}>{s}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">ماركة السيارة</label>
+                  <label className="block text-xs text-gray-400 mb-1">المحافظة</label>
                   <select
-                    value={brandId}
-                    onChange={(e) => { setBrandId(e.target.value); setPage(1); }}
+                    value={filterProvince}
+                    onChange={(e) => { setFilterProvince(e.target.value); setPage(1); }}
                     className="w-full h-10 px-3 rounded-lg border border-gray-700 bg-[#0f3460] text-white text-sm outline-none focus:border-[#0084ff]"
                   >
-                    <option value="">كل الماركات</option>
-                    {brands.map((b) => (
-                      <option key={b.id} value={b.id}>{b.nameAr}</option>
-                    ))}
+                    <option value="">كل المحافظات</option>
+                    <option value="عمّان">عمّان</option>
+                    <option value="إربد">إربد</option>
+                    <option value="الزرقاء">الزرقاء</option>
+                    <option value="العقبة">العقبة</option>
+                    <option value="البلقاء">البلقاء</option>
+                    <option value="الكرك">الكرك</option>
+                    <option value="المفرق">المفرق</option>
+                    <option value="معان">معان</option>
+                    <option value="الطفيلة">الطفيلة</option>
+                    <option value="الجبلة">الجبلة</option>
+                    <option value="عجلون">عجلون</option>
+                    <option value="جرش">جرش</option>
+                    <option value="المADABA">مادبا</option>
                   </select>
                 </div>
               </div>
@@ -299,7 +212,7 @@ export default function WorkshopsPage() {
           )}
         </div>
 
-        {/* Results Header */}
+        {/* Results Count */}
         <div className="flex items-center justify-between mb-6">
           <p className="text-gray-400 text-sm">
             {loading ? 'جاري البحث...' : `${total} ورشة`}
@@ -325,7 +238,6 @@ export default function WorkshopsPage() {
                   <div className="flex gap-2">
                     <div className="h-9 bg-gray-700/50 rounded-lg flex-1" />
                     <div className="h-9 bg-gray-700/50 rounded-lg flex-1" />
-                    <div className="h-9 bg-gray-700/50 rounded-lg flex-1" />
                   </div>
                 </div>
               </div>
@@ -345,7 +257,7 @@ export default function WorkshopsPage() {
             </button>
           </div>
         ) : (
-          /* Workshop Cards Grid */
+          /* Workshop Cards */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {workshops.map((workshop, index) => (
               <motion.div
@@ -355,7 +267,7 @@ export default function WorkshopsPage() {
                 transition={{ delay: index * 0.05 }}
                 className="rounded-xl overflow-hidden border border-gray-700 bg-[#16213e] hover:border-[#0084ff]/50 transition-all group"
               >
-                {/* Cover Image */}
+                {/* Cover */}
                 <div className="relative h-48 overflow-hidden">
                   {workshop.coverImage ? (
                     <Image
@@ -369,25 +281,10 @@ export default function WorkshopsPage() {
                       <Wrench className="w-16 h-16 text-[#0084ff]/30" />
                     </div>
                   )}
-                  {/* Open/Closed Badge */}
-                  <div className="absolute top-3 right-3">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        workshop.isOpen
-                          ? 'bg-green-500/90 text-white'
-                          : 'bg-red-500/90 text-white'
-                      }`}
-                    >
-                      {workshop.isOpen ? 'مفتوح' : 'مغلق'}
-                    </span>
-                  </div>
-                  {/* Verified Badge */}
                   {workshop.isVerified && (
                     <div className="absolute top-3 left-3">
                       <span className="px-2 py-1 rounded-full text-xs font-medium bg-[#0084ff]/90 text-white flex items-center gap-1">
-                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
+                        <ShieldCheck className="w-3 h-3" />
                         موثّق
                       </span>
                     </div>
@@ -397,16 +294,9 @@ export default function WorkshopsPage() {
                 {/* Content */}
                 <div className="p-5">
                   <div className="flex items-center gap-3 mb-3">
-                    {/* Logo */}
                     <div className="w-12 h-12 rounded-full border-2 border-gray-700 overflow-hidden shrink-0 bg-[#0f3460] flex items-center justify-center">
                       {workshop.logo ? (
-                        <Image
-                          src={workshop.logo}
-                          alt={workshop.name}
-                          width={48}
-                          height={48}
-                          className="object-cover"
-                        />
+                        <Image src={workshop.logo} alt={workshop.name} width={48} height={48} className="object-cover" />
                       ) : (
                         <Wrench className="w-5 h-5 text-[#0084ff]" />
                       )}
@@ -415,9 +305,7 @@ export default function WorkshopsPage() {
                       <h3 className="text-white font-semibold truncate">{workshop.name}</h3>
                       <div className="flex items-center gap-2 text-sm text-gray-400">
                         <MapPin className="w-3 h-3 shrink-0" />
-                        <span className="truncate">
-                          {workshop.city?.nameAr || ''}{workshop.city && workshop.province ? '، ' : ''}{workshop.province?.nameAr || ''}
-                        </span>
+                        <span className="truncate">{workshop.address || 'الأردن'}</span>
                       </div>
                     </div>
                   </div>
@@ -444,11 +332,8 @@ export default function WorkshopsPage() {
                   {workshop.services && workshop.services.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mb-3">
                       {workshop.services.slice(0, 3).map((service) => (
-                        <span
-                          key={service.id}
-                          className="px-2 py-0.5 bg-[#0084ff]/10 text-[#0084ff] text-xs rounded-full"
-                        >
-                          {service.nameAr}
+                        <span key={service.id} className="px-2 py-0.5 bg-[#0084ff]/10 text-[#0084ff] text-xs rounded-full">
+                          {service.name}
                         </span>
                       ))}
                       {workshop.services.length > 3 && (
@@ -459,20 +344,10 @@ export default function WorkshopsPage() {
                     </div>
                   )}
 
-                  {/* Price & Distance */}
-                  <div className="flex items-center justify-between text-sm mb-4">
-                    {workshop.priceRange && (
-                      <span className="flex items-center gap-1 text-green-400">
-                        <DollarSign className="w-3.5 h-3.5" />
-                        {workshop.priceRange}
-                      </span>
-                    )}
-                    {workshop.distance != null && (
-                      <span className="flex items-center gap-1 text-gray-400">
-                        <MapPin className="w-3.5 h-3.5" />
-                        {workshop.distance.toFixed(1)} كم
-                      </span>
-                    )}
+                  {/* Working Hours */}
+                  <div className="flex items-center gap-1 text-xs text-gray-500 mb-4">
+                    <Clock className="w-3 h-3" />
+                    <span>{workshop.workingHours}</span>
                   </div>
 
                   {/* Action Buttons */}
@@ -528,9 +403,6 @@ export default function WorkshopsPage() {
                     {pageNum}
                   </button>
                 );
-              }
-              if (pageNum === page - 3 || pageNum === page + 3) {
-                return <span key={pageNum} className="text-gray-600">...</span>;
               }
               return null;
             })}

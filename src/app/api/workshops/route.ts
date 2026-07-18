@@ -33,7 +33,13 @@ export async function GET(request: NextRequest) {
     }
 
     if (province) {
-      where.provinceId = province;
+      const provinceRecord = await prisma.province.findFirst({
+        where: { nameAr: { contains: province } },
+        select: { id: true },
+      });
+      if (provinceRecord) {
+        where.provinceId = provinceRecord.id;
+      }
     }
 
     if (city) {
