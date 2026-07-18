@@ -5,11 +5,12 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useCompareStore, useNotificationStore } from '@/store';
 import { cn } from '@/lib/utils';
-import { Home, Car, Calculator, Plus, User, GitCompare, Bell } from 'lucide-react';
+import { Home, Car, Calculator, Plus, User, GitCompare, Bell, Wrench } from 'lucide-react';
 
 const navItems = [
   { href: '/', label: 'الرئيسية', icon: Home },
   { href: '/cars', label: 'السيارات', icon: Car },
+  { href: '/workshops', label: 'الورش', icon: Wrench },
   { href: '/cars/add', label: 'بيع', icon: Plus, highlight: true },
   { href: '/financing', label: 'التمويل', icon: Calculator },
   { href: '/auth/login', label: 'حسابي', icon: User, authRequired: 'logout' },
@@ -27,6 +28,7 @@ export function MobileBottomNav() {
     if (href === '/cars') return pathname.startsWith('/cars') && !pathname.startsWith('/cars/add');
     if (href === '/cars/add') return pathname.startsWith('/cars/add');
     if (href === '/financing') return pathname.startsWith('/financing');
+    if (href === '/workshops') return pathname.startsWith('/workshops');
     if (href === '/profile') return pathname.startsWith('/profile') || pathname.startsWith('/my-cars') || pathname.startsWith('/favorites') || pathname.startsWith('/tickets');
     return false;
   };

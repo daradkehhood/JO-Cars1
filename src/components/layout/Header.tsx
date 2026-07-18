@@ -14,6 +14,7 @@ import {
   ChevronDown, LogOut, Settings, Car, Store, Bell, GitCompare,
   ShieldCheck, SlidersHorizontal, Cpu, Hammer, Gavel, Ticket,
   Calculator, BadgePercent, Newspaper, Star as StarIcon, ChevronLeft, Tag, Wrench, DollarSign, Bot,
+  Settings2,
 } from 'lucide-react';
 
 export function Header() {
@@ -50,6 +51,7 @@ export function Header() {
     { href: '/cars', label: 'جميع السيارات', icon: Car },
     { href: '/parts', label: 'قطع غيار', icon: Cpu },
     { href: '/financing', label: 'التمويل', icon: Calculator },
+    { href: '/workshops', label: 'الورش', icon: Wrench },
     { href: '/forum', label: 'المنتدى', icon: MessageCircle },
     { href: '/dealers', label: 'الوكلاء', icon: Store },
   ];

@@ -89,6 +89,17 @@ model User {
   soundReportsReviewed SoundReport[]    @relation("SoundReportReviewer")
   soundBans            SoundBan[]
   soundBansGiven       SoundBan[]       @relation("SoundBanBanner")
+  workshops            Workshop[]
+  workshopsVerified    Workshop[]       @relation("WorkshopVerifier")
+  workshopReviews      WorkshopReview[]
+  workshopAppointments WorkshopAppointment[]
+  workshopAds          WorkshopAd[]
+  workshopAdsReviewed  WorkshopAd[]     @relation("WorkshopAdReviewer")
+  workshopAdReports    WorkshopAdReport[]
+  workshopReports      WorkshopReport[]
+  workshopReportsReviewed WorkshopReport[] @relation("WorkshopReportReviewer")
+  workshopAdReportsReviewed WorkshopAdReport[] @relation("WorkshopAdReportReviewer")
+  costRecords          CostRecord[]
 
   @@map("users")
 }
@@ -1264,4 +1275,276 @@ model SoundBan {
   @@index([isActive])
   @@index([expiresAt])
   @@map("sound_bans")
+}
+
+// ==================== WORKSHOP MODELS ====================
+
+model Workshop {
+  id              String   @id @default(cuid())
+  userId          String
+  name            String
+  description     String?
+  phone           String?
+  whatsapp        String?
+  email           String?
+  website         String?
+  address         String?
+  lat             Float?
+  lng             Float?
+  cityId          String?
+  provinceId      String?
+  logo            String?
+  coverImage      String?
+  workingHours    String   @default("08:00-17:00")
+  workingDays     String   @default("Sun-Thu")
+  yearsOfExperience Int    @default(0)
+  employeeCount   Int      @default(1)
+  isVerified      Boolean  @default(false)
+  verifiedAt      DateTime?
+  verifiedBy      String?
+  commercialRegister String?
+  isPaused        Boolean  @default(false)
+  pausedUntil     DateTime?
+  pauseReason     String?
+  isBanned        Boolean  @default(false)
+  banReason       String?
+  banUntil        DateTime?
+  rating          Float    @default(0)
+  reviewCount     Int      @default(0)
+  viewCount       Int      @default(0)
+  messageCount    Int      @default(0)
+  appointmentCount Int     @default(0)
+  callCount       Int      @default(0)
+  carFixedCount   Int      @default(0)
+  recommendPercent Float   @default(0)
+  priceRange      String?  // "cheap", "moderate", "expensive"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verifier        User?    @relation("WorkshopVerifier", fields: [verifiedBy], references: [id])
+
+  services        WorkshopService[]
+  brands          WorkshopBrand[]
+  prices          WorkshopPrice[]
+  reviews         WorkshopReview[]
+  appointments    WorkshopAppointment[]
+  ads             WorkshopAd[]
+  reports         WorkshopReport[]
+  costRecords     CostRecord[]
+
+  @@index([userId])
+  @@index([cityId])
+  @@index([provinceId])
+  @@index([isVerified])
+  @@index([isPaused])
+  @@index([isBanned])
+  @@index([rating])
+  @@index([createdAt])
+  @@map("workshops")
+}
+
+model WorkshopService {
+  id          String   @id @default(cuid())
+  workshopId  String
+  name        String
+  category    String?  // "mechanical", "electrical", "body", "maintenance", "other"
+  createdAt   DateTime @default(now())
+
+  workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+
+  @@index([workshopId])
+  @@index([category])
+  @@map("workshop_services")
+}
+
+model WorkshopBrand {
+  id          String   @id @default(cuid())
+  workshopId  String
+  brand       String
+  createdAt   DateTime @default(now())
+
+  workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+
+  @@index([workshopId])
+  @@index([brand])
+  @@map("workshop_brands")
+}
+
+model WorkshopPrice {
+  id          String   @id @default(cuid())
+  workshopId  String
+  serviceName String
+  minPrice    Float
+  maxPrice    Float
+  createdAt   DateTime @default(now())
+
+  workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+
+  @@index([workshopId])
+  @@map("workshop_prices")
+}
+
+model WorkshopReview {
+  id              String   @id @default(cuid())
+  workshopId      String
+  userId          String
+  carMake         String?
+  carModel        String?
+  carYear         Int?
+  repairType      String?
+  price           Float?
+  duration        String?  // "same-day", "1-2days", "3-7days", "more"
+  description     String?
+  beforeImage     String?
+  afterImage      String?
+  qualityRating   Int?     // 1-5
+  priceRating     Int?     // 1-5
+  speedRating     Int?     // 1-5
+  serviceRating   Int?     // 1-5
+  cleanlinessRating Int?  // 1-5
+  punctualityRating Int?  // 1-5
+  partsRating     Int?     // 1-5
+  recommend       Boolean  @default(true)
+  workshopReply   String?
+  repliedAt       DateTime?
+  helpfulCount    Int      @default(0)
+  isReported      Boolean  @default(false)
+  reportReason    String?
+  isHidden        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  workshop  Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([workshopId])
+  @@index([userId])
+  @@index([recommend])
+  @@index([createdAt])
+  @@map("workshop_reviews")
+}
+
+model WorkshopAppointment {
+  id          String   @id @default(cuid())
+  workshopId  String
+  userId      String
+  date        DateTime
+  time        String
+  serviceType String
+  carMake     String?
+  carModel    String?
+  description String?
+  status      String   @default("pending") // pending, confirmed, completed, cancelled
+  workshopNote String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([workshopId])
+  @@index([userId])
+  @@index([status])
+  @@index([date])
+  @@map("workshop_appointments")
+}
+
+model WorkshopAd {
+  id          String   @id @default(cuid())
+  workshopId  String
+  title       String
+  description String?
+  images      String   @default("[]")
+  status      String   @default("pending") // pending, published, rejected
+  rejectReason String?
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  startDate   DateTime?
+  endDate     DateTime?
+  isActive    Boolean  @default(true)
+  viewCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workshop  Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  owner     User     @relation(fields: [createdBy], references: [id])
+  createdBy String
+  reviewer  User?    @relation("WorkshopAdReviewer", fields: [reviewedBy], references: [id])
+  reports  WorkshopAdReport[]
+
+  @@index([workshopId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("workshop_ads")
+}
+
+model WorkshopAdReport {
+  id          String   @id @default(cuid())
+  adId        String
+  userId      String
+  reason      String
+  description String?
+  status      String   @default("pending") // pending, reviewed, resolved, dismissed
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  ad       WorkshopAd  @relation(fields: [adId], references: [id], onDelete: Cascade)
+  user     User        @relation(fields: [userId], references: [id])
+  reviewer User?       @relation("WorkshopAdReportReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([adId])
+  @@index([userId])
+  @@index([status])
+  @@map("workshop_ad_reports")
+}
+
+model WorkshopReport {
+  id          String   @id @default(cuid())
+  workshopId  String
+  userId      String
+  type        String   // "review", "ad", "workshop"
+  targetId    String?  // ID of the review/ad being reported
+  reason      String
+  description String?
+  status      String   @default("pending") // pending, reviewed, resolved, dismissed
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id])
+  reviewer User?    @relation("WorkshopReportReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([workshopId])
+  @@index([userId])
+  @@index([status])
+  @@index([type])
+  @@map("workshop_reports")
+}
+
+model CostRecord {
+  id          String   @id @default(cuid())
+  userId      String
+  workshopId  String?
+  carMake     String
+  carModel    String
+  carYear     Int?
+  repairType  String
+  price       Float
+  duration    String?
+  partsType   String?  // "original", "aftermarket", "mixed"
+  description String?
+  createdAt   DateTime @default(now())
+
+  workshop Workshop? @relation(fields: [workshopId], references: [id])
+  user     User      @relation(fields: [userId], references: [id])
+
+  @@index([carMake])
+  @@index([carModel])
+  @@index([repairType])
+  @@index([workshopId])
+  @@index([createdAt])
+  @@map("cost_records")
 }
