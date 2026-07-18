@@ -14,8 +14,6 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  ChevronDown,
-  ChevronUp,
   Loader2,
   Send,
   Upload,
@@ -23,10 +21,11 @@ import {
   Flag,
   Image as ImageIcon,
   ThumbsUp,
-  ThumbsDown,
   Wrench,
   X,
-  ArrowRight,
+  Eye,
+  Users,
+  Award,
 } from 'lucide-react';
 
 interface Workshop {
@@ -40,55 +39,47 @@ interface Workshop {
   email: string | null;
   website: string | null;
   address: string | null;
-  latitude: number | null;
-  longitude: number | null;
+  lat: number | null;
+  lng: number | null;
   rating: number;
   reviewCount: number;
-  isOpen: boolean;
+  viewCount: number;
   priceRange: string | null;
-  province: { id: string; nameAr: string } | null;
-  city: { id: string; nameAr: string } | null;
-  services: { id: string; nameAr: string }[];
-  brands: { id: string; nameAr: string; logo: string | null }[];
+  provinceId: string | null;
+  cityId: string | null;
+  services: { id: string; name: string; category: string | null }[];
+  brands: { id: string; brand: string; workshopId: string }[];
   isVerified: boolean;
   workingHours: string | null;
   workingDays: string | null;
+  yearsOfExperience: number | null;
+  employeeCount: number | null;
+  recommendPercent: number;
   prices: WorkshopPrice[];
   reviews: WorkshopReview[];
   ads: WorkshopAd[];
-  ratingBreakdown: {
-    quality: number;
-    price: number;
-    speed: number;
-    service: number;
-    cleanliness: number;
-    punctuality: number;
-    parts: number;
-  };
-  recommendPercentage: number;
-  createdAt: string;
+  user: { id: string; name: string; image: string | null; phone: string | null; whatsapp: string | null } | null;
 }
 
 interface WorkshopPrice {
   id: string;
   serviceName: string;
-  price: number;
-  note: string | null;
+  minPrice: number;
+  maxPrice: number;
 }
 
 interface WorkshopReview {
   id: string;
-  userName: string;
-  userAvatar: string | null;
-  carBrand: string;
+  user: { id: string; name: string; image: string | null };
+  carMake: string;
   carModel: string;
+  carYear: number | null;
   repairType: string;
-  rating: number;
-  pricePaid: number | null;
+  price: number | null;
   duration: string | null;
   description: string;
-  beforeImages: string[];
-  afterImages: string[];
+  beforeImage: string | null;
+  afterImage: string | null;
   qualityRating: number;
   priceRating: number;
   speedRating: number;
@@ -97,19 +88,17 @@ interface WorkshopReview {
   punctualityRating: number;
   partsRating: number;
   recommend: boolean;
-  createdAt: string;
   workshopReply: string | null;
-  workshopReplyAt: string | null;
+  repliedAt: string | null;
+  createdAt: string;
 }
 
 interface WorkshopAd {
   id: string;
   title: string;
   description: string;
-  images: string[];
-  startDate: string;
-  endDate: string;
-  isActive: boolean;
+  images: string;
+  status: string;
 }
 
 export default function WorkshopDetailPage() {
@@ -120,17 +109,17 @@ export default function WorkshopDetailPage() {
   const [loading, setLoading] = useState(true);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [showBookForm, setShowBookForm] = useState(false);
-  const [showPriceRequest, setShowPriceRequest] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
 
   const [reviewForm, setReviewForm] = useState({
     rating: 5,
-    carBrand: '',
+    carMake: '',
     carModel: '',
+    carYear: '',
     repairType: '',
-    pricePaid: '',
+    price: '',
     duration: '',
     description: '',
     qualityRating: 5,
@@ -141,8 +130,8 @@ export default function WorkshopDetailPage() {
     punctualityRating: 5,
     partsRating: 5,
     recommend: true,
-    beforeImages: [] as File[],
-    afterImages: [] as File[],
+    beforeImage: null as File | null,
+    afterImage: null as File | null,
   });
 
   const [bookForm, setBookForm] = useState({
@@ -150,11 +139,6 @@ export default function WorkshopDetailPage() {
     time: '',
     service: '',
     description: '',
-  });
-
-  const [priceRequestForm, setPriceRequestForm] = useState({
-    description: '',
-    images: [] as File[],
   });
 
   const [reportForm, setReportForm] = useState({
@@ -181,10 +165,11 @@ export default function WorkshopDetailPage() {
   const submitReview = async () => {
     const formData = new FormData();
     formData.append('rating', reviewForm.rating.toString());
-    formData.append('carBrand', reviewForm.carBrand);
+    formData.append('carMake', reviewForm.carMake);
     formData.append('carModel', reviewForm.carModel);
+    if (reviewForm.carYear) formData.append('carYear', reviewForm.carYear);
     formData.append('repairType', reviewForm.repairType);
-    formData.append('pricePaid', reviewForm.pricePaid);
+    if (reviewForm.price) formData.append('price', reviewForm.price);
     formData.append('duration', reviewForm.duration);
     formData.append('description', reviewForm.description);
     formData.append('qualityRating', reviewForm.qualityRating.toString());
@@ -195,8 +180,8 @@ export default function WorkshopDetailPage() {
     formData.append('punctualityRating', reviewForm.punctualityRating.toString());
     formData.append('partsRating', reviewForm.partsRating.toString());
     formData.append('recommend', reviewForm.recommend.toString());
-    reviewForm.beforeImages.forEach((file) => formData.append('beforeImages', file));
-    reviewForm.afterImages.forEach((file) => formData.append('afterImages', file));
+    if (reviewForm.beforeImage) formData.append('beforeImage', reviewForm.beforeImage);
+    if (reviewForm.afterImage) formData.append('afterImage', reviewForm.afterImage);
 
     try {
       await fetch(`/api/workshops/${workshopId}/reviews`, {
@@ -217,20 +202,6 @@ export default function WorkshopDetailPage() {
       });
       setShowBookForm(false);
       setBookForm({ date: '', time: '', service: '', description: '' });
-    } catch {}
-  };
-
-  const submitPriceRequest = async () => {
-    const formData = new FormData();
-    formData.append('description', priceRequestForm.description);
-    priceRequestForm.images.forEach((file) => formData.append('images', file));
-    try {
-      await fetch(`/api/workshops/${workshopId}/price-request`, {
-        method: 'POST',
-        body: formData,
-      });
-      setShowPriceRequest(false);
-      setPriceRequestForm({ description: '', images: [] });
     } catch {}
   };
 
@@ -257,6 +228,41 @@ export default function WorkshopDetailPage() {
       setReplyText('');
       fetchWorkshop();
     } catch {}
+  };
+
+  const parseAdImages = (imagesStr: string): string[] => {
+    try {
+      const parsed = JSON.parse(imagesStr);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const getRatingBreakdown = (reviews: WorkshopReview[]) => {
+    if (reviews.length === 0) return null;
+    const sum = reviews.reduce(
+      (acc, r) => ({
+        quality: acc.quality + r.qualityRating,
+        price: acc.price + r.priceRating,
+        speed: acc.speed + r.speedRating,
+        service: acc.service + r.serviceRating,
+        cleanliness: acc.cleanliness + r.cleanlinessRating,
+        punctuality: acc.punctuality + r.punctualityRating,
+        parts: acc.parts + r.partsRating,
+      }),
+      { quality: 0, price: 0, speed: 0, service: 0, cleanliness: 0, punctuality: 0, parts: 0 }
+    );
+    const count = reviews.length;
+    return {
+      quality: sum.quality / count,
+      price: sum.price / count,
+      speed: sum.speed / count,
+      service: sum.service / count,
+      cleanliness: sum.cleanliness / count,
+      punctuality: sum.punctuality / count,
+      parts: sum.parts / count,
+    };
   };
 
   const ratingLabels: Record<string, string> = {
@@ -287,6 +293,8 @@ export default function WorkshopDetailPage() {
     );
   }
 
+  const ratingBreakdown = getRatingBreakdown(workshop.reviews);
+
   return (
     <div className="min-h-screen" style={{ background: '#1a1a2e' }}>
       {/* Cover Image */}
@@ -297,7 +305,6 @@ export default function WorkshopDetailPage() {
           <div className="w-full h-full bg-gradient-to-b from-[#0f3460] to-[#1a1a2e]" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a2e] via-[#1a1a2e]/50 to-transparent" />
-        {/* Logo Overlay */}
         <div className="absolute bottom-6 right-6 md:right-10">
           <div className="w-20 h-20 md:w-28 md:h-28 rounded-2xl border-4 border-[#1a1a2e] overflow-hidden bg-[#16213e] shadow-xl flex items-center justify-center">
             {workshop.logo ? (
@@ -321,7 +328,7 @@ export default function WorkshopDetailPage() {
               </span>
             )}
           </div>
-          <div className="flex items-center gap-4 mb-3">
+          <div className="flex items-center gap-4 mb-3 flex-wrap">
             <div className="flex items-center gap-1">
               {Array.from({ length: 5 }).map((_, i) => (
                 <Star key={i} className={`w-5 h-5 ${i < Math.round(workshop.rating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`} />
@@ -329,13 +336,19 @@ export default function WorkshopDetailPage() {
               <span className="text-white font-semibold mr-1">{workshop.rating.toFixed(1)}</span>
               <span className="text-gray-400 text-sm">({workshop.reviewCount} تقييم)</span>
             </div>
-            <span className={`px-3 py-1 rounded-full text-xs font-medium ${workshop.isOpen ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-              {workshop.isOpen ? '● مفتوح' : '● مغلق'}
-            </span>
+            <div className="flex items-center gap-1 text-gray-400 text-sm">
+              <Eye className="w-4 h-4" />
+              <span>{workshop.viewCount} مشاهدة</span>
+            </div>
+            {workshop.priceRange && (
+              <span className="px-3 py-1 bg-[#0f3460] text-gray-300 text-xs rounded-full">
+                {workshop.priceRange === 'budget' ? 'اقتصادي' : workshop.priceRange === 'moderate' ? 'متوسط' : workshop.priceRange === 'expensive' ? 'مرتفع' : workshop.priceRange}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2 text-gray-400 text-sm">
             <MapPin className="w-4 h-4" />
-            <span>{workshop.address || `${workshop.city?.nameAr || ''}، ${workshop.province?.nameAr || ''}`}</span>
+            <span>{workshop.address || 'العنوان غير محدد'}</span>
           </div>
         </div>
 
@@ -349,6 +362,34 @@ export default function WorkshopDetailPage() {
                 <p className="text-gray-300 leading-relaxed">{workshop.description}</p>
               </div>
             )}
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {workshop.yearsOfExperience != null && (
+                <div className="rounded-xl border border-gray-700 bg-[#16213e] p-4 text-center">
+                  <Award className="w-6 h-6 text-[#0084ff] mx-auto mb-2" />
+                  <p className="text-white font-bold text-lg">{workshop.yearsOfExperience}</p>
+                  <p className="text-gray-400 text-xs">سنة خبرة</p>
+                </div>
+              )}
+              {workshop.employeeCount != null && (
+                <div className="rounded-xl border border-gray-700 bg-[#16213e] p-4 text-center">
+                  <Users className="w-6 h-6 text-[#0084ff] mx-auto mb-2" />
+                  <p className="text-white font-bold text-lg">{workshop.employeeCount}</p>
+                  <p className="text-gray-400 text-xs">موظف</p>
+                </div>
+              )}
+              <div className="rounded-xl border border-gray-700 bg-[#16213e] p-4 text-center">
+                <Star className="w-6 h-6 text-yellow-400 mx-auto mb-2" />
+                <p className="text-white font-bold text-lg">{workshop.rating.toFixed(1)}</p>
+                <p className="text-gray-400 text-xs">التقييم</p>
+              </div>
+              <div className="rounded-xl border border-gray-700 bg-[#16213e] p-4 text-center">
+                <ThumbsUp className="w-6 h-6 text-green-400 mx-auto mb-2" />
+                <p className="text-white font-bold text-lg">{workshop.recommendPercent}%</p>
+                <p className="text-gray-400 text-xs">يوصون</p>
+              </div>
+            </div>
 
             {/* Working Hours */}
             <div className="rounded-xl border border-gray-700 bg-[#16213e] p-6">
@@ -384,7 +425,7 @@ export default function WorkshopDetailPage() {
                   {workshop.services.map((service) => (
                     <div key={service.id} className="flex items-center gap-2 px-4 py-3 bg-[#0f3460] rounded-lg">
                       <CheckCircle className="w-4 h-4 text-[#0084ff] shrink-0" />
-                      <span className="text-gray-200 text-sm">{service.nameAr}</span>
+                      <span className="text-gray-200 text-sm">{service.name}</span>
                     </div>
                   ))}
                 </div>
@@ -398,14 +439,10 @@ export default function WorkshopDetailPage() {
                 <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
                   {workshop.brands.map((brand) => (
                     <div key={brand.id} className="flex flex-col items-center gap-2 px-3 py-4 bg-[#0f3460] rounded-lg">
-                      {brand.logo ? (
-                        <Image src={brand.logo} alt={brand.nameAr} width={40} height={40} className="object-contain" />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-[#1a1a2e] flex items-center justify-center">
-                          <span className="text-[#0084ff] text-xs font-bold">{brand.nameAr.charAt(0)}</span>
-                        </div>
-                      )}
-                      <span className="text-gray-300 text-xs text-center">{brand.nameAr}</span>
+                      <div className="w-10 h-10 rounded-full bg-[#1a1a2e] flex items-center justify-center">
+                        <span className="text-[#0084ff] text-xs font-bold">{brand.brand.charAt(0)}</span>
+                      </div>
+                      <span className="text-gray-300 text-xs text-center">{brand.brand}</span>
                     </div>
                   ))}
                 </div>
@@ -421,16 +458,16 @@ export default function WorkshopDetailPage() {
                     <thead>
                       <tr className="border-b border-gray-700">
                         <th className="text-right py-3 px-4 text-gray-400 font-medium">الخدمة</th>
-                        <th className="text-right py-3 px-4 text-gray-400 font-medium">السعر</th>
-                        <th className="text-right py-3 px-4 text-gray-400 font-medium">ملاحظة</th>
+                        <th className="text-right py-3 px-4 text-gray-400 font-medium">السعر الأدنى</th>
+                        <th className="text-right py-3 px-4 text-gray-400 font-medium">السعر الأعلى</th>
                       </tr>
                     </thead>
                     <tbody>
                       {workshop.prices.map((price) => (
                         <tr key={price.id} className="border-b border-gray-700/50 hover:bg-[#0f3460]/50">
                           <td className="py-3 px-4 text-white">{price.serviceName}</td>
-                          <td className="py-3 px-4 text-green-400 font-medium">{price.price} د.أ</td>
-                          <td className="py-3 px-4 text-gray-400">{price.note || '-'}</td>
+                          <td className="py-3 px-4 text-green-400 font-medium">{price.minPrice} د.أ</td>
+                          <td className="py-3 px-4 text-green-400 font-medium">{price.maxPrice} د.أ</td>
                         </tr>
                       ))}
                     </tbody>
@@ -463,24 +500,26 @@ export default function WorkshopDetailPage() {
                   <p className="text-gray-400 text-sm">{workshop.reviewCount} تقييم</p>
                   <div className="mt-3 flex items-center justify-center md:justify-start gap-2">
                     <ThumbsUp className="w-4 h-4 text-green-400" />
-                    <span className="text-white text-sm">{workshop.recommendPercentage}% يوصون</span>
+                    <span className="text-white text-sm">{workshop.recommendPercent}% يوصون</span>
                   </div>
                 </div>
 
-                <div className="flex-1 space-y-2">
-                  {Object.entries(workshop.ratingBreakdown).map(([key, value]) => (
-                    <div key={key} className="flex items-center gap-3">
-                      <span className="text-gray-400 text-sm w-32 text-right">{ratingLabels[key]}</span>
-                      <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-[#0084ff] rounded-full"
-                          style={{ width: `${((value || 0) / 5) * 100}%` }}
-                        />
+                {ratingBreakdown && (
+                  <div className="flex-1 space-y-2">
+                    {Object.entries(ratingBreakdown).map(([key, value]) => (
+                      <div key={key} className="flex items-center gap-3">
+                        <span className="text-gray-400 text-sm w-32 text-right">{ratingLabels[key]}</span>
+                        <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-[#0084ff] rounded-full"
+                            style={{ width: `${((value || 0) / 5) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-white text-sm w-8">{(value || 0).toFixed(1)}</span>
                       </div>
-                      <span className="text-white text-sm w-8">{(value || 0).toFixed(1)}</span>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Individual Reviews */}
@@ -489,26 +528,28 @@ export default function WorkshopDetailPage() {
                   <div key={review.id} className="border-t border-gray-700 pt-6">
                     <div className="flex items-start gap-3 mb-3">
                       <div className="w-10 h-10 rounded-full bg-[#0f3460] flex items-center justify-center shrink-0">
-                        {review.userAvatar ? (
-                          <Image src={review.userAvatar} alt="" width={40} height={40} className="rounded-full object-cover" />
+                        {review.user.image ? (
+                          <Image src={review.user.image} alt="" width={40} height={40} className="rounded-full object-cover" />
                         ) : (
-                          <span className="text-[#0084ff] font-bold text-sm">{review.userName.charAt(0)}</span>
+                          <span className="text-[#0084ff] font-bold text-sm">{review.user.name.charAt(0)}</span>
                         )}
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
-                          <span className="text-white font-medium">{review.userName}</span>
+                          <span className="text-white font-medium">{review.user.name}</span>
                           <span className="text-gray-500 text-xs">{new Date(review.createdAt).toLocaleDateString('ar-JO')}</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-gray-400">
-                          <span>{review.carBrand} {review.carModel}</span>
+                          <span>{review.carMake} {review.carModel}</span>
+                          {review.carYear && <span>({review.carYear})</span>}
                           <span>•</span>
                           <span>{review.repairType}</span>
                         </div>
                         <div className="flex items-center gap-1 mt-1">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <Star key={i} className={`w-3.5 h-3.5 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`} />
-                          ))}
+                          {Array.from({ length: 5 }).map((_, i) => {
+                            const avg = (review.qualityRating + review.priceRating + review.speedRating + review.serviceRating + review.cleanlinessRating + review.punctualityRating + review.partsRating) / 7;
+                            return <Star key={i} className={`w-3.5 h-3.5 ${i < Math.round(avg) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`} />;
+                          })}
                           {review.recommend && (
                             <span className="text-green-400 text-xs mr-2 flex items-center gap-1">
                               <ThumbsUp className="w-3 h-3" />
@@ -519,36 +560,28 @@ export default function WorkshopDetailPage() {
                       </div>
                     </div>
                     <p className="text-gray-300 text-sm mb-3">{review.description}</p>
-                    {(review.pricePaid || review.duration) && (
+                    {(review.price != null || review.duration) && (
                       <div className="flex gap-4 text-sm text-gray-400 mb-3">
-                        {review.pricePaid && <span>السعر: {review.pricePaid} د.أ</span>}
+                        {review.price != null && <span>السعر: {review.price} د.أ</span>}
                         {review.duration && <span>المدة: {review.duration}</span>}
                       </div>
                     )}
                     {/* Review Images */}
-                    {(review.beforeImages.length > 0 || review.afterImages.length > 0) && (
+                    {(review.beforeImage || review.afterImage) && (
                       <div className="flex gap-4 mb-3">
-                        {review.beforeImages.length > 0 && (
+                        {review.beforeImage && (
                           <div>
                             <p className="text-xs text-gray-500 mb-1">قبل:</p>
-                            <div className="flex gap-2">
-                              {review.beforeImages.map((img, i) => (
-                                <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden">
-                                  <Image src={img} alt="" fill className="object-cover" />
-                                </div>
-                              ))}
+                            <div className="relative w-20 h-20 rounded-lg overflow-hidden">
+                              <Image src={review.beforeImage} alt="" fill className="object-cover" />
                             </div>
                           </div>
                         )}
-                        {review.afterImages.length > 0 && (
+                        {review.afterImage && (
                           <div>
                             <p className="text-xs text-gray-500 mb-1">بعد:</p>
-                            <div className="flex gap-2">
-                              {review.afterImages.map((img, i) => (
-                                <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden">
-                                  <Image src={img} alt="" fill className="object-cover" />
-                                </div>
-                              ))}
+                            <div className="relative w-20 h-20 rounded-lg overflow-hidden">
+                              <Image src={review.afterImage} alt="" fill className="object-cover" />
                             </div>
                           </div>
                         )}
@@ -591,22 +624,22 @@ export default function WorkshopDetailPage() {
               <div className="rounded-xl border border-gray-700 bg-[#16213e] p-6">
                 <h2 className="text-lg font-semibold text-white mb-4">إعلانات الورشة</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {workshop.ads.filter(a => a.isActive).map((ad) => (
-                    <div key={ad.id} className="rounded-lg border border-gray-700 bg-[#0f3460] overflow-hidden">
-                      {ad.images.length > 0 && (
-                        <div className="relative h-40">
-                          <Image src={ad.images[0]} alt={ad.title} fill className="object-cover" />
+                  {workshop.ads.map((ad) => {
+                    const adImages = parseAdImages(ad.images);
+                    return (
+                      <div key={ad.id} className="rounded-lg border border-gray-700 bg-[#0f3460] overflow-hidden">
+                        {adImages.length > 0 && (
+                          <div className="relative h-40">
+                            <Image src={adImages[0]} alt={ad.title} fill className="object-cover" />
+                          </div>
+                        )}
+                        <div className="p-4">
+                          <h3 className="text-white font-semibold mb-1">{ad.title}</h3>
+                          <p className="text-gray-400 text-sm">{ad.description}</p>
                         </div>
-                      )}
-                      <div className="p-4">
-                        <h3 className="text-white font-semibold mb-1">{ad.title}</h3>
-                        <p className="text-gray-400 text-sm mb-2">{ad.description}</p>
-                        <p className="text-xs text-gray-500">
-                          {new Date(ad.startDate).toLocaleDateString('ar-JO')} - {new Date(ad.endDate).toLocaleDateString('ar-JO')}
-                        </p>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -642,9 +675,9 @@ export default function WorkshopDetailPage() {
                     <span className="text-white text-sm">{workshop.website}</span>
                   </a>
                 )}
-                {workshop.latitude && workshop.longitude && (
+                {workshop.lat != null && workshop.lng != null && (
                   <a
-                    href={`https://www.google.com/maps?q=${workshop.latitude},${workshop.longitude}`}
+                    href={`https://www.google.com/maps?q=${workshop.lat},${workshop.lng}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-3 p-3 bg-[#0f3460] rounded-lg hover:bg-[#0f3460]/80 transition-colors"
@@ -690,7 +723,7 @@ export default function WorkshopDetailPage() {
                   >
                     <option value="">اختر الخدمة</option>
                     {workshop.services.map((s) => (
-                      <option key={s.id} value={s.id}>{s.nameAr}</option>
+                      <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
                   </select>
                   <textarea
@@ -705,66 +738,6 @@ export default function WorkshopDetailPage() {
                       تأكيد الحجز
                     </button>
                     <button onClick={() => setShowBookForm(false)} className="px-4 py-2.5 border border-gray-700 text-gray-400 rounded-lg text-sm hover:bg-gray-800 transition-colors">
-                      إلغاء
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Price Request */}
-            <div className="rounded-xl border border-gray-700 bg-[#16213e] p-6">
-              <h2 className="text-lg font-semibold text-white mb-4">طلب سعر</h2>
-              {!showPriceRequest ? (
-                <button
-                  onClick={() => setShowPriceRequest(true)}
-                  className="w-full py-3 border border-[#0084ff] text-[#0084ff] rounded-lg font-medium hover:bg-[#0084ff]/10 transition-colors"
-                >
-                  اطلب سعر
-                </button>
-              ) : (
-                <div className="space-y-3">
-                  <textarea
-                    value={priceRequestForm.description}
-                    onChange={(e) => setPriceRequestForm({ ...priceRequestForm, description: e.target.value })}
-                    placeholder="وصف المشكلة أو القطعة المطلوبة..."
-                    rows={3}
-                    className="w-full px-3 py-2.5 bg-[#0f3460] border border-gray-700 rounded-lg text-white text-sm outline-none focus:border-[#0084ff] resize-none"
-                  />
-                  <label className="flex items-center justify-center gap-2 py-3 border border-dashed border-gray-700 rounded-lg cursor-pointer hover:border-[#0084ff] transition-colors">
-                    <Upload className="w-5 h-5 text-gray-400" />
-                    <span className="text-gray-400 text-sm">إرفاق صور</span>
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => setPriceRequestForm({ ...priceRequestForm, images: Array.from(e.target.files || []) })}
-                    />
-                  </label>
-                  {priceRequestForm.images.length > 0 && (
-                    <div className="flex gap-2 flex-wrap">
-                      {priceRequestForm.images.map((file, i) => (
-                        <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden">
-                          <Image src={URL.createObjectURL(file)} alt="" fill className="object-cover" />
-                          <button
-                            onClick={() => setPriceRequestForm({
-                              ...priceRequestForm,
-                              images: priceRequestForm.images.filter((_, j) => j !== i),
-                            })}
-                            className="absolute top-0.5 left-0.5 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center"
-                          >
-                            <X className="w-2.5 h-2.5 text-white" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <div className="flex gap-2">
-                    <button onClick={submitPriceRequest} className="flex-1 py-2.5 bg-[#0084ff] text-white rounded-lg text-sm font-medium hover:bg-[#006cd9] transition-colors">
-                      إرسال الطلب
-                    </button>
-                    <button onClick={() => setShowPriceRequest(false)} className="px-4 py-2.5 border border-gray-700 text-gray-400 rounded-lg text-sm hover:bg-gray-800 transition-colors">
                       إلغاء
                     </button>
                   </div>
@@ -877,8 +850,8 @@ export default function WorkshopDetailPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <input
                     type="text"
-                    value={reviewForm.carBrand}
-                    onChange={(e) => setReviewForm({ ...reviewForm, carBrand: e.target.value })}
+                    value={reviewForm.carMake}
+                    onChange={(e) => setReviewForm({ ...reviewForm, carMake: e.target.value })}
                     placeholder="ماركة السيارة"
                     className="px-3 py-2.5 bg-[#0f3460] border border-gray-700 rounded-lg text-white text-sm outline-none focus:border-[#0084ff]"
                   />
@@ -891,19 +864,28 @@ export default function WorkshopDetailPage() {
                   />
                 </div>
 
-                <input
-                  type="text"
-                  value={reviewForm.repairType}
-                  onChange={(e) => setReviewForm({ ...reviewForm, repairType: e.target.value })}
-                  placeholder="نوع الإصلاح"
-                  className="w-full px-3 py-2.5 bg-[#0f3460] border border-gray-700 rounded-lg text-white text-sm outline-none focus:border-[#0084ff]"
-                />
+                <div className="grid grid-cols-2 gap-3">
+                  <input
+                    type="number"
+                    value={reviewForm.carYear}
+                    onChange={(e) => setReviewForm({ ...reviewForm, carYear: e.target.value })}
+                    placeholder="سنة الصنع"
+                    className="px-3 py-2.5 bg-[#0f3460] border border-gray-700 rounded-lg text-white text-sm outline-none focus:border-[#0084ff]"
+                  />
+                  <input
+                    type="text"
+                    value={reviewForm.repairType}
+                    onChange={(e) => setReviewForm({ ...reviewForm, repairType: e.target.value })}
+                    placeholder="نوع الإصلاح"
+                    className="px-3 py-2.5 bg-[#0f3460] border border-gray-700 rounded-lg text-white text-sm outline-none focus:border-[#0084ff]"
+                  />
+                </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <input
                     type="number"
-                    value={reviewForm.pricePaid}
-                    onChange={(e) => setReviewForm({ ...reviewForm, pricePaid: e.target.value })}
+                    value={reviewForm.price}
+                    onChange={(e) => setReviewForm({ ...reviewForm, price: e.target.value })}
                     placeholder="السعر (د.أ)"
                     className="px-3 py-2.5 bg-[#0f3460] border border-gray-700 rounded-lg text-white text-sm outline-none focus:border-[#0084ff]"
                   />
@@ -928,15 +910,15 @@ export default function WorkshopDetailPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <label className="flex items-center justify-center gap-2 py-4 border border-dashed border-gray-700 rounded-lg cursor-pointer hover:border-[#0084ff] transition-colors">
                     <ImageIcon className="w-5 h-5 text-gray-400" />
-                    <span className="text-gray-400 text-xs">صور قبل</span>
-                    <input type="file" multiple accept="image/*" className="hidden"
-                      onChange={(e) => setReviewForm({ ...reviewForm, beforeImages: Array.from(e.target.files || []) })} />
+                    <span className="text-gray-400 text-xs">صورة قبل</span>
+                    <input type="file" accept="image/*" className="hidden"
+                      onChange={(e) => setReviewForm({ ...reviewForm, beforeImage: e.target.files?.[0] || null })} />
                   </label>
                   <label className="flex items-center justify-center gap-2 py-4 border border-dashed border-gray-700 rounded-lg cursor-pointer hover:border-[#0084ff] transition-colors">
                     <ImageIcon className="w-5 h-5 text-gray-400" />
-                    <span className="text-gray-400 text-xs">صور بعد</span>
-                    <input type="file" multiple accept="image/*" className="hidden"
-                      onChange={(e) => setReviewForm({ ...reviewForm, afterImages: Array.from(e.target.files || []) })} />
+                    <span className="text-gray-400 text-xs">صورة بعد</span>
+                    <input type="file" accept="image/*" className="hidden"
+                      onChange={(e) => setReviewForm({ ...reviewForm, afterImage: e.target.files?.[0] || null })} />
                   </label>
                 </div>
 

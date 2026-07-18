@@ -123,7 +123,9 @@ export default function CreateWorkshopPage() {
     try {
       const fd = new FormData();
       fd.append('file', file);
-      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const res = await fetch('/api/upload', { method: 'POST', headers, body: fd });
       const data = await res.json();
       if (data.success && data.data?.url) return data.data.url;
       return null;
