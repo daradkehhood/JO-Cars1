@@ -57,6 +57,7 @@ export function Header() {
 
   const secondaryLinks = [
     { href: '/financing', label: 'التمويل', icon: Calculator },
+    { href: '/workshops/create', label: 'إضافة ورشة', icon: Wrench },
     { href: '/ai', label: 'المساعد الذكي', icon: Bot },
     { href: '/cars?featured=true', label: 'مميزة', icon: StarIcon },
     { href: '/car-finder', label: 'هل تناسبني؟', icon: Car },
