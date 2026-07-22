@@ -20,6 +20,7 @@ import {
   Flag,
   FileText,
   Store,
+  Trash2,
   ChevronLeft,
   ChevronRight,
   Image as ImageIcon,
@@ -31,7 +32,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 
 type MainTab = 'ads' | 'workshops' | 'reports';
-type AdStatusTab = 'pending' | 'published' | 'rejected';
+type AdStatusTab = 'all' | 'pending' | 'published' | 'rejected';
 type WorkshopStatusTab = 'all' | 'verified' | 'unverified' | 'paused' | 'banned';
 type ReportStatusTab = 'pending' | 'resolved' | 'dismissed' | 'all';
 
@@ -113,10 +114,12 @@ export default function WorkshopAdsAdminPage() {
 
   const [adRejectModal, setAdRejectModal] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [adDeleteModal, setAdDeleteModal] = useState<string | null>(null);
   const [banModal, setBanModal] = useState<string | null>(null);
   const [banForm, setBanForm] = useState({ reason: '', duration: 'permanent' });
   const [pauseModal, setPauseModal] = useState<string | null>(null);
   const [pauseForm, setPauseForm] = useState({ reason: '', untilDate: '' });
+  const [workshopDeleteModal, setWorkshopDeleteModal] = useState<string | null>(null);
   const [expandedImages, setExpandedImages] = useState<string[] | null>(null);
 
   useEffect(() => {
@@ -201,6 +204,23 @@ export default function WorkshopAdsAdminPage() {
     setRejectReason('');
   };
 
+  const deleteAd = async (adId: string) => {
+    setAdActionLoading(adId);
+    try {
+      const res = await fetch(`/api/admin/workshops/ads?adId=${adId}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAds((prev) => prev.filter((a) => a.id !== adId));
+        setAdsPagination((p) => ({ ...p, total: Math.max(0, p.total - 1) }));
+      }
+    } catch {}
+    setAdActionLoading(null);
+    setAdDeleteModal(null);
+  };
+
   const updateWorkshop = async (workshopId: string, updateData: Record<string, any>) => {
     setWorkshopActionLoading(workshopId);
     try {
@@ -219,6 +239,23 @@ export default function WorkshopAdsAdminPage() {
     setBanForm({ reason: '', duration: 'permanent' });
     setPauseModal(null);
     setPauseForm({ reason: '', untilDate: '' });
+  };
+
+  const deleteWorkshop = async (workshopId: string) => {
+    setWorkshopActionLoading(workshopId);
+    try {
+      const res = await fetch(`/api/admin/workshops?workshopId=${workshopId}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const data = await res.json();
+      if (data.success) {
+        setWorkshops((prev) => prev.filter((w) => w.id !== workshopId));
+        setWorkshopsPagination((p) => ({ ...p, total: Math.max(0, p.total - 1) }));
+      }
+    } catch {}
+    setWorkshopActionLoading(null);
+    setWorkshopDeleteModal(null);
   };
 
   const updateReport = async (reportId: string, status: string) => {
@@ -297,6 +334,7 @@ export default function WorkshopAdsAdminPage() {
           <>
             <div className="flex flex-wrap gap-2 mb-6">
               {([
+                { id: 'all' as AdStatusTab, label: 'الكل', icon: FileText },
                 { id: 'pending' as AdStatusTab, label: 'قيد المراجعة', icon: Clock },
                 { id: 'published' as AdStatusTab, label: 'منشورة', icon: Eye },
                 { id: 'rejected' as AdStatusTab, label: 'مرفوضة', icon: XCircle },
@@ -431,6 +469,27 @@ export default function WorkshopAdsAdminPage() {
                                 >
                                   <XCircle className="w-4 h-4" />
                                   رفض
+                                </button>
+                                <button
+                                  onClick={() => setAdDeleteModal(ad.id)}
+                                  disabled={adActionLoading === ad.id}
+                                  className="flex items-center gap-1.5 px-3 py-2 bg-red-600/20 text-red-500 rounded-lg text-sm font-medium hover:bg-red-600/30 transition-colors disabled:opacity-50"
+                                  title="حذف الإعلان"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                            {ad.status !== 'pending' && (
+                              <div className="flex gap-2 mt-3">
+                                <button
+                                  onClick={() => setAdDeleteModal(ad.id)}
+                                  disabled={adActionLoading === ad.id}
+                                  className="flex items-center gap-1.5 px-3 py-2 bg-red-600/20 text-red-500 rounded-lg text-sm font-medium hover:bg-red-600/30 transition-colors disabled:opacity-50"
+                                  title="حذف الإعلان"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                  حذف
                                 </button>
                               </div>
                             )}
@@ -636,6 +695,13 @@ export default function WorkshopAdsAdminPage() {
                                   <Pause className="w-5 h-5" />
                                 </button>
                               )}
+                              <button
+                                onClick={() => setWorkshopDeleteModal(workshop.id)}
+                                className="p-2 rounded-lg bg-red-600/20 text-red-500 hover:bg-red-600/30 text-sm transition-colors"
+                                title="حذف الورشة"
+                              >
+                                <Trash2 className="w-5 h-5" />
+                              </button>
                             </>
                           )}
                         </div>
@@ -848,6 +914,51 @@ export default function WorkshopAdsAdminPage() {
         )}
       </AnimatePresence>
 
+      {/* ============ AD DELETE MODAL ============ */}
+      <AnimatePresence>
+        {adDeleteModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+            onClick={() => setAdDeleteModal(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-md rounded-xl border border-gray-700 bg-[#16213e] p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
+                  <Trash2 className="w-5 h-5 text-red-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">حذف الإعلان</h3>
+              </div>
+              <p className="text-gray-400 text-sm mb-6">هل أنت متأكد من حذف هذا الإعلان؟ لا يمكن التراجع عن هذا الإجراء.</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => adDeleteModal && deleteAd(adDeleteModal)}
+                  disabled={adActionLoading === adDeleteModal}
+                  className="flex-1 py-2.5 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {adActionLoading === adDeleteModal ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  حذف
+                </button>
+                <button
+                  onClick={() => setAdDeleteModal(null)}
+                  className="px-6 py-2.5 border border-gray-700 text-gray-400 rounded-lg text-sm hover:bg-gray-800 transition-colors"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ============ BAN MODAL ============ */}
       <AnimatePresence>
         {banModal && (
@@ -982,6 +1093,51 @@ export default function WorkshopAdsAdminPage() {
                     إلغاء
                   </button>
                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ============ WORKSHOP DELETE MODAL ============ */}
+      <AnimatePresence>
+        {workshopDeleteModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+            onClick={() => setWorkshopDeleteModal(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-md rounded-xl border border-gray-700 bg-[#16213e] p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
+                  <Trash2 className="w-5 h-5 text-red-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">حذف الورشة</h3>
+              </div>
+              <p className="text-gray-400 text-sm mb-6">هل أنت متأكد من حذف هذه الورشة؟ سيتم حذف جميع الخدمات والتقييمات والإعلانات المرتبطة بها. لا يمكن التراجع عن هذا الإجراء.</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => workshopDeleteModal && deleteWorkshop(workshopDeleteModal)}
+                  disabled={workshopActionLoading === workshopDeleteModal}
+                  className="flex-1 py-2.5 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {workshopActionLoading === workshopDeleteModal ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  حذف الورشة
+                </button>
+                <button
+                  onClick={() => setWorkshopDeleteModal(null)}
+                  className="px-6 py-2.5 border border-gray-700 text-gray-400 rounded-lg text-sm hover:bg-gray-800 transition-colors"
+                >
+                  إلغاء
+                </button>
               </div>
             </motion.div>
           </motion.div>

@@ -1,0 +1,71 @@
+{
+  "expo": {
+    "name": "JO Cars",
+    "slug": "carsjo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "carsjo",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.jocars.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1E3A5F",
+        "foregroundImage": "./assets/icon.png"
+      },
+      "package": "com.jocars.app",
+      "permissions": [
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1E3A5F"
+    },
+    "web": {
+      "favicon": "./assets/icon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-font",
+      "expo-splash-screen",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "الوصول للصور لرفع صور السيارات",
+          "cameraPermission": "الوصول للكاميرا لتصوير السيارات"
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "الوصول للكاميرا لتصوير السيارات"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "الوصول لموقعك لتحديد موقع السيارة"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#3B82F6"
+        }
+      ]
+    ]
+  }
+}

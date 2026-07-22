@@ -34,6 +34,9 @@ export async function GET(
           user: {
             select: { id: true, name: true, image: true, phone: true },
           },
+          workshop: {
+            select: { id: true, name: true, userId: true },
+          },
         },
         orderBy: { date: 'desc' },
         skip,
@@ -96,6 +99,25 @@ export async function POST(
       await tx.workshop.update({
         where: { id },
         data: { appointmentCount: { increment: 1 } },
+      });
+
+      // Send notification message to workshop owner
+      const bookingDate = new Date(date).toLocaleDateString('ar-JO', { year: 'numeric', month: 'long', day: 'numeric' });
+      const notificationContent = `موعد جديد: ${user.name} حجز موعداً في ${bookingDate} الساعة ${time} للخدمة: ${serviceType}${carMake ? ` - سيارة ${carMake} ${carModel || ''}` : ''}${description ? `\nالوصف: ${description}` : ''}`;
+
+      await tx.message.create({
+        data: {
+          content: notificationContent,
+          senderId: user.id,
+          receiverId: workshop.userId,
+          conversationId: `appointment-${newAppointment.id}`,
+        },
+      });
+
+      // Update message count for workshop
+      await tx.workshop.update({
+        where: { id },
+        data: { messageCount: { increment: 1 } },
       });
 
       return newAppointment;

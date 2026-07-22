@@ -108,12 +108,10 @@ export function CarCard({ car, featured, index = 0 }: CarCardProps) {
 
           {car.images && car.images.length > 0 && car.images[0] ? (
             <div className="relative h-56 overflow-hidden">
-              <Image
+              <img
                 src={car.images[0].url || car.coverImage || '/images/placeholder-car.svg'}
                 alt={`${car.brand?.nameAr || ''} ${car.model?.nameAr || ''}`}
-                fill
-                className="object-cover transition-all duration-700 group-hover:scale-105"
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <div className="absolute bottom-3 left-3 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-2 group-hover:translate-y-0">
@@ -122,24 +120,13 @@ export function CarCard({ car, featured, index = 0 }: CarCardProps) {
                   {car.images.length} صورة
                 </span>
               </div>
-              {car.coverImage && !car.images[0] && (
-                <Image
-                  src={car.coverImage}
-                  alt={`${car.brand?.nameAr || ''} ${car.model?.nameAr || ''}`}
-                  fill
-                  className="object-cover transition-all duration-700 group-hover:scale-105"
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                />
-              )}
             </div>
           ) : car.coverImage ? (
             <div className="relative h-56 overflow-hidden">
-              <Image
+              <img
                 src={car.coverImage}
                 alt={`${car.brand?.nameAr || ''} ${car.model?.nameAr || ''}`}
-                fill
-                className="object-cover transition-all duration-700 group-hover:scale-105"
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
             </div>

@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     const where: any = {
       isBanned: false,
       isPaused: false,
+      isVerified: true,
     };
 
     if (search) {

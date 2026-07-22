@@ -4,6 +4,7 @@ import { verifyPassword, signToken, setAuthCookie } from '@/lib/auth';
 import { loginSchema } from '@/lib/validations';
 import { successResponse, errorResponse, validationErrorResponse } from '@/lib/api';
 import { checkRateLimit, RATE_LIMITS, resetRateLimit } from '@/lib/rate-limit';
+import { isIPBlocked, blockIP, trackSuspiciousActivity } from '@/lib/ip-blacklist';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,10 +13,17 @@ export async function POST(request: NextRequest) {
       || request.headers.get('cf-connecting-ip')
       || 'unknown';
 
+    if (isIPBlocked(ip)) {
+      return errorResponse('تم حظر عنوان IP الخاص بك مؤقتاً', 403);
+    }
+
     const rateLimitKey = `login:${ip}`;
     const rateLimit = checkRateLimit(rateLimitKey, RATE_LIMITS.LOGIN);
     if (!rateLimit.allowed) {
-      return errorResponse(`تم تجاوز الحد المسموح. حاول مرة أخرى بعد ${rateLimit.resetIn} ثانية`, 429);
+      if (trackSuspiciousActivity(ip)) {
+        blockIP(ip, 'Excessive login attempts');
+      }
+      return errorResponse('تم تجاوز الحد المسموح', 429);
     }
 
     const body = await request.json();
@@ -26,12 +34,11 @@ export async function POST(request: NextRequest) {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) return errorResponse('البريد الإلكتروني أو كلمة المرور غير صحيحة');
 
-    if (!user.isActive) return errorResponse('الحساب موقوف، تواصل مع الإدارة');
+    if (!user.isActive) return errorResponse('الحساب موقوف', 403);
 
     const lockedUntil = (user as any).lockedUntil;
     if (lockedUntil && new Date(lockedUntil) > new Date()) {
-      const minutesLeft = Math.ceil((new Date(lockedUntil).getTime() - Date.now()) / 60000);
-      return errorResponse(`الحساب مقفل مؤقتاً. حاول بعد ${minutesLeft} دقيقة`);
+      return errorResponse('الحساب مقفل مؤقتاً', 403);
     }
 
     const valid = await verifyPassword(password, user.password);
@@ -42,6 +49,7 @@ export async function POST(request: NextRequest) {
       if (failedAttempts >= 5) {
         updateData.lockedUntil = new Date(Date.now() + 30 * 60 * 1000);
         updateData.failedLoginAttempts = 0;
+        blockIP(ip, 'Account locked after 5 failed attempts', 30 * 60 * 1000);
       }
 
       await prisma.user.update({ where: { id: user.id }, data: updateData });
@@ -65,8 +73,6 @@ export async function POST(request: NextRequest) {
         id: user.id, name: user.name, email: user.email, role: user.role,
         image: user.image, phone: user.phone, whatsapp: user.whatsapp,
         whatsappNotifications: user.whatsappNotifications, dealerName: user.dealerName,
-        bio: user.bio, dealerDescription: user.dealerDescription, dealerAddress: user.dealerAddress,
-        rating: user.rating, ratingCount: user.ratingCount,
       },
       token,
     });
@@ -74,6 +80,6 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     console.error('Login error:', error);
-    return errorResponse('حدث خطأ في تسجيل الدخول', 500);
+    return errorResponse('حدث خطأ', 500);
   }
 }

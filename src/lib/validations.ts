@@ -1,9 +1,13 @@
 import { z } from 'zod';
 
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+
 export const registerSchema = z.object({
   name: z.string().min(2, 'الاسم يجب أن يكون أكثر من حرفين').max(100),
   email: z.string().email('البريد الإلكتروني غير صحيح'),
-  password: z.string().min(8, 'كلمة المرور يجب أن تكون 8 أحرف على الأقل'),
+  password: z.string()
+    .min(8, 'كلمة المرور يجب أن تكون 8 أحرف على الأقل')
+    .regex(passwordRegex, 'كلمة المرور يجب أن تحتوي على حرف كبير وصغير ورقم ورمز خاص (!@#$%^&*)'),
   phone: z.string().optional(),
   role: z.enum(['USER', 'DEALER']).default('USER'),
   dealerName: z.string().optional(),

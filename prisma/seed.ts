@@ -7,16 +7,17 @@ async function main() {
   console.log('🌱 بدء إضافة البيانات الأولية...');
 
   // Admin User
-  const adminPassword = await bcrypt.hash('Admin@123456', 12);
+  const adminPasswordStr = process.env.ADMIN_PASSWORD || 'CHANGE_ME_BEFORE_FIRST_RUN';
+  const adminPassword = await bcrypt.hash(adminPasswordStr, 12);
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@jocars.com' },
+    where: { email: 'mohammedhuod@jocars.com' },
     update: {},
     create: {
       name: 'مدير الموقع',
-      email: 'admin@jocars.com',
+      email: 'mohammedhuod@jocars.com',
       password: adminPassword,
       role: 'ADMIN',
-      phone: '+962790000000',
+      phone: '+962 7 7145 8569',
       isActive: true,
     },
   });

@@ -52,6 +52,28 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function DELETE(request: NextRequest) {
+  const user = await authenticateRequest(request);
+  if (!user || user.role !== 'ADMIN') return unauthorizedResponse();
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const adId = searchParams.get('adId');
+
+    if (!adId) return errorResponse('معرف الإعلان مطلوب');
+
+    const ad = await prisma.workshopAd.findUnique({ where: { id: adId } });
+    if (!ad) return errorResponse('الإعلان غير موجود', 404);
+
+    await prisma.workshopAd.delete({ where: { id: adId } });
+
+    return successResponse({ message: 'تم حذف الإعلان بنجاح' });
+  } catch (error) {
+    console.error('Admin ad delete error:', error);
+    return errorResponse('فشل حذف الإعلان', 500);
+  }
+}
+
 export async function PUT(request: NextRequest) {
   const user = await authenticateRequest(request);
   if (!user || user.role !== 'ADMIN') return unauthorizedResponse();

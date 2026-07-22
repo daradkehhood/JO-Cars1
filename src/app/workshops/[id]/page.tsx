@@ -137,14 +137,18 @@ export default function WorkshopDetailPage() {
   const [bookForm, setBookForm] = useState({
     date: '',
     time: '',
-    service: '',
+    serviceType: '',
+    carMake: '',
+    carModel: '',
     description: '',
   });
+  const [bookStatus, setBookStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
   const [reportForm, setReportForm] = useState({
     reason: '',
     description: '',
   });
+  const [reportStatus, setReportStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
   const fetchWorkshop = useCallback(async () => {
     try {
@@ -194,27 +198,47 @@ export default function WorkshopDetailPage() {
   };
 
   const submitBooking = async () => {
+    setBookStatus('loading');
     try {
-      await fetch(`/api/workshops/${workshopId}/appointments`, {
+      const res = await fetch(`/api/workshops/${workshopId}/appointments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bookForm),
       });
-      setShowBookForm(false);
-      setBookForm({ date: '', time: '', service: '', description: '' });
-    } catch {}
+      if (res.ok) {
+        setBookStatus('success');
+        setBookForm({ date: '', time: '', serviceType: '', carMake: '', carModel: '', description: '' });
+        setTimeout(() => { setBookStatus('idle'); setShowBookForm(false); }, 2000);
+      } else {
+        setBookStatus('error');
+        setTimeout(() => setBookStatus('idle'), 3000);
+      }
+    } catch {
+      setBookStatus('error');
+      setTimeout(() => setBookStatus('idle'), 3000);
+    }
   };
 
   const submitReport = async () => {
+    setReportStatus('loading');
     try {
-      await fetch(`/api/workshops/${workshopId}/report`, {
+      const res = await fetch(`/api/workshops/${workshopId}/report`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(reportForm),
+        body: JSON.stringify({ ...reportForm, type: 'workshop' }),
       });
-      setShowReport(false);
-      setReportForm({ reason: '', description: '' });
-    } catch {}
+      if (res.ok) {
+        setReportStatus('success');
+        setReportForm({ reason: '', description: '' });
+        setTimeout(() => { setReportStatus('idle'); setShowReport(false); }, 2000);
+      } else {
+        setReportStatus('error');
+        setTimeout(() => setReportStatus('idle'), 3000);
+      }
+    } catch {
+      setReportStatus('error');
+      setTimeout(() => setReportStatus('idle'), 3000);
+    }
   };
 
   const submitReply = async (reviewId: string) => {
@@ -702,6 +726,12 @@ export default function WorkshopDetailPage() {
                 >
                   احجز موعداً
                 </button>
+              ) : bookStatus === 'success' ? (
+                <div className="text-center py-4">
+                  <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-2" />
+                  <p className="text-green-400 font-medium">تم إرسال طلب الحجز بنجاح!</p>
+                  <p className="text-gray-400 text-sm mt-1">سيتلقى صاحب الورشة إشعاراً بطلب الحجز</p>
+                </div>
               ) : (
                 <div className="space-y-3">
                   <input
@@ -717,15 +747,31 @@ export default function WorkshopDetailPage() {
                     className="w-full px-3 py-2.5 bg-[#0f3460] border border-gray-700 rounded-lg text-white text-sm outline-none focus:border-[#0084ff]"
                   />
                   <select
-                    value={bookForm.service}
-                    onChange={(e) => setBookForm({ ...bookForm, service: e.target.value })}
+                    value={bookForm.serviceType}
+                    onChange={(e) => setBookForm({ ...bookForm, serviceType: e.target.value })}
                     className="w-full px-3 py-2.5 bg-[#0f3460] border border-gray-700 rounded-lg text-white text-sm outline-none focus:border-[#0084ff]"
                   >
                     <option value="">اختر الخدمة</option>
                     {workshop.services.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
+                      <option key={s.id} value={s.name}>{s.name}</option>
                     ))}
                   </select>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      value={bookForm.carMake}
+                      onChange={(e) => setBookForm({ ...bookForm, carMake: e.target.value })}
+                      placeholder="ماركة السيارة"
+                      className="px-3 py-2.5 bg-[#0f3460] border border-gray-700 rounded-lg text-white text-sm outline-none focus:border-[#0084ff]"
+                    />
+                    <input
+                      type="text"
+                      value={bookForm.carModel}
+                      onChange={(e) => setBookForm({ ...bookForm, carModel: e.target.value })}
+                      placeholder="موديل السيارة"
+                      className="px-3 py-2.5 bg-[#0f3460] border border-gray-700 rounded-lg text-white text-sm outline-none focus:border-[#0084ff]"
+                    />
+                  </div>
                   <textarea
                     value={bookForm.description}
                     onChange={(e) => setBookForm({ ...bookForm, description: e.target.value })}
@@ -733,11 +779,19 @@ export default function WorkshopDetailPage() {
                     rows={3}
                     className="w-full px-3 py-2.5 bg-[#0f3460] border border-gray-700 rounded-lg text-white text-sm outline-none focus:border-[#0084ff] resize-none"
                   />
+                  {bookStatus === 'error' && (
+                    <p className="text-red-400 text-sm">حدث خطأ، تأكد من ملء جميع الحقول المطلوبة</p>
+                  )}
                   <div className="flex gap-2">
-                    <button onClick={submitBooking} className="flex-1 py-2.5 bg-[#0084ff] text-white rounded-lg text-sm font-medium hover:bg-[#006cd9] transition-colors">
+                    <button
+                      onClick={submitBooking}
+                      disabled={bookStatus === 'loading' || !bookForm.date || !bookForm.time || !bookForm.serviceType}
+                      className="flex-1 py-2.5 bg-[#0084ff] text-white rounded-lg text-sm font-medium hover:bg-[#006cd9] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {bookStatus === 'loading' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calendar className="w-4 h-4" />}
                       تأكيد الحجز
                     </button>
-                    <button onClick={() => setShowBookForm(false)} className="px-4 py-2.5 border border-gray-700 text-gray-400 rounded-lg text-sm hover:bg-gray-800 transition-colors">
+                    <button onClick={() => { setShowBookForm(false); setBookStatus('idle'); }} className="px-4 py-2.5 border border-gray-700 text-gray-400 rounded-lg text-sm hover:bg-gray-800 transition-colors">
                       إلغاء
                     </button>
                   </div>
@@ -755,8 +809,18 @@ export default function WorkshopDetailPage() {
                   <Flag className="w-4 h-4" />
                   الإبلاغ عن الورشة
                 </button>
+              ) : reportStatus === 'success' ? (
+                <div className="text-center py-4">
+                  <CheckCircle className="w-10 h-10 text-green-400 mx-auto mb-2" />
+                  <p className="text-green-400 font-medium text-sm">تم إرسال البلاغ بنجاح!</p>
+                  <p className="text-gray-400 text-xs mt-1">شكراً على إبلاغك، سنراجع البلاغ قريباً</p>
+                </div>
               ) : (
                 <div className="space-y-3">
+                  <p className="text-red-400 text-sm font-medium flex items-center gap-2">
+                    <Flag className="w-4 h-4" />
+                    الإبلاغ عن الورشة
+                  </p>
                   <select
                     value={reportForm.reason}
                     onChange={(e) => setReportForm({ ...reportForm, reason: e.target.value })}
@@ -775,11 +839,19 @@ export default function WorkshopDetailPage() {
                     rows={3}
                     className="w-full px-3 py-2.5 bg-[#0f3460] border border-gray-700 rounded-lg text-white text-sm outline-none focus:border-[#0084ff] resize-none"
                   />
+                  {reportStatus === 'error' && (
+                    <p className="text-red-400 text-sm">حدث خطأ، تأكد من اختيار السبب</p>
+                  )}
                   <div className="flex gap-2">
-                    <button onClick={submitReport} className="flex-1 py-2.5 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors">
+                    <button
+                      onClick={submitReport}
+                      disabled={reportStatus === 'loading' || !reportForm.reason}
+                      className="flex-1 py-2.5 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {reportStatus === 'loading' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Flag className="w-4 h-4" />}
                       إرسال البلاغ
                     </button>
-                    <button onClick={() => setShowReport(false)} className="px-4 py-2.5 border border-gray-700 text-gray-400 rounded-lg text-sm hover:bg-gray-800 transition-colors">
+                    <button onClick={() => { setShowReport(false); setReportStatus('idle'); }} className="px-4 py-2.5 border border-gray-700 text-gray-400 rounded-lg text-sm hover:bg-gray-800 transition-colors">
                       إلغاء
                     </button>
                   </div>

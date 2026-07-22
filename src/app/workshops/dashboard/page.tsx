@@ -264,10 +264,10 @@ export default function WorkshopDashboard() {
 
   const updateAppointmentStatus = async (id: string, status: string) => {
     try {
-      await fetch(`/api/workshops/dashboard/appointments/${id}`, {
+      await fetch('/api/workshops/dashboard/appointments', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ appointmentId: id, status }),
       });
       loadAll();
     } catch {}
@@ -275,10 +275,10 @@ export default function WorkshopDashboard() {
 
   const submitReply = async (reviewId: string) => {
     try {
-      await fetch(`/api/workshops/dashboard/reviews/${reviewId}/reply`, {
-        method: 'POST',
+      await fetch('/api/workshops/dashboard/reviews', {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reply: replyText }),
+        body: JSON.stringify({ reviewId, workshopReply: replyText }),
       });
       setReplyingTo(null);
       setReplyText('');

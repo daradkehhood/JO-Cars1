@@ -30,11 +30,19 @@ function geoBlockPage(): NextResponse {
   );
 }
 
+function geoBlockApi(): NextResponse {
+  return NextResponse.json(
+    { success: false, error: 'Service not available in your region' },
+    { status: 403 }
+  );
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Always allow these routes
   if (pathname.startsWith('/api/') || pathname.startsWith('/_next/') || pathname.startsWith('/uploads/') ||
-      pathname.includes('.') || pathname === '/favicon.ico') {
+      pathname === '/favicon.ico' || pathname.includes('.')) {
     return NextResponse.next();
   }
 
@@ -52,6 +60,9 @@ export async function middleware(request: NextRequest) {
       });
       const data = await res.json();
       if (data.countryCode !== 'JO') {
+        if (pathname.startsWith('/api/')) {
+          return geoBlockApi();
+        }
         return geoBlockPage();
       }
     } catch {}

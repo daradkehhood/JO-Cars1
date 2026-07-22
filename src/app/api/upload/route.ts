@@ -61,22 +61,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, data: { url: result.secure_url, provider: 'cloudinary' } });
     }
 
-    // Fallback: local filesystem.
-    // WARNING: on Railway, the container filesystem is ephemeral. For production
-    // you MUST either set Cloudinary credentials or mount a Volume at
-    // /app/public/uploads so images survive redeploys.
-    const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-    const dir = path.join(process.cwd(), 'public', 'uploads');
-    await mkdir(dir, { recursive: true });
-    await writeFile(path.join(dir, filename), buffer);
-
-    if (process.env.NODE_ENV === 'production' && process.env.RAILWAY_ENVIRONMENT) {
-      console.warn(
-        '[upload] Saved to ephemeral Railway filesystem. Configure Cloudinary or mount a Volume at /app/public/uploads to persist images across redeploys.'
-      );
-    }
-
-    return NextResponse.json({ success: true, data: { url: `/uploads/${filename}`, provider: 'local' } });
+    // Fallback: store as base64 data URI in database (persistent across deploys)
+    const base64 = buffer.toString('base64');
+    const dataUri = `data:${file.type};base64,${base64}`;
+    return NextResponse.json({ success: true, data: { url: dataUri, provider: 'data-uri' } });
   } catch (err) {
     console.error('Upload error:', err);
     return NextResponse.json({ success: false, error: 'فشل رفع الملف' }, { status: 500 });

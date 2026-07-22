@@ -30,10 +30,10 @@ const handle = app.getRequestHandler();
 const { execSync } = require('child_process');
 try {
   log('INFO', 'Running prisma db push...');
-  execSync('./node_modules/.bin/prisma db push --accept-data-loss --skip-generate', { stdio: 'inherit', timeout: 120000 });
+  execSync('./node_modules/.bin/prisma db push --skip-generate', { stdio: 'inherit', timeout: 30000 });
   log('INFO', 'Prisma db push completed');
 } catch (e) {
-  log('ERROR', 'Prisma db push failed (non-fatal)', e.message);
+  log('WARN', 'Prisma db push failed (non-fatal, will retry on first request)', e.message);
 }
 
 app.prepare().then(() => {

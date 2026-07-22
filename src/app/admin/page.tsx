@@ -9,7 +9,7 @@ import {
   Car, Users, FileText, Flag, Building2, BarChart3, TrendingUp,
   DollarSign, Activity, ShieldCheck, Settings, Star, Bell, MessageCircle,
   ShoppingBag, CreditCard, AlertTriangle, CheckCircle, XCircle, Clock, Award, Cpu, TrendingDown,
-  Crown, Tag, ClipboardList, Ticket, Bot, Database, Download, Volume2
+  Crown, Tag, ClipboardList, Ticket, Bot, Database, Download, Volume2, Wrench, Store, MapPin,
 } from 'lucide-react';
 
 interface DashboardStats {
@@ -35,21 +35,26 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/'); return; }
-    fetch('/api/admin/stats').then(r => r.json())
+    fetch('/api/admin/stats', { headers: { Authorization: `Bearer ${useAuth.getState().token}` } })
+      .then(r => r.json())
       .then(data => { if (data.success) setStats(data.data); })
       .catch(() => {});
   }, [isAuthenticated, user, router]);
 
   useEffect(() => {
     if (!isAuthenticated || user?.role !== 'ADMIN') return;
-    fetch('/api/admin/notifications').then(r => r.json())
+    fetch('/api/admin/notifications', { headers: { Authorization: `Bearer ${useAuth.getState().token}` } })
+      .then(r => r.json())
       .then(data => { if (data.success) { setNotifications(data.data.notifications); setUnreadCount(data.data.unreadCount); } })
       .catch(() => {});
   }, [isAuthenticated, user]);
 
   const markAllRead = async () => {
     try {
-      await fetch('/api/admin/notifications', { method: 'PUT' });
+      await fetch('/api/admin/notifications', {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${useAuth.getState().token}` },
+      });
       setUnreadCount(0);
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     } catch {}
@@ -85,6 +90,9 @@ export default function AdminPage() {
     { href: '/admin/provinces', label: 'المحافظات', icon: MapPin, desc: 'إدارة المحافظات والمناطق' },
     { href: '/admin/car-comment-reports', label: 'بلاغات التعليقات', icon: MessageCircle, desc: 'إدارة بلاغات تعليقات السيارات' },
     { href: '/admin/sounds', label: 'بلاغات الصوت', icon: Volume2, desc: 'إدارة بلاغات تسجيلات الصوت وحظر المستخدمين' },
+    { href: '/admin/workshops/review', label: 'مراجعة الورش', icon: Wrench, desc: 'مراجعة وقبول أو رفض ورش السيارات' },
+    { href: '/admin/workshops/ads', label: 'إعلانات الورش', icon: Store, desc: 'مراجعة إعلانات الورش والقبول أو الرفض' },
+    { href: '/admin/workshops', label: 'إدارة الورش', icon: Settings, desc: 'توثيق وحظر وإيقاف الورش' },
     { href: '/admin/advanced-stats', label: 'إحصائيات متقدمة', icon: BarChart3, desc: 'رسوم بيانية وتحليلات السوق' },
     { href: '/admin/audit-logs', label: 'سجل النشاطات', icon: ClipboardList, desc: 'تتبع جميع التغييرات والإجراءات' },
     { href: '/admin/content-tools', label: 'المحتوى الذكي', icon: Bot, desc: 'منشئ أوصاف وكشف الصور المكررة' },
@@ -233,23 +241,5 @@ export default function AdminPage() {
         </div>
       </div>
     </div>
-  );
-}
-
-function Store(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-      <polyline points="9 22 9 12 15 12 15 22" />
-    </svg>
-  );
-}
-
-function MapPin(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-      <circle cx="12" cy="10" r="3" />
-    </svg>
   );
 }

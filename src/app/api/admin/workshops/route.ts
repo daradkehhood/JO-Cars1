@@ -62,6 +62,28 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function DELETE(request: NextRequest) {
+  const user = await authenticateRequest(request);
+  if (!user || user.role !== 'ADMIN') return unauthorizedResponse();
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const workshopId = searchParams.get('workshopId');
+
+    if (!workshopId) return errorResponse('معرف الورشة مطلوب');
+
+    const workshop = await prisma.workshop.findUnique({ where: { id: workshopId } });
+    if (!workshop) return errorResponse('الورشة غير موجودة', 404);
+
+    await prisma.workshop.delete({ where: { id: workshopId } });
+
+    return successResponse({ message: 'تم حذف الورشة بنجاح' });
+  } catch (error) {
+    console.error('Admin workshop delete error:', error);
+    return errorResponse('فشل حذف الورشة', 500);
+  }
+}
+
 export async function PUT(request: NextRequest) {
   const user = await authenticateRequest(request);
   if (!user || user.role !== 'ADMIN') return unauthorizedResponse();

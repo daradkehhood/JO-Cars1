@@ -16,6 +16,14 @@ export function checkRateLimit(key: string, config: RateLimitConfig): { allowed:
 
   if (record.count >= config.maxRequests) {
     const resetIn = Math.ceil((record.resetTime - now) / 1000);
+    console.log(JSON.stringify({
+      level: 'SECURITY',
+      action: 'RATE_LIMIT_EXCEEDED',
+      key,
+      count: record.count,
+      maxRequests: config.maxRequests,
+      resetIn: `${resetIn}s`,
+    }));
     return { allowed: false, remaining: 0, resetIn };
   }
 
