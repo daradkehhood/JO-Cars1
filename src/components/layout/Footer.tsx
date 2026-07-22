@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { Car, Phone, Mail, MapPin, Facebook, Twitter, Instagram, Youtube, ArrowUp } from 'lucide-react';
 
 export function Footer() {
@@ -15,12 +16,33 @@ export function Footer() {
     { icon: Youtube, href: '#', label: 'يوتيوب' },
   ];
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+  };
+
   return (
     <footer className="relative mt-16 pb-20 lg:pb-0 bg-surface-50 dark:bg-surface-900/50 border-t border-surface-200/60 dark:border-surface-700/60">
       <div className="container-custom py-14 lg:py-16">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12"
+        >
           {/* Brand */}
-          <div className="sm:col-span-2 lg:col-span-1">
+          <motion.div variants={itemVariants} className="sm:col-span-2 lg:col-span-1">
             <Link href="/" className="flex items-center gap-2.5 mb-4">
               <div className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center shadow-primary">
                 <Car className="w-5 h-5 text-white" />
@@ -33,21 +55,23 @@ export function Footer() {
               أفضل منصة أردنية متخصصة في بيع وشراء السيارات. نوفر لك تجربة آمنة وسهلة.
             </p>
             <div className="flex items-center gap-2">
-              {socialLinks.map(({ icon: Icon, href, label }) => (
-                <a
+              {socialLinks.map(({ icon: Icon, href, label }, i) => (
+                <motion.a
                   key={label}
                   href={href}
                   aria-label={label}
+                  whileHover={{ scale: 1.1, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
                   className="w-9 h-9 rounded-xl bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 flex items-center justify-center text-surface-500 hover:text-primary-600 hover:border-primary-200 dark:hover:border-primary-800 hover:shadow-soft transition-all duration-200"
                 >
                   <Icon className="w-4 h-4" />
-                </a>
+                </motion.a>
               ))}
             </div>
-          </div>
+          </motion.div>
 
           {/* Quick Links */}
-          <div>
+          <motion.div variants={itemVariants}>
             <h3 className="font-bold text-surface-900 dark:text-white mb-4 text-sm">روابط سريعة</h3>
             <ul className="space-y-2.5">
               {[
@@ -64,10 +88,10 @@ export function Footer() {
                 </li>
               ))}
             </ul>
-          </div>
+          </motion.div>
 
           {/* Services */}
-          <div>
+          <motion.div variants={itemVariants}>
             <h3 className="font-bold text-surface-900 dark:text-white mb-4 text-sm">الخدمات</h3>
             <ul className="space-y-2.5">
               {[
@@ -84,10 +108,10 @@ export function Footer() {
                 </li>
               ))}
             </ul>
-          </div>
+          </motion.div>
 
           {/* Contact */}
-          <div>
+          <motion.div variants={itemVariants}>
             <h3 className="font-bold text-surface-900 dark:text-white mb-4 text-sm">تواصل معنا</h3>
             <ul className="space-y-3">
               <li className="flex items-center gap-3 text-surface-500 text-sm">
@@ -109,12 +133,18 @@ export function Footer() {
                 <span>الأردن - إربد</span>
               </li>
             </ul>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
 
       {/* Bottom Bar */}
-      <div className="border-t border-surface-200/60 dark:border-surface-700/60">
+      <motion.div
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+        className="border-t border-surface-200/60 dark:border-surface-700/60"
+      >
         <div className="container-custom py-5 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-surface-500 text-sm">
             © {new Date().getFullYear()} JO Cars. جميع الحقوق محفوظة.
@@ -126,15 +156,17 @@ export function Footer() {
             <Link href="/terms" className="text-surface-500 hover:text-surface-700 dark:hover:text-surface-300 text-sm transition-colors">
               الشروط
             </Link>
-            <button
+            <motion.button
               onClick={scrollToTop}
+              whileHover={{ scale: 1.1, y: -2 }}
+              whileTap={{ scale: 0.95 }}
               className="w-8 h-8 rounded-lg bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 flex items-center justify-center text-surface-500 hover:text-primary-600 hover:border-primary-200 dark:hover:border-primary-800 transition-all duration-200"
             >
               <ArrowUp className="w-4 h-4" />
-            </button>
+            </motion.button>
           </div>
         </div>
-      </div>
+      </motion.div>
     </footer>
   );
 }
