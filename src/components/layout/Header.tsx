@@ -84,7 +84,7 @@ export function Header() {
   return (
     <header
       className={cn(
-        'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
+        'fixed top-0 left-0 right-0 z-[60] transition-all duration-300',
         scrolled
           ? 'bg-white/90 dark:bg-surface-900/90 backdrop-blur-xl border-b border-surface-200/60 dark:border-surface-700/60 shadow-soft'
           : 'bg-white/70 dark:bg-surface-900/70 backdrop-blur-sm'
@@ -338,7 +338,7 @@ export function Header() {
       {/* Mobile User Bottom Sheet */}
       <AnimatePresence>
         {userMenuOpen && isAuthenticated && (
-          <div className="md:hidden fixed inset-0 z-[96]">
+          <div className="md:hidden fixed inset-0 z-[97]">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -353,10 +353,13 @@ export function Header() {
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               className="absolute bottom-0 left-0 right-0 max-h-[80dvh] bg-white dark:bg-surface-900 rounded-t-3xl overflow-hidden flex flex-col shadow-soft-xl"
             >
-              {/* Handle */}
-              <div className="flex justify-center pt-3 pb-1">
+              {/* Handle - tappable to close */}
+              <button
+                onClick={() => setUserMenuOpen(false)}
+                className="flex justify-center pt-3 pb-1 w-full"
+              >
                 <div className="w-10 h-1 rounded-full bg-surface-300 dark:bg-surface-600" />
-              </div>
+              </button>
 
               {/* User info */}
               <div className="px-5 py-4 border-b border-surface-100 dark:border-surface-800">
@@ -428,7 +431,7 @@ export function Header() {
       {/* Mobile Menu (hamburger) */}
       <AnimatePresence>
         {mobileMenuOpen && (
-          <div className="lg:hidden fixed inset-0 z-[95]">
+          <div className="lg:hidden fixed inset-0 z-[97]">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -443,10 +446,13 @@ export function Header() {
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               className="absolute bottom-0 left-0 right-0 max-h-[85dvh] bg-white dark:bg-surface-900 rounded-t-3xl overflow-hidden flex flex-col shadow-soft-xl"
             >
-              {/* Handle */}
-              <div className="flex justify-center pt-3 pb-1">
+              {/* Handle - tappable to close */}
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex justify-center pt-3 pb-1 w-full"
+              >
                 <div className="w-10 h-1 rounded-full bg-surface-300 dark:bg-surface-600" />
-              </div>
+              </button>
 
               <div className="flex items-center justify-between px-5 py-3 border-b border-surface-100 dark:border-surface-800">
                 <h3 className="font-bold text-surface-900 dark:text-white">القائمة</h3>
