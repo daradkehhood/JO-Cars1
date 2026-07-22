@@ -436,7 +436,7 @@ export default function WorkshopDashboard() {
                       <label className="flex items-center justify-center gap-2 py-6 border border-dashed border-gray-700 rounded-lg cursor-pointer hover:border-[#0084ff] transition-colors">
                         <Upload className="w-5 h-5 text-gray-400" />
                         <span className="text-gray-400 text-sm">اختر شعاراً</span>
-                        <input type="file" accept="image/*" className="hidden"
+                        <input type="file" accept="image/*" className="absolute w-0 h-0 opacity-0 overflow-hidden"
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
@@ -458,7 +458,7 @@ export default function WorkshopDashboard() {
                       <label className="flex items-center justify-center gap-2 py-6 border border-dashed border-gray-700 rounded-lg cursor-pointer hover:border-[#0084ff] transition-colors">
                         <Upload className="w-5 h-5 text-gray-400" />
                         <span className="text-gray-400 text-sm">اختر صورة غلاف</span>
-                        <input type="file" accept="image/*" className="hidden"
+                        <input type="file" accept="image/*" className="absolute w-0 h-0 opacity-0 overflow-hidden"
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
@@ -749,7 +749,7 @@ export default function WorkshopDashboard() {
                     <label className="flex items-center justify-center gap-2 py-8 border border-dashed border-gray-700 rounded-lg cursor-pointer hover:border-[#0084ff] transition-colors">
                       <Upload className="w-6 h-6 text-gray-400" />
                       <span className="text-gray-400 text-sm">اختر الصور</span>
-                      <input type="file" multiple accept="image/*" className="hidden"
+                      <input type="file" multiple accept="image/*" className="absolute w-0 h-0 opacity-0 overflow-hidden"
                         onChange={(e) => setAdForm({ ...adForm, images: Array.from(e.target.files || []) })} />
                     </label>
                     {adForm.images.length > 0 && (

@@ -494,7 +494,7 @@ export default function AddCarPage() {
                 <div className="space-y-5">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">صورة الغلاف</label>
-                    <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-6 text-center hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer"
+                    <div className="relative border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-6 text-center hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer"
                       onClick={() => document.getElementById('coverInput')?.click()}>
                       {coverImage ? (
                         <div className="relative w-full h-48 rounded-lg overflow-hidden">
@@ -510,7 +510,7 @@ export default function AddCarPage() {
                           <p className="text-sm text-gray-500">اضغط لاختيار صورة الغلاف</p>
                         </div>
                       )}
-                      <input id="coverInput" type="file" accept="image/*" className="hidden"
+                      <input id="coverInput" type="file" accept="image/*" className="absolute w-0 h-0 opacity-0 overflow-hidden"
                         onChange={e => setCoverImage(e.target.files?.[0] || null)} />
                     </div>
                   </div>
@@ -545,7 +545,7 @@ export default function AddCarPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">فيديو (اختياري)</label>
-                    <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-6 text-center hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer"
+                    <div className="relative border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-6 text-center hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer"
                       onClick={() => document.getElementById('videoInput')?.click()}>
                       {videoFile ? (
                         <div className="flex items-center justify-center gap-2 text-sm text-green-500">
@@ -558,7 +558,7 @@ export default function AddCarPage() {
                           إضافة فيديو (YouTube أو MP4)
                         </div>
                       )}
-                      <input id="videoInput" type="file" accept="video/*" className="hidden"
+                      <input id="videoInput" type="file" accept="video/*" className="absolute w-0 h-0 opacity-0 overflow-hidden"
                         onChange={e => setVideoFile(e.target.files?.[0] || null)} />
                     </div>
                     <Input label="أو رابط فيديو YouTube" value={form.videoUrl}

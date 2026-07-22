@@ -334,11 +334,11 @@ export default function CreateWorkshopPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
                   <label className="block text-sm text-gray-400 mb-1.5">شعار الورشة</label>
-                  <input ref={logoRef} type="file" accept="image/*" onChange={handleLogo} className="hidden" />
+                  <input ref={logoRef} type="file" accept="image/*" onChange={handleLogo} className="absolute w-0 h-0 opacity-0 overflow-hidden" />
                   <button
                     type="button"
                     onClick={() => logoRef.current?.click()}
-                    className={`w-full h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all ${
+                    className={`relative w-full h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all ${
                       getFieldError('logo')
                         ? 'border-red-500 bg-red-500/10'
                         : logoPreview
@@ -365,11 +365,11 @@ export default function CreateWorkshopPage() {
 
                 <div>
                   <label className="block text-sm text-gray-400 mb-1.5">صورة الغلاف</label>
-                  <input ref={coverRef} type="file" accept="image/*" onChange={handleCover} className="hidden" />
+                  <input ref={coverRef} type="file" accept="image/*" onChange={handleCover} className="absolute w-0 h-0 opacity-0 overflow-hidden" />
                   <button
                     type="button"
                     onClick={() => coverRef.current?.click()}
-                    className={`w-full h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all ${
+                    className={`relative w-full h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all ${
                       getFieldError('coverImage')
                         ? 'border-red-500 bg-red-500/10'
                         : coverPreview

@@ -102,8 +102,8 @@ export default function ProfilePage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           <div className="lg:col-span-1">
             <div className="card p-6 sticky top-24">
-              <div className="text-center">
-                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+              <div className="text-center relative">
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="absolute w-0 h-0 opacity-0 overflow-hidden" />
                 <div className="relative group w-24 h-24 mx-auto mb-4">
                   <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-3xl font-bold text-white shadow-xl overflow-hidden">
                     {user?.image ? (

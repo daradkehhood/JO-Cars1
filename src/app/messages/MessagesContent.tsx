@@ -547,7 +547,7 @@ export default function MessagesContent() {
                       )}
                     </AnimatePresence>
 
-                    <div className="px-3 py-2.5 flex items-center gap-2" style={{ backgroundColor: '#242526', borderTop: '1px solid #3a3b3c' }}>
+                    <div className="relative px-3 py-2.5 flex items-center gap-2" style={{ backgroundColor: '#242526', borderTop: '1px solid #3a3b3c' }}>
                       <button onClick={() => setShowEmoji(!showEmoji)} className="p-2 rounded-full flex-shrink-0 hover:bg-[#3a3b3c] transition-colors" style={{ color: '#0084ff' }}>
                         <Smile className="w-6 h-6" />
                       </button>
@@ -555,7 +555,7 @@ export default function MessagesContent() {
                         className="p-2 rounded-full flex-shrink-0 disabled:opacity-50 hover:bg-[#3a3b3c] transition-colors" style={{ color: '#0084ff' }}>
                         {uploadingImage ? <Loader2 className="w-6 h-6 animate-spin" /> : <ImageIcon className="w-6 h-6" />}
                       </button>
-                      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                      <input ref={fileInputRef} type="file" accept="image/*" className="absolute w-0 h-0 opacity-0 overflow-hidden" onChange={handleImageUpload} />
                       <div className="flex-1 relative">
                         <input ref={inputRef} value={newMessage} onChange={handleInputChange}
                           onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}

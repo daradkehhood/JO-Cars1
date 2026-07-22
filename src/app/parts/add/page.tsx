@@ -208,7 +208,7 @@ export default function AddPartPage() {
               {images.length < 10 && (
                 <label className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center cursor-pointer hover:border-blue-500 transition-colors">
                   <Upload className="w-5 h-5 text-gray-400" />
-                  <input type="file" accept="image/*" multiple className="hidden" onChange={e => handleImages(e.target.files)} />
+                  <input type="file" accept="image/*" multiple className="absolute w-0 h-0 opacity-0 overflow-hidden" onChange={e => handleImages(e.target.files)} />
                 </label>
               )}
             </div>
