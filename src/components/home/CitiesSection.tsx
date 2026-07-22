@@ -4,12 +4,46 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { MapPin, ChevronDown, AlertCircle } from 'lucide-react';
+import { useInScrollView } from '@/hooks/useInScrollView';
 
 interface CityData {
   id: string;
   nameAr: string;
   slug: string;
   _count?: { cars: number };
+}
+
+function CityCard({ city, index }: { city: CityData; index: number }) {
+  const { ref, isInView } = useInScrollView(0.1);
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 12 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
+      transition={{ delay: index * 0.04 }}
+    >
+      <Link
+        href={`/cars?cityId=${city.id}`}
+        className="group flex items-center justify-between p-4 rounded-xl bg-white dark:bg-surface-800 border border-surface-100 dark:border-surface-700 hover:border-primary-200 dark:hover:border-primary-800 hover:shadow-soft transition-all duration-200"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-surface-50 dark:bg-surface-700 flex items-center justify-center group-hover:bg-primary-50 dark:group-hover:bg-primary-500/10 transition-colors duration-200">
+            <MapPin className="w-4.5 h-4.5 text-primary-500" />
+          </div>
+          <div>
+            <p className="font-semibold text-surface-900 dark:text-white text-sm group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-200">
+              {city.nameAr}
+            </p>
+            <p className="text-xs text-surface-500">{city._count?.cars || 0} سيارة</p>
+          </div>
+        </div>
+        <svg className="w-4 h-4 text-surface-400 group-hover:text-primary-500 transition-colors duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      </Link>
+    </motion.div>
+  );
 }
 
 export function CitiesSection() {
@@ -110,33 +144,7 @@ export function CitiesSection() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {displayCities.map((city, i) => (
-            <motion.div
-              key={city.slug || city.id}
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.04 }}
-            >
-              <Link
-                href={`/cars?cityId=${city.id}`}
-                className="group flex items-center justify-between p-4 rounded-xl bg-white dark:bg-surface-800 border border-surface-100 dark:border-surface-700 hover:border-primary-200 dark:hover:border-primary-800 hover:shadow-soft transition-all duration-200"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-surface-50 dark:bg-surface-700 flex items-center justify-center group-hover:bg-primary-50 dark:group-hover:bg-primary-500/10 transition-colors duration-200">
-                    <MapPin className="w-4.5 h-4.5 text-primary-500" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-surface-900 dark:text-white text-sm group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-200">
-                      {city.nameAr}
-                    </p>
-                    <p className="text-xs text-surface-500">{city._count?.cars || 0} سيارة</p>
-                  </div>
-                </div>
-                <svg className="w-4 h-4 text-surface-400 group-hover:text-primary-500 transition-colors duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
-            </motion.div>
+            <CityCard key={city.slug || city.id} city={city} index={i} />
           ))}
         </div>
 

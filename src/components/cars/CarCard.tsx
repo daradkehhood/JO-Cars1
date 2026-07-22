@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Heart, MapPin, Eye, Fuel, Gauge, Calendar, Shield, Camera, Settings, Flag } from 'lucide-react';
 import { cn, formatPrice, formatDistance, getFuelTypeLabel, getTransmissionLabel, formatDate } from '@/lib/utils';
+import { useInScrollView } from '@/hooks/useInScrollView';
 import type { Car } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { ReportModal } from '@/components/cars/ReportModal';
@@ -24,6 +25,7 @@ export function CarCard({ car, featured, index = 0 }: CarCardProps) {
   const [saving, setSaving] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const isPending = car.status === 'PENDING';
+  const { ref, isInView } = useInScrollView(0.1);
 
   const toggleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -49,9 +51,9 @@ export function CarCard({ car, featured, index = 0 }: CarCardProps) {
 
   return (
     <motion.div
+      ref={ref}
       initial={{ opacity: 0, y: 16 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-50px' }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
       transition={{ duration: 0.4, delay: index * 0.05 }}
     >
       <Link href={`/cars/${car.slug || car.id}`} className="group block">
