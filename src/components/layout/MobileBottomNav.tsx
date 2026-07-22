@@ -3,10 +3,15 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTheme } from 'next-themes';
 import { useAuth } from '@/hooks/useAuth';
-import { useCompareStore, useNotificationStore, useUIStore } from '@/store';
+import { useCompareStore, useNotificationStore } from '@/store';
 import { cn } from '@/lib/utils';
-import { Home, Car, Plus, User, Wrench, MoreHorizontal, X, Heart, MessageCircle, Tag, Bell, Store, Calculator, Bot, DollarSign, BadgePercent, Newspaper, Ticket, ShieldCheck } from 'lucide-react';
+import {
+  Home, Car, Plus, Wrench, MoreHorizontal, X, Heart, MessageCircle,
+  Tag, Bell, Store, Calculator, Bot, DollarSign, BadgePercent, Newspaper,
+  Ticket, ShieldCheck, Moon, Sun, Search, LogOut, User,
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const navItems = [
@@ -17,7 +22,8 @@ const navItems = [
   { href: 'more', label: 'المزيد', icon: MoreHorizontal, isMore: true },
 ];
 
-const moreMenuItems = [
+const mainLinks = [
+  { href: '/cars', label: 'السيارات', icon: Car },
   { href: '/parts', label: 'قطع الغيار', icon: Wrench },
   { href: '/forum', label: 'المنتدى', icon: MessageCircle },
   { href: '/dealers', label: 'الوكلاء', icon: Store },
@@ -32,22 +38,24 @@ const moreMenuItems = [
   { href: '/news', label: 'الأخبار', icon: Newspaper },
 ];
 
-const userMenuItems = [
+const userLinks = [
   { href: '/favorites', label: 'المفضلة', icon: Heart },
-  { href: '/messages', label: 'الرسائل', icon: MessageCircle },
+  { href: '/messages', label: 'الرسائل', icon: MessageCircle, badge: true },
   { href: '/my-cars', label: 'إعلاناتي', icon: Car },
   { href: '/my-wants', label: 'طلباتي', icon: Tag },
   { href: '/price-alerts', label: 'تنبيهات الأسعار', icon: Bell },
   { href: '/tickets', label: 'التذاكر', icon: Ticket },
+  { href: '/auth/profile', label: 'الملف الشخصي', icon: User },
 ];
 
 export function MobileBottomNav() {
   const pathname = usePathname();
-  const { user, isAuthenticated } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const { user, isAuthenticated, logout } = useAuth();
   const { cars: compareCars } = useCompareStore();
   const { unreadCount } = useNotificationStore();
-  const { mobileMenuOpen, setMobileMenuOpen } = useUIStore();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/';
@@ -88,7 +96,17 @@ export function MobileBottomNav() {
                       onClick={() => setMoreOpen(true)}
                       className="relative flex flex-col items-center justify-center min-w-[3.5rem] h-full gap-0.5 text-surface-400 dark:text-surface-500"
                     >
-                      <Icon className="w-5 h-5" />
+                      {isAuthenticated ? (
+                        <div className="w-7 h-7 rounded-full bg-primary-100 dark:bg-primary-500/20 flex items-center justify-center text-primary-600 dark:text-primary-400 text-xs font-bold">
+                          {user?.image ? (
+                            <img src={user.image} alt="" className="w-7 h-7 rounded-full object-cover" />
+                          ) : (
+                            user?.name?.charAt(0) || 'U'
+                          )}
+                        </div>
+                      ) : (
+                        <Icon className="w-5 h-5" />
+                      )}
                       <span className="text-[10px] font-medium">{item.label}</span>
                     </button>
                   );
@@ -130,7 +148,7 @@ export function MobileBottomNav() {
         </div>
       </nav>
 
-      {/* More Menu Bottom Sheet */}
+      {/* Unified More Bottom Sheet */}
       <AnimatePresence>
         {moreOpen && (
           <div className="lg:hidden fixed inset-0 z-[96]">
@@ -146,7 +164,7 @@ export function MobileBottomNav() {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="absolute bottom-0 left-0 right-0 max-h-[80dvh] bg-white dark:bg-surface-900 rounded-t-3xl overflow-hidden flex flex-col shadow-soft-xl"
+              className="absolute bottom-0 left-0 right-0 max-h-[85dvh] bg-white dark:bg-surface-900 rounded-t-3xl overflow-hidden flex flex-col shadow-soft-xl"
             >
               {/* Handle */}
               <div className="flex justify-center pt-3 pb-1">
@@ -161,12 +179,50 @@ export function MobileBottomNav() {
               </div>
 
               <div className="flex-1 overflow-y-auto overscroll-contain p-3">
+                {/* Search */}
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  if (searchQuery.trim()) {
+                    window.location.href = `/cars?search=${encodeURIComponent(searchQuery.trim())}`;
+                  }
+                }} className="mb-4">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="ابحث عن سيارة..."
+                      className="w-full h-12 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 pl-11 pr-4 text-sm text-surface-900 dark:text-surface-100 placeholder-surface-400 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-500/10"
+                    />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
+                  </div>
+                </form>
+
+                {/* Theme toggle */}
+                <button
+                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800 mb-3 transition-all duration-200"
+                >
+                  {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                  {theme === 'dark' ? 'الوضع الفاتح' : 'الوضع الداكن'}
+                </button>
+
+                {/* Sell button */}
+                <Link
+                  href="/cars/add"
+                  onClick={() => setMoreOpen(false)}
+                  className="flex items-center justify-center gap-2 w-full h-11 btn-primary text-sm rounded-xl mb-3"
+                >
+                  <Plus className="w-4 h-4" />
+                  إضافة سيارة
+                </Link>
+
                 {/* User section if authenticated */}
                 {isAuthenticated && (
                   <div className="mb-3">
                     <p className="text-xs font-semibold text-surface-400 px-3 mb-2">حسابي</p>
                     <div className="space-y-0.5">
-                      {userMenuItems.map((item) => {
+                      {userLinks.map((item) => {
                         const Icon = item.icon;
                         const active = pathname === item.href || pathname.startsWith(item.href + '/');
                         return (
@@ -185,7 +241,7 @@ export function MobileBottomNav() {
                               <Icon className="w-5 h-5" />
                               {item.label}
                             </span>
-                            {item.label === 'الرسائل' && unreadCount > 0 && (
+                            {item.badge && unreadCount > 0 && (
                               <span className="w-5 h-5 rounded-full bg-primary-500 text-white text-[10px] font-bold flex items-center justify-center">
                                 {unreadCount}
                               </span>
@@ -208,10 +264,10 @@ export function MobileBottomNav() {
                   </div>
                 )}
 
-                {/* All links */}
+                {/* All navigation links */}
                 <p className="text-xs font-semibold text-surface-400 px-3 mb-2">الاستكشاف</p>
                 <div className="space-y-0.5">
-                  {moreMenuItems.map((item) => {
+                  {mainLinks.map((item) => {
                     const Icon = item.icon;
                     const active = pathname === item.href || pathname.startsWith(item.href + '/');
                     return (
@@ -232,6 +288,39 @@ export function MobileBottomNav() {
                     );
                   })}
                 </div>
+
+                {/* Login/Register for guests */}
+                {!isAuthenticated && (
+                  <div className="border-t border-surface-100 dark:border-surface-800 mt-3 pt-3 space-y-2">
+                    <Link
+                      href="/auth/login"
+                      onClick={() => setMoreOpen(false)}
+                      className="flex items-center justify-center gap-2 w-full h-11 btn-primary text-sm rounded-xl"
+                    >
+                      تسجيل دخول
+                    </Link>
+                    <Link
+                      href="/auth/register"
+                      onClick={() => setMoreOpen(false)}
+                      className="flex items-center justify-center gap-2 w-full h-11 btn-secondary text-sm rounded-xl"
+                    >
+                      حساب جديد
+                    </Link>
+                  </div>
+                )}
+
+                {/* Logout */}
+                {isAuthenticated && (
+                  <div className="border-t border-surface-100 dark:border-surface-800 mt-3 pt-3">
+                    <button
+                      onClick={() => { logout(); setMoreOpen(false); }}
+                      className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-sm font-semibold text-accent-600 bg-accent-50 dark:bg-accent-500/10 hover:bg-accent-100 dark:hover:bg-accent-500/20 transition-all duration-200"
+                    >
+                      <LogOut className="w-5 h-5" />
+                      تسجيل خروج
+                    </button>
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>
