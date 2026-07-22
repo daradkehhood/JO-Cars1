@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { Header } from './Header';
 import { Footer } from './Footer';
 import { MobileBottomNav } from './MobileBottomNav';
+import { UserMenuSheet } from './UserMenuSheet';
 
 const FULLSCREEN_ROUTES = ['/messages'];
 
@@ -29,6 +30,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
       </main>
       <Footer />
       <MobileBottomNav />
+      <UserMenuSheet />
     </>
   );
 }
