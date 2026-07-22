@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { createPortal } from 'react-dom';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,10 +10,9 @@ import { useUIStore, useNotificationStore, useCompareStore } from '@/store';
 import { cn } from '@/lib/utils';
 import {
   Search, Menu, X, User, Heart, MessageCircle, Plus, Moon, Sun,
-  ChevronDown, LogOut, Settings, Car, Store, Bell, GitCompare,
-  ShieldCheck, SlidersHorizontal, Cpu, Hammer, Gavel, Ticket,
-  Calculator, BadgePercent, Newspaper, Star as StarIcon, ChevronLeft, Tag, Wrench, DollarSign, Bot,
-  Settings2,
+  ChevronDown, LogOut, ShieldCheck, Bot, Wrench, DollarSign, Tag,
+  BadgePercent, Newspaper, Car, Store, Bell, GitCompare, Ticket,
+  Calculator, Cpu, Settings, CreditCard,
 } from 'lucide-react';
 
 export function Header() {
@@ -29,14 +27,21 @@ export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [moreOpen, setMoreOpen] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
+    const handleScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    setMoreOpen(false);
+    setUserMenuOpen(false);
+    setMobileMenuOpen(false);
+  }, [pathname, setMobileMenuOpen]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,349 +50,284 @@ export function Header() {
     }
   };
 
-  const [moreOpen, setMoreOpen] = useState(false);
-
   const primaryLinks = [
-    { href: '/cars', label: 'جميع السيارات', icon: Car },
-    { href: '/parts', label: 'قطع غيار', icon: Cpu },
+    { href: '/cars', label: 'السيارات', icon: Car },
+    { href: '/parts', label: 'قطع الغيار', icon: Cpu },
     { href: '/workshops', label: 'الورش', icon: Wrench },
     { href: '/forum', label: 'المنتدى', icon: MessageCircle },
-    { href: '/dealers', label: 'الوكلاء', icon: Store },
   ];
 
   const secondaryLinks = [
+    { href: '/dealers', label: 'الوكلاء', icon: Store },
     { href: '/financing', label: 'التمويل', icon: Calculator },
-    { href: '/workshops/create', label: 'إضافة ورشة', icon: Wrench },
     { href: '/ai', label: 'المساعد الذكي', icon: Bot },
-    { href: '/cars?featured=true', label: 'مميزة', icon: StarIcon },
     { href: '/car-finder', label: 'هل تناسبني؟', icon: Car },
     { href: '/resale-value', label: 'قيمة إعادة البيع', icon: DollarSign },
-    { href: '/maintenance', label: 'صيانة وإصلاح', icon: Wrench },
+    { href: '/maintenance', label: 'الصيانة', icon: Wrench },
     { href: '/my-garage', label: 'مرآبي', icon: Wrench },
-    { href: '/wanted', label: 'إعلانات الطلب', icon: Tag },
-    { href: '/plates', label: 'لوحات مميزة', icon: BadgePercent },
+    { href: '/wanted', label: 'مطلوب', icon: Tag },
+    { href: '/plates', label: 'لوحات', icon: BadgePercent },
     { href: '/news', label: 'الأخبار', icon: Newspaper },
     ...(isAuthenticated ? [{ href: '/tickets', label: 'التذاكر', icon: Ticket }] : []),
+  ];
+
+  const userMenuItems = [
+    { href: '/auth/profile', label: 'الملف الشخصي', icon: User },
+    { href: '/favorites', label: 'المفضلة', icon: Heart },
+    { href: '/messages', label: 'الرسائل', icon: MessageCircle, badge: unreadCount },
+    { href: '/my-cars', label: 'إعلاناتي', icon: Car },
+    { href: '/my-garage', label: 'مرآبي', icon: Wrench },
+    { href: '/my-wants', label: 'طلباتي', icon: Tag },
+    { href: '/price-alerts', label: 'تنبيهات الأسعار', icon: Bell },
   ];
 
   return (
     <header
       className={cn(
-        'fixed top-0 left-0 right-0 z-50 transition-all duration-500',
+        'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
         scrolled
-          ? 'bg-white/90 dark:bg-black/90 backdrop-blur-xl shadow-lg shadow-black/5'
-          : 'bg-transparent'
+          ? 'bg-white/90 dark:bg-surface-900/90 backdrop-blur-xl border-b border-surface-200/60 dark:border-surface-700/60 shadow-soft'
+          : 'bg-white/70 dark:bg-surface-900/70 backdrop-blur-sm'
       )}
     >
       <div className="container-custom">
-        <div className="flex items-center justify-between h-20">
-          <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-400 flex items-center justify-center shadow-lg shadow-blue-500/25 group-hover:shadow-blue-500/40 transition-all">
-                <Car className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-gray-900 dark:text-white">
-                <span className="gradient-text">JO</span> Cars
-              </span>
-            </Link>
+        <div className="flex items-center justify-between h-14">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2 shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center">
+              <Car className="w-4.5 h-4.5 text-white" />
+            </div>
+            <span className="text-base font-bold text-surface-900 dark:text-white hidden sm:block">
+              <span className="gradient-text">JO</span>Cars
+            </span>
+          </Link>
 
-            <nav className="hidden lg:flex items-center gap-1">
-              {primaryLinks.map((link) => {
-                const Icon = link.icon;
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={cn(
-                      'flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-300 whitespace-nowrap',
-                      pathname === link.href || pathname.startsWith(link.href + '/')
-                        ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50'
-                    )}
-                  >
-                    <Icon className="w-4 h-4" />
-                    {link.label}
-                  </Link>
-                );
-              })}
+          {/* Desktop Nav */}
+          <nav className="hidden lg:flex items-center gap-0.5">
+            {primaryLinks.map((link) => {
+              const Icon = link.icon;
+              const active = pathname === link.href || pathname.startsWith(link.href + '/');
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={cn(
+                    'relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200',
+                    active
+                      ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10'
+                      : 'text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-white hover:bg-surface-100 dark:hover:bg-surface-800'
+                  )}
+                >
+                  <Icon className="w-4 h-4" />
+                  {link.label}
+                </Link>
+              );
+            })}
 
-              {/* More dropdown */}
-              {secondaryLinks.length > 0 && (
-                <div className="relative">
-                  <button onClick={() => setMoreOpen(!moreOpen)}
-                    className={cn(
-                      'flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-300',
-                      moreOpen ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50'
-                    )}>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${moreOpen ? 'rotate-180' : ''}`} />
-                    المزيد
-                  </button>
+            {/* More dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setMoreOpen(!moreOpen)}
+                className={cn(
+                  'flex items-center gap-1 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200',
+                  moreOpen
+                    ? 'text-surface-900 dark:text-white bg-surface-100 dark:bg-surface-800'
+                    : 'text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-white hover:bg-surface-100 dark:hover:bg-surface-800'
+                )}
+              >
+                المزيد
+                <ChevronDown className={cn('w-3.5 h-3.5 transition-transform duration-200', moreOpen && 'rotate-180')} />
+              </button>
 
-                  <AnimatePresence>
-                    {moreOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                        className="absolute right-0 top-full mt-2 w-52 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl shadow-black/10 overflow-hidden z-50">
-                        <div className="p-2 space-y-0.5">
-                          {secondaryLinks.map((link) => {
-                            const Icon = link.icon;
-                            const active = pathname === link.href || pathname.startsWith(link.href + '/');
-                            return (
-                              <Link key={link.href} href={link.href} onClick={() => setMoreOpen(false)}
-                                className={cn(
-                                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
-                                  active
-                                    ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'
-                                )}>
-                                <Icon className="w-4 h-4" />
-                                {link.label}
-                              </Link>
-                            );
-                          })}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              )}
-            </nav>
-          </div>
+              <AnimatePresence>
+                {moreOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setMoreOpen(false)} />
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 8 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 top-full mt-2 w-56 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 shadow-soft-xl overflow-hidden z-50"
+                    >
+                      <div className="p-1.5">
+                        {secondaryLinks.map((link) => {
+                          const Icon = link.icon;
+                          const active = pathname === link.href || pathname.startsWith(link.href + '/');
+                          return (
+                            <Link
+                              key={link.href}
+                              href={link.href}
+                              onClick={() => setMoreOpen(false)}
+                              className={cn(
+                                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+                                active
+                                  ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10'
+                                  : 'text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700'
+                              )}
+                            >
+                              <Icon className="w-4 h-4" />
+                              {link.label}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+          </nav>
 
-          <div className="hidden md:flex items-center flex-1 max-w-md mx-8">
-            <form onSubmit={handleSearch} className="relative w-full group">
+          {/* Search */}
+          <div className="hidden md:flex items-center flex-1 max-w-xs mx-6">
+            <form onSubmit={handleSearch} className="relative w-full">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ابحث عن سيارتك..."
-                className="w-full h-11 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm pl-11 pr-4 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
+                placeholder="ابحث عن سيارة..."
+                className="w-full h-9 rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 pl-9 pr-4 text-sm text-surface-900 dark:text-surface-100 placeholder-surface-400 transition-all duration-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-500/10 outline-none"
               />
-              <button type="submit" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-500 transition-colors">
-                <Search className="w-4 h-4" />
-              </button>
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
             </form>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Right actions */}
+          <div className="flex items-center gap-0.5">
+            {/* Compare */}
             {compareCars.length > 0 && (
               <Link
                 href="/cars/compare"
-                className="relative p-2.5 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+                className="relative p-2 rounded-lg text-surface-500 hover:text-primary-600 hover:bg-surface-100 dark:hover:bg-surface-800 transition-all duration-200"
               >
                 <GitCompare className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center">
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-primary-500 text-white text-[9px] font-bold flex items-center justify-center">
                   {compareCars.length}
                 </span>
               </Link>
             )}
 
+            {/* Theme toggle */}
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="p-2.5 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+              className="p-2 rounded-lg text-surface-500 hover:text-surface-700 dark:hover:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 transition-all duration-200"
             >
               {mounted ? (theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />) : <div className="w-5 h-5" />}
             </button>
 
+            {/* User menu - works on ALL screens */}
             {isAuthenticated ? (
-              <div className="relative">
+              <>
+                {/* Desktop: dropdown */}
+                <div className="hidden md:block relative">
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="flex items-center gap-1.5 p-1.5 pr-2.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-all duration-200"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-primary-100 dark:bg-primary-500/20 flex items-center justify-center text-primary-600 dark:text-primary-400 text-xs font-semibold">
+                      {user?.name?.charAt(0) || 'U'}
+                    </div>
+                    <ChevronDown className={cn('w-4 h-4 text-surface-400 transition-transform duration-200', userMenuOpen && 'rotate-180')} />
+                  </button>
+
+                  <AnimatePresence>
+                    {userMenuOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
+                        <motion.div
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 8 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute left-0 top-full mt-2 w-60 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 shadow-soft-xl overflow-hidden z-50"
+                        >
+                          <div className="p-3 border-b border-surface-100 dark:border-surface-700">
+                            <p className="font-semibold text-surface-900 dark:text-white text-sm">{user?.name}</p>
+                            <p className="text-xs text-surface-500 mt-0.5 truncate">{user?.email}</p>
+                          </div>
+                          <div className="p-1.5 max-h-[300px] overflow-y-auto">
+                            {userMenuItems.map((item) => {
+                              const Icon = item.icon;
+                              return (
+                                <Link
+                                  key={item.href}
+                                  href={item.href}
+                                  onClick={() => setUserMenuOpen(false)}
+                                  className="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700 transition-all duration-200"
+                                >
+                                  <span className="flex items-center gap-3">
+                                    <Icon className="w-4 h-4" />
+                                    {item.label}
+                                  </span>
+                                  {item.badge ? (
+                                    <span className="w-5 h-5 rounded-full bg-primary-500 text-white text-[10px] font-bold flex items-center justify-center">
+                                      {item.badge}
+                                    </span>
+                                  ) : null}
+                                </Link>
+                              );
+                            })}
+                            {user?.role === 'ADMIN' && (
+                              <Link
+                                href="/admin"
+                                onClick={() => setUserMenuOpen(false)}
+                                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700 transition-all duration-200"
+                              >
+                                <ShieldCheck className="w-4 h-4" />
+                                لوحة التحكم
+                              </Link>
+                            )}
+                          </div>
+                          <div className="p-1.5 border-t border-surface-100 dark:border-surface-700">
+                            <button
+                              onClick={() => { logout(); setUserMenuOpen(false); }}
+                              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-accent-600 hover:bg-accent-50 dark:hover:bg-accent-500/10 w-full transition-all duration-200"
+                            >
+                              <LogOut className="w-4 h-4" />
+                              تسجيل خروج
+                            </button>
+                          </div>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Mobile: open user bottom sheet */}
                 <button
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+                  onClick={() => setUserMenuOpen(true)}
+                  className="md:hidden p-2 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-all duration-200"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-sm font-medium">
+                  <div className="w-7 h-7 rounded-full bg-primary-100 dark:bg-primary-500/20 flex items-center justify-center text-primary-600 dark:text-primary-400 text-xs font-semibold">
                     {user?.name?.charAt(0) || 'U'}
                   </div>
-                  <ChevronDown className="w-4 h-4 text-gray-500" />
                 </button>
-
-                <AnimatePresence>
-                  {userMenuOpen && (
-                    <>
-                      <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="hidden md:block absolute left-0 top-full mt-2 w-64 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl shadow-black/10 overflow-hidden"
-                      >
-                        <div className="p-4 border-b border-gray-100 dark:border-gray-800">
-                          <p className="font-medium text-gray-900 dark:text-white">{user?.name}</p>
-                          <p className="text-sm text-gray-500">{user?.email}</p>
-                        </div>
-                        <div className="p-2 max-h-[400px] overflow-y-auto">
-                          {[
-                            { href: '/auth/profile', label: 'الملف الشخصي', icon: User },
-                            { href: '/favorites', label: 'المفضلة', icon: Heart },
-                            { href: '/price-alerts', label: 'تنبيهات الأسعار', icon: Bell },
-                            { href: '/messages', label: 'الرسائل', icon: MessageCircle, badge: unreadCount },
-                            { href: '/my-cars', label: 'سياراتي', icon: Car },
-                            { href: '/my-garage', label: 'مرآبي', icon: Wrench },
-                            { href: '/my-auctions', label: 'مزاداتي', icon: Hammer },
-                            { href: '/my-bids', label: 'المزادات', icon: Gavel },
-                            { href: '/my-wants', label: 'إعلاناتي المطلوبة', icon: Tag },
-                            { href: '/my-services', label: 'خدماتي', icon: Wrench },
-                            { href: '/my-plates', label: 'لوحاتي', icon: BadgePercent },
-                            { href: '/parts', label: 'قطع غيار', icon: Cpu },
-                            { href: '/cars/add', label: 'إضافة سيارة', icon: Plus },
-                          ].map((item) => {
-                            const Icon = item.icon;
-                            return (
-                              <Link
-                                key={item.href}
-                                href={item.href}
-                                onClick={() => setUserMenuOpen(false)}
-                                className="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
-                              >
-                                <span className="flex items-center gap-3">
-                                  <Icon className="w-4 h-4" />
-                                  {item.label}
-                                </span>
-                                {item.badge ? (
-                                  <span className="w-5 h-5 rounded-full bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center">
-                                    {item.badge}
-                                  </span>
-                                ) : null}
-                              </Link>
-                            );
-                          })}
-                          {user?.role === 'ADMIN' && (
-                            <Link
-                              href="/admin"
-                              onClick={() => setUserMenuOpen(false)}
-                              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
-                            >
-                              <ShieldCheck className="w-4 h-4" />
-                              لوحة التحكم
-                            </Link>
-                          )}
-                        </div>
-                        <div className="p-2 border-t border-gray-100 dark:border-gray-800">
-                          <button
-                            onClick={() => { logout(); setUserMenuOpen(false); }}
-                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 w-full transition-all"
-                          >
-                            <LogOut className="w-4 h-4" />
-                            تسجيل خروج
-                          </button>
-                        </div>
-                      </motion.div>
-
-                      {createPortal(
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="md:hidden fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm"
-                          onClick={() => setUserMenuOpen(false)}
-                        >
-                          <motion.div
-                            initial={{ y: '100%' }}
-                            animate={{ y: 0 }}
-                            exit={{ y: '100%' }}
-                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                            className="absolute bottom-0 left-0 right-0 max-h-[85dvh] bg-white dark:bg-gray-900 rounded-t-3xl overflow-hidden flex flex-col"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
-                              <div>
-                                <p className="font-medium text-gray-900 dark:text-white">{user?.name}</p>
-                                <p className="text-sm text-gray-500">{user?.email}</p>
-                              </div>
-                              <button
-                                onClick={() => setUserMenuOpen(false)}
-                                className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800"
-                              >
-                                <X className="w-5 h-5 text-gray-500" />
-                              </button>
-                            </div>
-                            <div className="flex-1 overflow-y-auto overscroll-contain p-2">
-                              {[
-                                { href: '/auth/profile', label: 'الملف الشخصي', icon: User },
-                                { href: '/favorites', label: 'المفضلة', icon: Heart },
-                                { href: '/price-alerts', label: 'تنبيهات الأسعار', icon: Bell },
-                                { href: '/messages', label: 'الرسائل', icon: MessageCircle, badge: unreadCount },
-                                { href: '/my-cars', label: 'سياراتي', icon: Car },
-                                { href: '/my-garage', label: 'مرآبي', icon: Wrench },
-                                { href: '/my-auctions', label: 'مزاداتي', icon: Hammer },
-                                { href: '/my-bids', label: 'المزادات', icon: Gavel },
-                                { href: '/my-wants', label: 'إعلاناتي المطلوبة', icon: Tag },
-                                { href: '/my-services', label: 'خدماتي', icon: Wrench },
-                                { href: '/my-plates', label: 'لوحاتي', icon: BadgePercent },
-                                { href: '/parts', label: 'قطع غيار', icon: Cpu },
-                                { href: '/cars/add', label: 'إضافة سيارة', icon: Plus },
-                              ].map((item) => {
-                                const Icon = item.icon;
-                                return (
-                                  <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    onClick={() => setUserMenuOpen(false)}
-                                    className="flex items-center justify-between px-4 py-3 rounded-xl text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
-                                  >
-                                    <span className="flex items-center gap-3">
-                                      <Icon className="w-5 h-5" />
-                                      {item.label}
-                                    </span>
-                                    {item.badge ? (
-                                      <span className="w-5 h-5 rounded-full bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center">
-                                        {item.badge}
-                                      </span>
-                                    ) : null}
-                                  </Link>
-                                );
-                              })}
-                              {user?.role === 'ADMIN' && (
-                                <Link
-                                  href="/admin"
-                                  onClick={() => setUserMenuOpen(false)}
-                                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
-                                >
-                                  <ShieldCheck className="w-5 h-5" />
-                                  لوحة التحكم
-                                </Link>
-                              )}
-                            </div>
-                            <div className="p-2 border-t border-gray-100 dark:border-gray-800">
-                              <button
-                                onClick={() => { logout(); setUserMenuOpen(false); }}
-                                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 w-full transition-all"
-                              >
-                                <LogOut className="w-5 h-5" />
-                                تسجيل خروج
-                              </button>
-                            </div>
-                          </motion.div>
-                        </motion.div>,
-                        document.body
-                      )}
-                    </>
-                  )}
-                </AnimatePresence>
-              </div>
+              </>
             ) : (
-              <div className="flex items-center gap-2">
-                <Link href="/auth/login" className="btn-ghost text-sm">
-                  تسجيل دخول
+              <div className="hidden sm:flex items-center gap-1.5">
+                <Link href="/auth/login" className="px-3 py-1.5 rounded-lg text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-all duration-200">
+                  دخول
                 </Link>
-                <Link href="/auth/register" className="btn-primary text-sm !px-5 !py-2.5">
-                  إنشاء حساب
+                <Link href="/auth/register" className="btn-primary text-sm px-3 py-1.5">
+                  حساب جديد
                 </Link>
               </div>
             )}
 
+            {/* Sell button */}
             <Link
               href="/cars/add"
-              className="hidden lg:flex btn-primary text-sm !px-5 !py-2.5 gap-2"
+              className="hidden lg:flex items-center gap-1.5 btn-primary text-sm px-3 py-1.5"
             >
               <Plus className="w-4 h-4" />
               بيع سيارتك
             </Link>
 
+            {/* Mobile hamburger */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2.5 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+              className="lg:hidden p-2 rounded-lg text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800 transition-all duration-200"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -395,109 +335,205 @@ export function Header() {
         </div>
       </div>
 
-      {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 z-[95]">
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setMobileMenuOpen(false)}
-          />
-          <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="absolute bottom-0 left-0 right-0 max-h-[85dvh] bg-white dark:bg-gray-900 rounded-t-3xl overflow-hidden flex flex-col"
-          >
-            <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
-              <h3 className="font-semibold text-gray-900 dark:text-white">القائمة</h3>
-              <button
-                onClick={() => setMobileMenuOpen(false)}
-                className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto overscroll-contain p-2">
-              <form onSubmit={handleSearch} className="px-2 mb-3">
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="ابحث عن سيارتك..."
-                    className="w-full h-11 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 pl-11 pr-4 text-sm outline-none focus:border-blue-500"
-                  />
-                  <button type="submit" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                    <Search className="w-4 h-4" />
-                  </button>
+      {/* Mobile User Bottom Sheet */}
+      <AnimatePresence>
+        {userMenuOpen && isAuthenticated && (
+          <div className="md:hidden fixed inset-0 z-[96]">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-surface-900/50 backdrop-blur-sm"
+              onClick={() => setUserMenuOpen(false)}
+            />
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="absolute bottom-0 left-0 right-0 max-h-[80dvh] bg-white dark:bg-surface-900 rounded-t-3xl overflow-hidden flex flex-col shadow-soft-xl"
+            >
+              {/* Handle */}
+              <div className="flex justify-center pt-3 pb-1">
+                <div className="w-10 h-1 rounded-full bg-surface-300 dark:bg-surface-600" />
+              </div>
+
+              {/* User info */}
+              <div className="px-5 py-4 border-b border-surface-100 dark:border-surface-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-500/20 flex items-center justify-center text-primary-600 dark:text-primary-400 text-lg font-bold">
+                    {user?.name?.charAt(0) || 'U'}
+                  </div>
+                  <div>
+                    <p className="font-bold text-surface-900 dark:text-white">{user?.name}</p>
+                    <p className="text-sm text-surface-500 truncate">{user?.email}</p>
+                  </div>
                 </div>
-              </form>
-              <div className="space-y-1">
-                {[...primaryLinks, ...secondaryLinks].map((link) => {
-                  const Icon = link.icon;
+              </div>
+
+              {/* Menu items */}
+              <div className="flex-1 overflow-y-auto overscroll-contain p-3">
+                {userMenuItems.map((item) => {
+                  const Icon = item.icon;
                   return (
                     <Link
-                      key={link.href}
-                      href={link.href}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center justify-between px-4 py-3.5 rounded-xl text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 active:bg-surface-100 dark:active:bg-surface-700 transition-all duration-200"
                     >
-                      <Icon className="w-5 h-5" />
-                      {link.label}
+                      <span className="flex items-center gap-3">
+                        <Icon className="w-5 h-5 text-surface-400" />
+                        {item.label}
+                      </span>
+                      {item.badge ? (
+                        <span className="w-5 h-5 rounded-full bg-primary-500 text-white text-[10px] font-bold flex items-center justify-center">
+                          {item.badge}
+                        </span>
+                      ) : (
+                        <svg className="w-4 h-4 text-surface-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      )}
                     </Link>
                   );
                 })}
-                {isAuthenticated && (
-                  <>
-                    <div className="border-t border-gray-100 dark:border-gray-800 my-2" />
-                    <Link
-                      href="/auth/profile"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
-                    >
-                      <User className="w-5 h-5" />
-                      حسابي
-                    </Link>
-                    <Link
-                      href="/my-cars"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
-                    >
-                      <Car className="w-5 h-5" />
-                      سياراتي
-                    </Link>
-                    {user?.role === 'ADMIN' && (
-                      <Link
-                        href="/admin"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
-                      >
-                        <ShieldCheck className="w-5 h-5" />
-                        لوحة التحكم
-                      </Link>
-                    )}
-                  </>
+                {user?.role === 'ADMIN' && (
+                  <Link
+                    href="/admin"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-all duration-200"
+                  >
+                    <ShieldCheck className="w-5 h-5 text-surface-400" />
+                    لوحة التحكم
+                  </Link>
                 )}
               </div>
-            </div>
-          </motion.div>
-        </div>
-      )}
-    </header>
-  );
-}
 
-function Star(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-    </svg>
+              {/* Logout */}
+              <div className="p-3 border-t border-surface-100 dark:border-surface-800">
+                <button
+                  onClick={() => { logout(); setUserMenuOpen(false); }}
+                  className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-sm font-semibold text-accent-600 bg-accent-50 dark:bg-accent-500/10 hover:bg-accent-100 dark:hover:bg-accent-500/20 transition-all duration-200"
+                >
+                  <LogOut className="w-5 h-5" />
+                  تسجيل خروج
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile Menu (hamburger) */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <div className="lg:hidden fixed inset-0 z-[95]">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-surface-900/50 backdrop-blur-sm"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="absolute bottom-0 left-0 right-0 max-h-[85dvh] bg-white dark:bg-surface-900 rounded-t-3xl overflow-hidden flex flex-col shadow-soft-xl"
+            >
+              {/* Handle */}
+              <div className="flex justify-center pt-3 pb-1">
+                <div className="w-10 h-1 rounded-full bg-surface-300 dark:bg-surface-600" />
+              </div>
+
+              <div className="flex items-center justify-between px-5 py-3 border-b border-surface-100 dark:border-surface-800">
+                <h3 className="font-bold text-surface-900 dark:text-white">القائمة</h3>
+                <button onClick={() => setMobileMenuOpen(false)} className="p-2 -mr-2 rounded-xl hover:bg-surface-100 dark:hover:bg-surface-800">
+                  <X className="w-5 h-5 text-surface-500" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto overscroll-contain p-4">
+                {/* Search */}
+                <form onSubmit={handleSearch} className="mb-4">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="ابحث عن سيارة..."
+                      className="input-field pl-11 h-12"
+                    />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
+                  </div>
+                </form>
+
+                {/* Auth buttons */}
+                {!isAuthenticated && (
+                  <div className="flex gap-3 mb-4">
+                    <Link href="/auth/login" onClick={() => setMobileMenuOpen(false)} className="flex-1 h-11 btn-primary text-sm justify-center rounded-xl">
+                      تسجيل دخول
+                    </Link>
+                    <Link href="/auth/register" onClick={() => setMobileMenuOpen(false)} className="flex-1 h-11 btn-secondary text-sm justify-center rounded-xl">
+                      حساب جديد
+                    </Link>
+                  </div>
+                )}
+
+                {/* Quick actions for authenticated users */}
+                {isAuthenticated && (
+                  <div className="mb-3">
+                    <Link
+                      href="/cars/add"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center justify-center gap-2 w-full h-11 btn-primary text-sm rounded-xl"
+                    >
+                      <Plus className="w-4 h-4" />
+                      إضافة سيارة
+                    </Link>
+                  </div>
+                )}
+
+                {/* Links */}
+                <div className="space-y-0.5">
+                  {[...primaryLinks, ...secondaryLinks].map((link) => {
+                    const Icon = link.icon;
+                    const active = pathname === link.href || pathname.startsWith(link.href + '/');
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={cn(
+                          'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200',
+                          active
+                            ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10'
+                            : 'text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800'
+                        )}
+                      >
+                        <Icon className="w-5 h-5" />
+                        {link.label}
+                      </Link>
+                    );
+                  })}
+                  {user?.role === 'ADMIN' && (
+                    <Link
+                      href="/admin"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800 transition-all duration-200"
+                    >
+                      <ShieldCheck className="w-5 h-5" />
+                      لوحة التحكم
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </header>
   );
 }

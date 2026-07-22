@@ -41,6 +41,13 @@ model User {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
+  @@index([phone])
+  @@index([role])
+  @@index([isActive])
+  @@index([canPost])
+  @@index([createdAt])
+  @@index([name])
+
   cars          Car[]
   favorites     Favorite[]
   messagesSent          Message[]      @relation("SentMessages")
@@ -356,6 +363,15 @@ model Car {
   @@index([status])
   @@index([featured])
   @@index([createdAt])
+  @@index([fuelType])
+  @@index([transmission])
+  @@index([condition])
+  @@index([bodyType])
+  @@index([color])
+  @@index([kilometers])
+  @@index([brandId, modelId])
+  @@index([status, featured])
+  @@index([status, createdAt])
   @@map("cars")
 }
 
@@ -1341,6 +1357,8 @@ model Workshop {
   @@index([isBanned])
   @@index([rating])
   @@index([createdAt])
+  @@index([isVerified, isPaused, isBanned])
+  @@index([cityId, isVerified])
   @@map("workshops")
 }
 

@@ -4,7 +4,7 @@ ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL
 COPY package.json package-lock.json ./
 COPY prisma ./prisma/
-RUN npm ci --ignore-scripts
+RUN npm ci --ignore-scripts --legacy-peer-deps
 RUN npx prisma generate
 COPY . .
 RUN rm -rf tsconfig.tsbuildinfo .next

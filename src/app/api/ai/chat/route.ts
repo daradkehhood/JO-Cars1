@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { searchCars } from '@/lib/ai/search-cars';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { errorResponse } from '@/lib/api';
 
 const familyCars = ['SUV', 'CROSSOVER', 'VAN', 'MINIVAN', 'WAGON'];
 const economyTypes = ['PETROL', 'HYBRID'];
@@ -68,6 +70,10 @@ function formatResponse(query: string, cars: any[], budget: number | null): { me
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rateLimit = checkRateLimit(`ai-chat:${ip}`, RATE_LIMITS.AI);
+    if (!rateLimit.allowed) return errorResponse('تم تجاوز الحد المسموح', 429);
+
     const { messages } = await request.json();
     const query = messages?.[messages.length - 1]?.content || '';
     if (!query.trim()) {

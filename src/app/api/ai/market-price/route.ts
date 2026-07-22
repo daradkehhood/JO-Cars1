@@ -1,8 +1,15 @@
 import { NextRequest } from 'next/server';
 import { getMarketPrices } from '@/lib/market-scrape';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rateLimit = checkRateLimit(`ai-market:${ip}`, RATE_LIMITS.AI);
+    if (!rateLimit.allowed) {
+      return Response.json({ success: false, error: 'تم تجاوز الحد المسموح' }, { status: 429 });
+    }
+
     const { brand, model, year, kilometers, condition } = await request.json();
 
     if (!brand || !year) {

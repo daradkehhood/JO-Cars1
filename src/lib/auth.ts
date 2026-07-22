@@ -80,6 +80,10 @@ export async function authenticateRequest(request: NextRequest) {
     },
   });
 
+  if (!user) return null;
+  if (!user.isActive) return null;
+  if (user.banStatus && user.banUntil && new Date(user.banUntil) > new Date()) return null;
+
   return user;
 }
 

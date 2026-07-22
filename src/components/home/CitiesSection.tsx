@@ -39,7 +39,6 @@ export function CitiesSection() {
       })
       .catch(e => {
         if (cancelled) return;
-        console.error('Cities fetch error:', e);
         setError('تعذّر الاتصال بالخادم. حاول مرة أخرى.');
       })
       .finally(() => {
@@ -57,15 +56,11 @@ export function CitiesSection() {
 
   if (error) {
     return (
-      <section className="py-16">
+      <section className="py-16 sm:py-20">
         <div className="container-custom text-center">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-500 mb-2">{error}</p>
-          <p className="text-sm text-gray-500 mb-4">تأكّد من اتصالك بالإنترنت ومن تشغيل المنصة.</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-          >
+          <AlertCircle className="w-12 h-12 text-accent-400 mx-auto mb-4" />
+          <p className="text-accent-600 dark:text-accent-400 mb-2">{error}</p>
+          <button onClick={() => window.location.reload()} className="btn-primary mt-2">
             إعادة المحاولة
           </button>
         </div>
@@ -75,10 +70,10 @@ export function CitiesSection() {
 
   if (loading) {
     return (
-      <section className="py-16">
+      <section className="py-16 sm:py-20">
         <div className="container-custom text-center">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-500">جاري تحميل المحافظات...</p>
+          <div className="w-10 h-10 border-2 border-primary-200 border-t-primary-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-surface-500 text-sm">جاري تحميل المحافظات...</p>
         </div>
       </section>
     );
@@ -86,11 +81,11 @@ export function CitiesSection() {
 
   if (cities.length === 0) {
     return (
-      <section className="py-16">
+      <section className="py-16 sm:py-20">
         <div className="container-custom text-center">
-          <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <MapPin className="w-12 h-12 text-surface-300 mx-auto mb-4" />
           <h2 className="section-title">السيارات حسب المحافظة</h2>
-          <p className="text-gray-500">لا توجد محافظات متاحة حالياً.</p>
+          <p className="text-surface-500 text-sm">لا توجد محافظات متاحة حالياً.</p>
         </div>
       </section>
     );
@@ -100,45 +95,46 @@ export function CitiesSection() {
   const hasMore = cities.length > INITIAL_COUNT;
 
   return (
-    <section className="py-16">
+    <section className="py-16 sm:py-20 bg-surface-50/50 dark:bg-surface-900/50">
       <div className="container-custom">
         <div className="text-center mb-10">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <MapPin className="w-5 h-5 text-blue-500" />
-            <span className="text-sm font-medium text-blue-500">المحافظات</span>
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-500/10 flex items-center justify-center">
+              <MapPin className="w-4 h-4 text-primary-500" />
+            </div>
+            <span className="text-sm font-semibold text-primary-600 dark:text-primary-400">المحافظات</span>
           </div>
-          <h2 className="section-title">السيارات حسب المحافظة</h2>
+          <h2 className="section-title">تصفح حسب المحافظة</h2>
           <p className="section-subtitle">اعثر على سيارتك في محافظتك</p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-h-[calc(8*84px)] overflow-hidden">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {displayCities.map((city, i) => (
             <motion.div
               key={city.slug || city.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.04 }}
             >
               <Link
                 href={`/cars?cityId=${city.id}`}
-                className="flex items-center justify-between p-5 rounded-2xl bg-white dark:bg-gray-900/80 border border-gray-100 dark:border-gray-800 hover:border-blue-200 dark:hover:border-blue-500/20 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group"
+                className="group flex items-center justify-between p-4 rounded-xl bg-white dark:bg-surface-800 border border-surface-100 dark:border-surface-700 hover:border-primary-200 dark:hover:border-primary-800 hover:shadow-soft transition-all duration-200"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20 transition-colors">
-                    <MapPin className="w-5 h-5 text-blue-500" />
+                  <div className="w-10 h-10 rounded-xl bg-surface-50 dark:bg-surface-700 flex items-center justify-center group-hover:bg-primary-50 dark:group-hover:bg-primary-500/10 transition-colors duration-200">
+                    <MapPin className="w-4.5 h-4.5 text-primary-500" />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900 dark:text-white group-hover:text-blue-500 transition-colors">
+                    <p className="font-semibold text-surface-900 dark:text-white text-sm group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-200">
                       {city.nameAr}
                     </p>
-                    <p className="text-xs text-gray-400">{city._count?.cars || 0} سيارة</p>
+                    <p className="text-xs text-surface-500">{city._count?.cars || 0} سيارة</p>
                   </div>
                 </div>
-                <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-800 flex items-center justify-center group-hover:bg-blue-50 dark:group-hover:bg-blue-500/10 transition-colors">
-                  <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
+                <svg className="w-4 h-4 text-surface-400 group-hover:text-primary-500 transition-colors duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </Link>
             </motion.div>
           ))}
@@ -148,10 +144,10 @@ export function CitiesSection() {
           <div className="text-center mt-8">
             <button
               onClick={() => setShowAll(!showAll)}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-blue-200 dark:hover:border-blue-500/20 hover:shadow-lg transition-all duration-300 text-blue-600 dark:text-blue-400 font-medium"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-sm font-medium text-surface-700 dark:text-surface-300 hover:border-primary-200 dark:hover:border-primary-800 hover:shadow-soft transition-all duration-200"
             >
               {showAll ? 'إظهار أقل' : 'المزيد من المحافظات'}
-              <ChevronDown className={`w-5 h-5 transition-transform ${showAll ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showAll ? 'rotate-180' : ''}`} />
             </button>
           </div>
         )}

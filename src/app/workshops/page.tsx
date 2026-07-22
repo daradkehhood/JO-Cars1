@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, SlidersHorizontal, X, MapPin, Star, Wrench, Store,
   Filter, DollarSign, Calendar, MessageCircle, ChevronDown,
@@ -152,12 +152,43 @@ export default function WorkshopsPage() {
             </div>
           </div>
 
-          {/* Advanced Filters */}
+          {/* Mobile Filter Chips */}
+          <div className="md:hidden mt-3 flex flex-wrap gap-2">
+            {activeFilterCount > 0 && (
+              <button
+                onClick={resetFilters}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-400 bg-red-900/20 rounded-full"
+              >
+                <X className="w-3 h-3" />
+                مسح الكل
+              </button>
+            )}
+            {filterService && (
+              <button
+                onClick={() => { setFilterService(''); setPage(1); }}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-[#0084ff] bg-[#0084ff]/10 rounded-full"
+              >
+                {filterService}
+                <X className="w-3 h-3" />
+              </button>
+            )}
+            {filterProvince && (
+              <button
+                onClick={() => { setFilterProvince(''); setPage(1); }}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-[#0084ff] bg-[#0084ff]/10 rounded-full"
+              >
+                {filterProvince}
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+
+          {/* Advanced Filters - Desktop */}
           {showFilters && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-4 p-5 rounded-xl border border-gray-700 bg-[#16213e]"
+              className="hidden md:block mt-4 p-5 rounded-xl border border-gray-700 bg-[#16213e]"
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-white font-semibold flex items-center gap-2">
@@ -210,6 +241,82 @@ export default function WorkshopsPage() {
               </div>
             </motion.div>
           )}
+
+          {/* Advanced Filters - Mobile Bottom Sheet */}
+          <AnimatePresence>
+            {showFilters && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 md:hidden"
+              >
+                <div className="absolute inset-0 bg-black/50" onClick={() => setShowFilters(false)} />
+                <motion.div
+                  initial={{ y: '100%' }}
+                  animate={{ y: 0 }}
+                  exit={{ y: '100%' }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                  className="absolute bottom-0 left-0 right-0 bg-[#1a1a2e] rounded-t-3xl max-h-[80vh] overflow-y-auto"
+                >
+                  <div className="sticky top-0 bg-[#1a1a2e] p-4 border-b border-gray-700">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-white font-semibold">فلاتر متقدمة</h3>
+                      <button onClick={() => setShowFilters(false)} className="p-2 hover:bg-gray-800 rounded-full">
+                        <X className="w-5 h-5 text-gray-400" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="p-4 space-y-4">
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">نوع الخدمة</label>
+                      <select
+                        value={filterService}
+                        onChange={(e) => { setFilterService(e.target.value); setPage(1); }}
+                        className="w-full h-12 px-3 rounded-lg border border-gray-700 bg-[#0f3460] text-white text-sm outline-none focus:border-[#0084ff]"
+                      >
+                        <option value="">كل الخدمات</option>
+                        {SERVICE_OPTIONS.map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">المحافظة</label>
+                      <select
+                        value={filterProvince}
+                        onChange={(e) => { setFilterProvince(e.target.value); setPage(1); }}
+                        className="w-full h-12 px-3 rounded-lg border border-gray-700 bg-[#0f3460] text-white text-sm outline-none focus:border-[#0084ff]"
+                      >
+                        <option value="">كل المحافظات</option>
+                        <option value="عمّان">عمّان</option>
+                        <option value="إربد">إربد</option>
+                        <option value="الزرقاء">الزرقاء</option>
+                        <option value="العقبة">العقبة</option>
+                        <option value="البلقاء">البلقاء</option>
+                        <option value="الكرك">الكرك</option>
+                        <option value="المفرق">المفرق</option>
+                        <option value="معان">معان</option>
+                        <option value="الطفيلة">الطفيلة</option>
+                        <option value="الجبلة">الجبلة</option>
+                        <option value="عجلون">عجلون</option>
+                        <option value="جرش">جرش</option>
+                        <option value="المADABA">مادبا</option>
+                      </select>
+                    </div>
+                    <div className="sticky bottom-0 bg-[#1a1a2e] pt-4 pb-2">
+                      <button
+                        onClick={() => { setPage(1); setShowFilters(false); }}
+                        className="w-full py-3 bg-[#0084ff] text-white rounded-xl text-sm font-medium hover:bg-[#006cd9] transition-colors"
+                      >
+                        تطبيق الفلاتر
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Results Count */}

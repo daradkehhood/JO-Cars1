@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import Image from 'next/image';
-import { ChevronLeft, Building2 } from 'lucide-react';
+import { Building2 } from 'lucide-react';
 import type { Brand } from '@/types';
 
 export function BrandsSection() {
@@ -28,44 +27,47 @@ export function BrandsSection() {
     { id: '8', nameAr: 'ميتسوبيشي', slug: 'mitsubishi', logo: null },
     { id: '9', nameAr: 'شيفروليه', slug: 'chevrolet', logo: null },
     { id: '10', nameAr: 'فورد', slug: 'ford', logo: null },
-    { id: '11', nameAr: 'هيونداي', slug: 'hyundai', logo: null },
-    { id: '12', nameAr: 'لكزس', slug: 'lexus', logo: null },
+    { id: '11', nameAr: 'لكزس', slug: 'lexus', logo: null },
+    { id: '12', nameAr: 'لاند روفر', slug: 'land-rover', logo: null },
   ];
 
   const displayBrands = brands.length > 0 ? brands : defaultBrands;
 
   return (
-    <section className="py-16 bg-gray-50/50 dark:bg-gray-900/30">
+    <section className="py-16 sm:py-20">
       <div className="container-custom">
-        <div className="flex items-center justify-between mb-10">
+        <div className="flex items-end justify-between mb-10">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Building2 className="w-5 h-5 text-blue-500" />
-              <span className="text-sm font-medium text-blue-500">الشركات</span>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-500/10 flex items-center justify-center">
+                <Building2 className="w-4 h-4 text-primary-500" />
+              </div>
+              <span className="text-sm font-semibold text-primary-600 dark:text-primary-400">الماركات</span>
             </div>
-            <h2 className="section-title">السيارات حسب الشركة</h2>
-            <p className="section-subtitle">تصفح السيارات حسب الشركة المصنعة</p>
+            <h2 className="section-title">تصفح حسب الماركة</h2>
+            <p className="section-subtitle">اختر الماركة المفضلة لديك</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4">
           {displayBrands.map((brand, i) => (
             <motion.div
               key={brand.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.04 }}
             >
               <Link
                 href={`/cars?brandId=${brand.slug}`}
-                className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-white dark:bg-gray-900/80 border border-gray-100 dark:border-gray-800 hover:border-blue-200 dark:hover:border-blue-500/20 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 text-center group"
+                className="group flex flex-col items-center gap-3 p-5 sm:p-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-100 dark:border-surface-700 hover:border-primary-200 dark:hover:border-primary-800 hover:shadow-soft transition-all duration-200 text-center"
               >
-                <div className="w-16 h-16 rounded-xl bg-gray-50 dark:bg-gray-800 flex items-center justify-center group-hover:bg-blue-50 dark:group-hover:bg-blue-500/5 transition-colors">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg">
+                <div className="w-14 h-14 rounded-xl bg-surface-50 dark:bg-surface-700 flex items-center justify-center group-hover:bg-primary-50 dark:group-hover:bg-primary-500/10 transition-colors duration-200">
+                  <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-500/20 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold text-lg">
                     {brand.nameAr?.charAt(0) || 'B'}
                   </div>
                 </div>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-500 transition-colors">
+                <span className="text-sm font-medium text-surface-700 dark:text-surface-300 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-200">
                   {brand.nameAr}
                 </span>
               </Link>

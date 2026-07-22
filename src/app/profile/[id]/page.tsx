@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Star, MapPin, Calendar, Car, MessageCircle, Shield, Store, ChevronLeft } from 'lucide-react';
+import { Star, MapPin, Calendar, Car, MessageCircle, Shield, Store, ChevronLeft, Phone, Share2 } from 'lucide-react';
 import Link from 'next/link';
 import { CarCard } from '@/components/cars/CarCard';
+import { BadgeDisplay } from '@/components/badges/BadgeDisplay';
 
 interface UserProfile {
   id: string;
@@ -15,10 +16,12 @@ interface UserProfile {
   dealerLogo: string | null;
   dealerDescription: string | null;
   dealerAddress: string | null;
+  phone: string | null;
   rating: number;
   ratingCount: number;
   createdAt: string;
   role: string;
+  badges: any;
   _count: { cars: number; favorites: number; forumTopics: number; forumPosts: number };
 }
 
@@ -96,14 +99,53 @@ export default function PublicProfilePage() {
                     <span className="text-sm text-blue-500 font-medium">{profile.dealerName}</span>
                   </div>
                 )}
+                <div className="flex items-center gap-2 justify-center sm:justify-start mt-2">
+                  <BadgeDisplay badges={profile.badges} />
+                </div>
               </div>
               <div className="flex items-center gap-3 pb-1">
+                {profile.phone && (
+                  <a href={`tel:${profile.phone}`}
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                    <Phone className="w-4 h-4" />
+                  </a>
+                )}
                 <Link href={`/messages?userId=${profile.id}`}
                   className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors">
                   <MessageCircle className="w-4 h-4" /> تواصل
                 </Link>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Mobile Contact Bar */}
+        <div className="md:hidden card p-4 mt-4">
+          <div className="flex items-center gap-3">
+            {profile.phone && (
+              <a href={`tel:${profile.phone}`}
+                className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-600 text-white rounded-xl text-sm font-medium">
+                <Phone className="w-4 h-4" />
+                اتصل
+              </a>
+            )}
+            <Link href={`/messages?userId=${profile.id}`}
+              className="flex-1 flex items-center justify-center gap-2 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium">
+              <MessageCircle className="w-4 h-4" />
+              رسالة
+            </Link>
+            <button
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({ title: profile.name, url: window.location.href });
+                } else {
+                  navigator.clipboard.writeText(window.location.href);
+                }
+              }}
+              className="flex items-center justify-center w-12 h-12 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl"
+            >
+              <Share2 className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
@@ -170,16 +212,16 @@ export default function PublicProfilePage() {
                       r.rater?.name?.charAt(0) || 'U'
                     )}
                   </div>
-                  <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">{r.rater?.name}</span>
-                        <div className="flex items-center gap-0.5">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <Star key={i} className={`w-3 h-3 ${i < r.score ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
-                          ))}
-                        </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white truncate">{r.rater?.name}</span>
+                      <div className="flex items-center gap-0.5 flex-shrink-0">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star key={i} className={`w-3 h-3 ${i < r.score ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
+                        ))}
                       </div>
-                    {r.comment && <p className="text-sm text-gray-500 mt-1">{r.comment}</p>}
+                    </div>
+                    {r.comment && <p className="text-sm text-gray-500 mt-1 line-clamp-2">{r.comment}</p>}
                   </div>
                 </div>
               ))}

@@ -1,8 +1,14 @@
 import { NextRequest } from 'next/server';
 import { analyzeCarPrice, type CarData } from '@/ai/price-analysis';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { errorResponse } from '@/lib/api';
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rateLimit = checkRateLimit(`ai-analysis:${ip}`, RATE_LIMITS.AI);
+    if (!rateLimit.allowed) return errorResponse('تم تجاوز الحد المسموح', 429);
+
     const body = await request.json();
     const carData: CarData = {
       brand: body.brand || '',

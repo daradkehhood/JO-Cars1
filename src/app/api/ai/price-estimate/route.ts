@@ -2,9 +2,14 @@ import { NextRequest } from 'next/server';
 import { priceEstimator } from '@/ai/price-estimator';
 import { successResponse, errorResponse } from '@/lib/api';
 import prisma from '@/lib/prisma';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rateLimit = checkRateLimit(`ai-price:${ip}`, RATE_LIMITS.AI);
+    if (!rateLimit.allowed) return errorResponse('تم تجاوز الحد المسموح', 429);
+
     const body = await request.json();
     const { brandId, modelId, year, kilometers, condition, cityId } = body;
 

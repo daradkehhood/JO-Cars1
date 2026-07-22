@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'crypto';
 
 const CSRF_SECRET = process.env.CSRF_SECRET || process.env.JWT_SECRET || 'csrf-fallback-secret';
 
@@ -17,7 +17,10 @@ export function verifyCSRFToken(token: string): boolean {
     const [rawToken, timestamp, signature] = parts;
     const payload = `${rawToken}:${timestamp}`;
     const expectedSignature = createHash('sha256').update(`${payload}:${CSRF_SECRET}`).digest('hex');
-    if (signature !== expectedSignature) return false;
+    const sigBuffer = Buffer.from(signature, 'hex');
+    const expectedBuffer = Buffer.from(expectedSignature, 'hex');
+    if (sigBuffer.length !== expectedBuffer.length) return false;
+    if (!timingSafeEqual(sigBuffer, expectedBuffer)) return false;
     const tokenAge = Date.now() - parseInt(timestamp);
     if (tokenAge > 60 * 60 * 1000) return false;
     return true;

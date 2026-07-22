@@ -2,9 +2,14 @@ import { NextRequest } from 'next/server';
 import { smartSearch } from '@/ai/smart-search';
 import prisma from '@/lib/prisma';
 import { successResponse, errorResponse } from '@/lib/api';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rateLimit = checkRateLimit(`ai-search:${ip}`, RATE_LIMITS.AI);
+    if (!rateLimit.allowed) return errorResponse('تم تجاوز الحد المسموح', 429);
+
     const { query } = await request.json();
     if (!query?.trim()) return errorResponse('الرجاء إدخال نص البحث');
 

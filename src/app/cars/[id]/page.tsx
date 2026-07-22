@@ -160,7 +160,7 @@ export default function CarDetailPage() {
     <div className="min-h-screen pb-16">
       <div className="container-custom">
         {/* Image Gallery */}
-        <div className="relative h-[70vh] min-h-[400px] rounded-3xl overflow-hidden mb-8 mt-4 group cursor-pointer" onClick={() => { setLightboxIndex(currentImage); setLightboxOpen(true); }}>
+        <div className="relative h-[50vh] md:h-[70vh] min-h-[300px] md:min-h-[400px] rounded-3xl overflow-hidden mb-8 mt-4 cursor-pointer" onClick={() => { setLightboxIndex(currentImage); setLightboxOpen(true); }}>
           {allImages.length > 0 ? (
             <>
               <Image
@@ -173,7 +173,7 @@ export default function CarDetailPage() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
 
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute top-4 left-1/2 -translate-x-1/2">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-sm text-white text-xs">
                   <Maximize2 className="w-3.5 h-3.5" />
                   <span>اضغط للعرض بالكامل</span>
@@ -182,12 +182,12 @@ export default function CarDetailPage() {
 
               {allImages.length > 1 && (
                 <>
-                  <button onClick={() => setCurrentImage(prev => (prev - 1 + allImages.length) % allImages.length)}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all hover:bg-white/30">
+                  <button onClick={(e) => { e.stopPropagation(); setCurrentImage(prev => (prev - 1 + allImages.length) % allImages.length); }}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white transition-all hover:bg-white/30">
                     <ChevronLeft className="w-5 h-5" />
                   </button>
-                  <button onClick={() => setCurrentImage(prev => (prev + 1) % allImages.length)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all hover:bg-white/30">
+                  <button onClick={(e) => { e.stopPropagation(); setCurrentImage(prev => (prev + 1) % allImages.length); }}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white transition-all hover:bg-white/30">
                     <ChevronRight className="w-5 h-5" />
                   </button>
                 </>
@@ -195,7 +195,7 @@ export default function CarDetailPage() {
 
               <div className="absolute bottom-4 right-4 flex items-center gap-2">
                 {allImages.slice(0, 5).map((_, i) => (
-                  <button key={i} onClick={() => setCurrentImage(i)}
+                  <button key={i} onClick={(e) => { e.stopPropagation(); setCurrentImage(i); }}
                     className={`w-2 h-2 rounded-full transition-all ${i === currentImage ? 'w-6 bg-white' : 'bg-white/50'}`} />
                 ))}
                 {allImages.length > 5 && (
@@ -229,7 +229,7 @@ export default function CarDetailPage() {
           {allImages.length > 1 && (
             <div className="absolute bottom-4 left-4 flex gap-2 max-w-[60%] overflow-x-auto scrollbar-hide">
               {allImages.map((img, i) => (
-                <button key={i} onClick={() => setCurrentImage(i)}
+                <button key={i} onClick={(e) => { e.stopPropagation(); setCurrentImage(i); }}
                   className={`flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all ${
                     i === currentImage ? 'border-white shadow-lg' : 'border-transparent opacity-60 hover:opacity-80'
                   }`}>
@@ -275,7 +275,70 @@ export default function CarDetailPage() {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2 mt-4">
+                {/* Mobile Action Buttons */}
+                <div className="mt-4 space-y-3 md:hidden">
+                  {/* Primary Actions */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button className="w-full" icon={<Phone className="w-4 h-4" />} onClick={() => window.location.href = `tel:${car.phone}`}>
+                      اتصل
+                    </Button>
+                    {car.whatsapp && (
+                      <Button variant="secondary" className="w-full" icon={<MessageCircle className="w-4 h-4" />}
+                        onClick={() => window.open(`https://wa.me/${car.whatsapp}`, '_blank')}>
+                        واتساب
+                      </Button>
+                    )}
+                  </div>
+                  {/* Secondary Actions */}
+                  <div className="grid grid-cols-4 gap-2">
+                    <button
+                      onClick={async () => {
+                        const prev = isSaved;
+                        setIsSaved(!isSaved);
+                        try {
+                          const res = await fetch('/api/cars/favorites', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ carId: car.id }),
+                          });
+                          const data = await res.json();
+                          if (!data.success) setIsSaved(prev);
+                        } catch { setIsSaved(prev); }
+                      }}
+                      className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${isSaved ? 'text-red-500 bg-red-50 dark:bg-red-900/20' : 'text-gray-500 bg-gray-50 dark:bg-gray-800/50'}`}
+                    >
+                      <Heart className={`w-5 h-5 ${isSaved ? 'fill-red-500' : ''}`} />
+                      <span className="text-[10px]">{isSaved ? 'محفوظة' : 'حفظ'}</span>
+                    </button>
+                    <button
+                      onClick={handleShare}
+                      className="flex flex-col items-center gap-1 p-2 rounded-xl text-gray-500 bg-gray-50 dark:bg-gray-800/50"
+                    >
+                      <Share2 className="w-5 h-5" />
+                      <span className="text-[10px]">مشاركة</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (inCompare) { removeCar(car.id); toast.success('تم إزالة السيارة من المقارنة'); }
+                        else { addCar(car); toast.success('تم إضافة السيارة للمقارنة'); }
+                      }}
+                      className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${inCompare ? 'text-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-500 bg-gray-50 dark:bg-gray-800/50'}`}
+                    >
+                      {inCompare ? <CheckCircle className="w-5 h-5" /> : <GitCompare className="w-5 h-5" />}
+                      <span className="text-[10px]">{inCompare ? 'مُضافة' : 'مقارنة'}</span>
+                    </button>
+                    <button
+                      onClick={() => setReportOpen(true)}
+                      className="flex flex-col items-center gap-1 p-2 rounded-xl text-gray-500 bg-gray-50 dark:bg-gray-800/50"
+                    >
+                      <Flag className="w-5 h-5" />
+                      <span className="text-[10px]">إبلاغ</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Desktop Action Buttons */}
+                <div className="hidden md:flex flex-wrap gap-2 mt-4">
                   <Button icon={<Phone className="w-4 h-4" />} onClick={() => window.location.href = `tel:${car.phone}`}>
                     {car.phone}
                   </Button>
@@ -489,15 +552,15 @@ export default function CarDetailPage() {
                     )}
                   </div>
                 </Link>
-                  <div>
-                    <Link href={`/profile/${car.user.id}`}>
-                      <p className="font-semibold text-gray-900 dark:text-white hover:text-blue-500 transition-colors">{car.user?.dealerName || car.user?.name}</p>
-                    </Link>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <BadgeDisplay badges={(car.user as any)?.badges} />
-                      {car.user?.dealerName && <p className="text-xs text-gray-500">تاجر معتمد</p>}
-                    </div>
+                <div className="flex-1 min-w-0">
+                  <Link href={`/profile/${car.user.id}`}>
+                    <p className="font-semibold text-gray-900 dark:text-white hover:text-blue-500 transition-colors truncate">{car.user?.dealerName || car.user?.name}</p>
+                  </Link>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <BadgeDisplay badges={(car.user as any)?.badges} />
+                    {car.user?.dealerName && <p className="text-xs text-gray-500">تاجر معتمد</p>}
                   </div>
+                </div>
               </div>
 
               {car.user?.rating && car.user.rating > 0 && (
@@ -574,12 +637,12 @@ export default function CarDetailPage() {
               )}
 
               <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 space-y-2">
-                  <Link href={`/profile/${car.user.id}`}
+                <Link href={`/profile/${car.user.id}`}
                   className="flex items-center justify-between text-sm text-blue-500 hover:text-blue-600 transition-colors">
                   <span>عرض الملف الشخصي</span>
                   <ChevronLeft className="w-4 h-4" />
                 </Link>
-                  <Link href={`/dealers/${car.user.id}`}
+                <Link href={`/dealers/${car.user.id}`}
                   className="flex items-center justify-between text-sm text-blue-500 hover:text-blue-600 transition-colors">
                   <span>جميع سيارات {car.user?.dealerName || car.user?.name}</span>
                   <ChevronLeft className="w-4 h-4" />

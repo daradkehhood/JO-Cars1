@@ -1,9 +1,14 @@
 import { NextRequest } from 'next/server';
 import { descriptionGenerator } from '@/ai/description-generator';
 import { successResponse, errorResponse } from '@/lib/api';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rateLimit = checkRateLimit(`ai-desc:${ip}`, RATE_LIMITS.AI);
+    if (!rateLimit.allowed) return errorResponse('تم تجاوز الحد المسموح', 429);
+
     const body = await request.json();
     const result = await descriptionGenerator.process({
       brand: body.brandName || '',

@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { CarGrid } from '@/components/cars/CarGrid';
-import { ChevronLeft, Sparkles } from 'lucide-react';
+import { ArrowLeft, Star } from 'lucide-react';
 import type { Car } from '@/types';
 
 export function FeaturedCars() {
@@ -22,28 +21,39 @@ export function FeaturedCars() {
   }, []);
 
   return (
-    <section className="py-16 relative">
-      <div className="absolute inset-0 bg-gradient-to-b from-blue-50/30 to-transparent dark:from-blue-950/10 dark:to-transparent" />
-      <div className="container-custom relative">
-        <div className="flex items-center justify-between mb-10">
+    <section className="py-16 sm:py-20">
+      <div className="container-custom">
+        <div className="flex items-end justify-between mb-10">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="w-5 h-5 text-amber-500" />
-              <span className="text-sm font-medium text-amber-500">مميزة</span>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-warning-50 dark:bg-warning-500/10 flex items-center justify-center">
+                <Star className="w-4 h-4 text-warning-500 fill-warning-500" />
+              </div>
+              <span className="text-sm font-semibold text-warning-600 dark:text-warning-400">مميزة</span>
             </div>
             <h2 className="section-title">السيارات المميزة</h2>
             <p className="section-subtitle">أفضل العروض من الوكلاء والمعارض الموثوقة</p>
           </div>
           <Link
             href="/cars?featured=true"
-            className="hidden sm:flex items-center gap-2 text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors"
+            className="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
           >
             عرض الكل
-            <ChevronLeft className="w-4 h-4" />
+            <ArrowLeft className="w-4 h-4" />
           </Link>
         </div>
 
         <CarGrid cars={cars} featured loading={loading} />
+
+        <div className="sm:hidden mt-6 text-center">
+          <Link
+            href="/cars?featured=true"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 dark:text-primary-400"
+          >
+            عرض الكل
+            <ArrowLeft className="w-4 h-4" />
+          </Link>
+        </div>
       </div>
     </section>
   );

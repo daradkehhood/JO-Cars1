@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Store, Phone, MapPin, ChevronLeft, Search } from 'lucide-react';
+import { Store, Phone, MapPin, ChevronLeft, Search, Star, Shield, BadgeCheck } from 'lucide-react';
 import type { User } from '@/types';
 import { BadgeDisplay } from '@/components/badges/BadgeDisplay';
 import { StarRating } from '@/components/ratings/StarRating';
@@ -11,6 +11,7 @@ import { StarRating } from '@/components/ratings/StarRating';
 export default function DealersPage() {
   const [dealers, setDealers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetch('/api/dealers')
@@ -19,15 +20,35 @@ export default function DealersPage() {
       .catch(() => setLoading(false));
   }, []);
 
+  const filteredDealers = dealers.filter(dealer => {
+    if (!searchQuery) return true;
+    const name = dealer.dealerName || dealer.name || '';
+    return name.includes(searchQuery) || dealer.dealerAddress?.includes(searchQuery);
+  });
+
   return (
     <div className="min-h-screen py-8">
       <div className="container-custom">
+        {/* Header */}
         <div className="text-center mb-12">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-400 flex items-center justify-center mx-auto mb-4 shadow-lg">
             <Store className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">الوكلاء والمعارض</h1>
           <p className="text-gray-500 mt-2">تصفح الوكلاء والمعارض المعتمدين</p>
+        </div>
+
+        {/* Mobile Search */}
+        <div className="md:hidden mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="ابحث عن وكيل..."
+              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/50 pl-10 pr-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+            />
+          </div>
         </div>
 
         {loading ? (
@@ -44,9 +65,14 @@ export default function DealersPage() {
               </div>
             ))}
           </div>
+        ) : filteredDealers.length === 0 ? (
+          <div className="text-center py-12">
+            <Store className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500">لا يوجد وكلاء حالياً</p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {dealers.map((dealer, i) => (
+            {filteredDealers.map((dealer, i) => (
               <motion.div key={dealer.id}
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
                 <Link href={`/dealers/${dealer.id}`} className="card p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 block group">

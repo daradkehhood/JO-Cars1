@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { successResponse, errorResponse } from '@/lib/api';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 const familyCars = ['SUV', 'CROSSOVER', 'VAN', 'MINIVAN', 'WAGON'];
 const economyTypes = ['PETROL', 'HYBRID'];
@@ -38,6 +39,10 @@ function getModelNameAr(model: { nameAr: string; nameEn: string }) {
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rateLimit = checkRateLimit(`ai-purchase:${ip}`, RATE_LIMITS.AI);
+    if (!rateLimit.allowed) return errorResponse('تم تجاوز الحد المسموح', 429);
+
     const { query } = await request.json();
     if (!query?.trim()) return errorResponse('الرجاء إدخال طلبك');
 

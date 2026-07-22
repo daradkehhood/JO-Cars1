@@ -65,8 +65,19 @@ export async function DELETE(request: NextRequest) {
   if (!user || user.role !== 'ADMIN') return unauthorizedResponse();
 
   try {
-    await prisma.article.deleteMany({});
-    return successResponse({ message: 'تم حذف جميع المقالات' });
+    const body = await request.json().catch(() => ({}));
+    const { ids } = body as { ids?: string[] };
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return errorResponse('يجب تحديد المقالات المراد حذفها');
+    }
+
+    if (ids.length > 50) {
+      return errorResponse('لا يمكن حذف أكثر من 50 مقالة في مرة واحدة');
+    }
+
+    await prisma.article.deleteMany({ where: { id: { in: ids } } });
+    return successResponse({ message: `تم حذف ${ids.length} مقالة` });
   } catch (error) {
     return errorResponse('فشل حذف المقالات', 500);
   }

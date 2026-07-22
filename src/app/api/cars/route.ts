@@ -78,8 +78,10 @@ export async function GET(request: NextRequest) {
   }
 
   const orderBy: Record<string, string> = {};
-  const sortBy = searchParams.get('sortBy') || 'createdAt';
-  const sortOrder = searchParams.get('sortOrder') || 'desc';
+  const allowedSortFields = ['createdAt', 'price', 'year', 'kilometers', 'views', 'featured'];
+  const allowedSortOrders = ['asc', 'desc'];
+  const sortBy = allowedSortFields.includes(searchParams.get('sortBy') || '') ? searchParams.get('sortBy')! : 'createdAt';
+  const sortOrder = allowedSortOrders.includes(searchParams.get('sortOrder') || '') ? searchParams.get('sortOrder')! : 'desc';
   orderBy[sortBy] = sortOrder;
 
   const user = await authenticateRequest(request).catch(() => null);
@@ -223,11 +225,20 @@ export async function POST(request: NextRequest) {
         coverUrl = result.secure_url;
       }
     } else {
+      const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+      const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
       const saveLocalFile = async (file: File) => {
+        if (!ALLOWED_MIME.includes(file.type)) {
+          throw new Error('نوع الملف غير مسموح. الأنواع المسموحة: JPG, PNG, WebP, GIF');
+        }
+        if (file.size > MAX_FILE_SIZE) {
+          throw new Error('حجم الملف يتجاوز الحد الأقصى (10MB)');
+        }
         const bytes = await file.arrayBuffer();
         if (!bytes || bytes.byteLength === 0) throw new Error('Empty file');
         const buffer = Buffer.from(bytes);
-        const ext = file.name.split('.').pop() || 'jpg';
+        const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : file.type === 'image/gif' ? 'gif' : 'jpg';
         const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
         const dir = path.join(process.cwd(), 'public', 'uploads');
         await mkdir(dir, { recursive: true });

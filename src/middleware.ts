@@ -40,9 +40,20 @@ function geoBlockApi(): NextResponse {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Block path traversal attempts
+  if (pathname.includes('..') || pathname.includes('%2e%2e') || pathname.includes('%252e%252e')) {
+    return NextResponse.json({ error: 'Invalid path' }, { status: 400 });
+  }
+
+  // Block common attack vectors
+  const blockedPatterns = ['/wp-admin', '/wp-login', '/phpmyadmin', '/.env', '/.git', '/config', '/backup'];
+  if (blockedPatterns.some(p => pathname.toLowerCase().startsWith(p))) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
   // Always allow these routes
   if (pathname.startsWith('/api/') || pathname.startsWith('/_next/') || pathname.startsWith('/uploads/') ||
-      pathname === '/favicon.ico' || pathname.includes('.')) {
+      pathname === '/favicon.ico' || /\.(ico|png|jpg|jpeg|gif|svg|css|js|woff2?)$/i.test(pathname)) {
     return NextResponse.next();
   }
 
