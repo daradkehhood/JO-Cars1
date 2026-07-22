@@ -1,13 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { Car, Phone, Mail, MapPin, Facebook, Twitter, Instagram, Youtube, ArrowUp } from 'lucide-react';
 import { useInScrollView } from '@/hooks/useInScrollView';
+import { cn } from '@/lib/utils';
 
 export function Footer() {
-  const { ref, isInView } = useInScrollView(0.1);
-  const { ref: bottomRef, isInView: bottomInView } = useInScrollView(0.1);
+  const { ref, isInView } = useInScrollView(0.05);
+  const { ref: bottomRef, isInView: bottomInView } = useInScrollView(0.05);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -23,19 +23,9 @@ export function Footer() {
   return (
     <footer className="relative mt-16 pb-20 lg:pb-0 bg-surface-50 dark:bg-surface-900/50 border-t border-surface-200/60 dark:border-surface-700/60">
       <div ref={ref} className="container-custom py-14 lg:py-16">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 0.5 }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12"
-        >
+        <div className={cn('grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12', isInView ? 'scroll-visible' : 'scroll-hidden')}>
           {/* Brand */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-            transition={{ duration: 0.5, delay: 0.05 }}
-            className="sm:col-span-2 lg:col-span-1"
-          >
+          <div className={cn('sm:col-span-2 lg:col-span-1', isInView ? 'scroll-visible' : 'scroll-hidden')} style={{ transitionDelay: '0.05s' }}>
             <Link href="/" className="flex items-center gap-2.5 mb-4">
               <div className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center shadow-primary">
                 <Car className="w-5 h-5 text-white" />
@@ -49,29 +39,20 @@ export function Footer() {
             </p>
             <div className="flex items-center gap-2">
               {socialLinks.map(({ icon: Icon, href, label }, i) => (
-                <motion.a
+                <a
                   key={label}
                   href={href}
                   aria-label={label}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
-                  transition={{ duration: 0.3, delay: 0.1 + i * 0.05 }}
-                  whileHover={{ scale: 1.1, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="w-9 h-9 rounded-xl bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 flex items-center justify-center text-surface-500 hover:text-primary-600 hover:border-primary-200 dark:hover:border-primary-800 hover:shadow-soft transition-all duration-200"
+                  className="w-9 h-9 rounded-xl bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 flex items-center justify-center text-surface-500 hover:text-primary-600 hover:border-primary-200 dark:hover:border-primary-800 hover:shadow-soft hover:scale-110 hover:-translate-y-0.5 active:scale-95 transition-all duration-200"
                 >
                   <Icon className="w-4 h-4" />
-                </motion.a>
+                </a>
               ))}
             </div>
-          </motion.div>
+          </div>
 
           {/* Quick Links */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
+          <div className={isInView ? 'scroll-visible' : 'scroll-hidden'} style={{ transitionDelay: '0.1s' }}>
             <h3 className="font-bold text-surface-900 dark:text-white mb-4 text-sm">روابط سريعة</h3>
             <ul className="space-y-2.5">
               {[
@@ -88,14 +69,10 @@ export function Footer() {
                 </li>
               ))}
             </ul>
-          </motion.div>
+          </div>
 
           {/* Services */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-            transition={{ duration: 0.5, delay: 0.15 }}
-          >
+          <div className={isInView ? 'scroll-visible' : 'scroll-hidden'} style={{ transitionDelay: '0.15s' }}>
             <h3 className="font-bold text-surface-900 dark:text-white mb-4 text-sm">الخدمات</h3>
             <ul className="space-y-2.5">
               {[
@@ -112,14 +89,10 @@ export function Footer() {
                 </li>
               ))}
             </ul>
-          </motion.div>
+          </div>
 
           {/* Contact */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
+          <div className={isInView ? 'scroll-visible' : 'scroll-hidden'} style={{ transitionDelay: '0.2s' }}>
             <h3 className="font-bold text-surface-900 dark:text-white mb-4 text-sm">تواصل معنا</h3>
             <ul className="space-y-3">
               <li className="flex items-center gap-3 text-surface-500 text-sm">
@@ -141,18 +114,13 @@ export function Footer() {
                 <span>الأردن - إربد</span>
               </li>
             </ul>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </div>
 
       {/* Bottom Bar */}
       <div ref={bottomRef} className="border-t border-surface-200/60 dark:border-surface-700/60">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={bottomInView ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="container-custom py-5 flex flex-col sm:flex-row items-center justify-between gap-4"
-        >
+        <div className={cn('container-custom py-5 flex flex-col sm:flex-row items-center justify-between gap-4', bottomInView ? 'scroll-visible' : 'scroll-hidden')} style={{ transitionDelay: '0.1s' }}>
           <p className="text-surface-500 text-sm">
             © {new Date().getFullYear()} JO Cars. جميع الحقوق محفوظة.
           </p>
@@ -163,16 +131,14 @@ export function Footer() {
             <Link href="/terms" className="text-surface-500 hover:text-surface-700 dark:hover:text-surface-300 text-sm transition-colors">
               الشروط
             </Link>
-            <motion.button
+            <button
               onClick={scrollToTop}
-              whileHover={{ scale: 1.1, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              className="w-8 h-8 rounded-lg bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 flex items-center justify-center text-surface-500 hover:text-primary-600 hover:border-primary-200 dark:hover:border-primary-800 transition-all duration-200"
+              className="w-8 h-8 rounded-lg bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 flex items-center justify-center text-surface-500 hover:text-primary-600 hover:border-primary-200 dark:hover:border-primary-800 hover:scale-110 hover:-translate-y-0.5 active:scale-95 transition-all duration-200"
             >
               <ArrowUp className="w-4 h-4" />
-            </motion.button>
+            </button>
           </div>
-        </motion.div>
+        </div>
       </div>
     </footer>
   );

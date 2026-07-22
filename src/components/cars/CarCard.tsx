@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { Heart, MapPin, Eye, Fuel, Gauge, Calendar, Shield, Camera, Settings, Flag } from 'lucide-react';
 import { cn, formatPrice, formatDistance, getFuelTypeLabel, getTransmissionLabel, formatDate } from '@/lib/utils';
 import { useInScrollView } from '@/hooks/useInScrollView';
@@ -50,11 +49,10 @@ export function CarCard({ car, featured, index = 0 }: CarCardProps) {
   };
 
   return (
-    <motion.div
+    <div
       ref={ref}
-      initial={{ opacity: 0, y: 16 }}
-      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
-      transition={{ duration: 0.4, delay: index * 0.05 }}
+      className={cn(isInView ? 'scroll-visible' : 'scroll-hidden')}
+      style={{ transitionDelay: `${index * 0.05}s` }}
     >
       <Link href={`/cars/${car.slug || car.id}`} className="group block">
         <div className={cn(
@@ -239,6 +237,6 @@ export function CarCard({ car, featured, index = 0 }: CarCardProps) {
       </Link>
       <ReportModal carId={car.id} carTitle={`${car.brand?.nameAr || ''} ${car.model?.nameAr || ''} ${car.year}`}
         isOpen={reportOpen} onClose={() => setReportOpen(false)} />
-    </motion.div>
+    </div>
   );
 }

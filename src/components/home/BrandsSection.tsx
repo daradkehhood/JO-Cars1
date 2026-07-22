@@ -2,20 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { Building2 } from 'lucide-react';
 import { useInScrollView } from '@/hooks/useInScrollView';
+import { cn } from '@/lib/utils';
 import type { Brand } from '@/types';
 
 function BrandCard({ brand, index }: { brand: Brand; index: number }) {
-  const { ref, isInView } = useInScrollView(0.1);
+  const { ref, isInView } = useInScrollView(0.05);
 
   return (
-    <motion.div
+    <div
       ref={ref}
-      initial={{ opacity: 0, y: 12 }}
-      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
-      transition={{ delay: index * 0.04 }}
+      className={cn(isInView ? 'scroll-visible' : 'scroll-hidden')}
+      style={{ transitionDelay: `${index * 0.04}s` }}
     >
       <Link
         href={`/cars?brandId=${brand.slug}`}
@@ -30,7 +29,7 @@ function BrandCard({ brand, index }: { brand: Brand; index: number }) {
           {brand.nameAr}
         </span>
       </Link>
-    </motion.div>
+    </div>
   );
 }
 

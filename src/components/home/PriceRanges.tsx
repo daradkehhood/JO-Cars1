@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { CircleDollarSign } from 'lucide-react';
 import { useInScrollView } from '@/hooks/useInScrollView';
+import { cn } from '@/lib/utils';
 
 const ranges = [
   { label: 'أقل من 5,000 دينار', min: 0, max: 5000, icon: '💰' },
@@ -15,14 +15,13 @@ const ranges = [
 ];
 
 function RangeCard({ range, index }: { range: typeof ranges[0]; index: number }) {
-  const { ref, isInView } = useInScrollView(0.1);
+  const { ref, isInView } = useInScrollView(0.05);
 
   return (
-    <motion.div
+    <div
       ref={ref}
-      initial={{ opacity: 0, y: 12 }}
-      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
-      transition={{ delay: index * 0.05 }}
+      className={cn(isInView ? 'scroll-visible' : 'scroll-hidden')}
+      style={{ transitionDelay: `${index * 0.05}s` }}
     >
       <Link
         href={`/cars?priceMin=${range.min}${range.max ? `&priceMax=${range.max}` : ''}`}
@@ -36,7 +35,7 @@ function RangeCard({ range, index }: { range: typeof ranges[0]; index: number })
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
       </Link>
-    </motion.div>
+    </div>
   );
 }
 

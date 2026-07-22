@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from 'react';
 
-export function useInScrollView(threshold = 0.1) {
+export function useInScrollView(threshold = 0.05) {
   const ref = useRef<HTMLDivElement>(null);
   const [isInView, setIsInView] = useState(false);
 
@@ -17,7 +17,7 @@ export function useInScrollView(threshold = 0.1) {
           observer.disconnect();
         }
       },
-      { threshold }
+      { threshold, rootMargin: '0px 0px -40px 0px' }
     );
 
     observer.observe(el);

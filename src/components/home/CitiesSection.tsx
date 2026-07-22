@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { MapPin, ChevronDown, AlertCircle } from 'lucide-react';
 import { useInScrollView } from '@/hooks/useInScrollView';
+import { cn } from '@/lib/utils';
 
 interface CityData {
   id: string;
@@ -14,14 +14,13 @@ interface CityData {
 }
 
 function CityCard({ city, index }: { city: CityData; index: number }) {
-  const { ref, isInView } = useInScrollView(0.1);
+  const { ref, isInView } = useInScrollView(0.05);
 
   return (
-    <motion.div
+    <div
       ref={ref}
-      initial={{ opacity: 0, y: 12 }}
-      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
-      transition={{ delay: index * 0.04 }}
+      className={cn(isInView ? 'scroll-visible' : 'scroll-hidden')}
+      style={{ transitionDelay: `${index * 0.04}s` }}
     >
       <Link
         href={`/cars?cityId=${city.id}`}
@@ -42,7 +41,7 @@ function CityCard({ city, index }: { city: CityData; index: number }) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
       </Link>
-    </motion.div>
+    </div>
   );
 }
 
