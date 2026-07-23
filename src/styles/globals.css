@@ -49,10 +49,15 @@
     font-family: 'Tajawal', 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-image:
-      radial-gradient(circle at top left, rgba(92, 124, 250, 0.05), transparent 28%),
-      radial-gradient(circle at bottom right, rgba(247, 144, 9, 0.035), transparent 24%);
     position: relative;
+    background-attachment: fixed;
+    background-image:
+      radial-gradient(circle at 18% 18%, rgba(56, 189, 248, 0.12), transparent 22%),
+      radial-gradient(circle at 82% 16%, rgba(96, 165, 250, 0.1), transparent 24%),
+      radial-gradient(circle at 70% 84%, rgba(251, 191, 36, 0.08), transparent 22%),
+      radial-gradient(circle at 20% 82%, rgba(52, 211, 153, 0.06), transparent 20%);
+    background-size: 140% 140%;
+    animation: bodyDrift 24s ease-in-out infinite alternate;
   }
 
   ::selection {
@@ -179,6 +184,23 @@
     animation-direction: alternate-reverse;
   }
 
+  .aurora-sheen {
+    background:
+      linear-gradient(120deg, rgba(59, 130, 246, 0.10), rgba(34, 197, 94, 0.06), rgba(251, 191, 36, 0.08), rgba(236, 72, 153, 0.06));
+    background-size: 220% 220%;
+    animation: auroraShift 18s ease-in-out infinite alternate;
+    mix-blend-mode: screen;
+    opacity: 0.55;
+  }
+
+  .soft-noise {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+    background-size: 26px 26px;
+    opacity: 0.22;
+  }
+
   /* Shimmer */
   .shimmer {
     @apply bg-gradient-to-r from-surface-100 via-surface-50 to-surface-100 dark:from-surface-800 dark:via-surface-700 dark:to-surface-800 bg-[length:200%_100%] animate-[shimmer_2s_ease-in-out_infinite];
@@ -266,6 +288,18 @@
 @keyframes floatOrb {
   0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
   50% { transform: translate3d(0, -18px, 0) scale(1.05); }
+}
+
+@keyframes auroraShift {
+  0% { transform: translate3d(-2%, -1%, 0) scale(1); background-position: 0% 50%; }
+  50% { transform: translate3d(2%, 1%, 0) scale(1.03); background-position: 100% 50%; }
+  100% { transform: translate3d(-1%, 2%, 0) scale(1); background-position: 0% 50%; }
+}
+
+@keyframes bodyDrift {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 100%; }
+  100% { background-position: 0% 0%; }
 }
 
 /* Scroll Reveal Animations */
