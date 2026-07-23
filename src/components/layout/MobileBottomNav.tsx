@@ -56,6 +56,21 @@ export function MobileBottomNav() {
   const { unreadCount } = useNotificationStore();
   const [moreOpen, setMoreOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const listVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.035,
+        delayChildren: 0.04,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10, scale: 0.985 },
+    show: { opacity: 1, y: 0, scale: 1 },
+  };
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/';
@@ -221,73 +236,87 @@ export function MobileBottomNav() {
                 {isAuthenticated && (
                   <div className="mb-3">
                     <p className="text-xs font-semibold text-surface-400 px-3 mb-2">حسابي</p>
-                    <div className="space-y-0.5">
-                      {userLinks.map((item) => {
-                        const Icon = item.icon;
-                        const active = pathname === item.href || pathname.startsWith(item.href + '/');
-                        return (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            onClick={() => setMoreOpen(false)}
-                            className={cn(
-                              'flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200',
-                              active
-                                ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10'
-                                : 'text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800'
-                            )}
-                          >
-                            <span className="flex items-center gap-3">
-                              <Icon className="w-5 h-5" />
-                              {item.label}
-                            </span>
-                            {item.badge && unreadCount > 0 && (
-                              <span className="w-5 h-5 rounded-full bg-primary-500 text-white text-[10px] font-bold flex items-center justify-center">
-                                {unreadCount}
-                              </span>
-                            )}
-                          </Link>
-                        );
-                      })}
-                      {user?.role === 'ADMIN' && (
+                <motion.div
+                  variants={listVariants}
+                  initial="hidden"
+                  animate="show"
+                  className="space-y-0.5"
+                >
+                  {userLinks.map((item) => {
+                    const Icon = item.icon;
+                    const active = pathname === item.href || pathname.startsWith(item.href + '/');
+                    return (
+                      <motion.div key={item.href} variants={itemVariants}>
                         <Link
-                          href="/admin"
+                          href={item.href}
                           onClick={() => setMoreOpen(false)}
-                          className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800 transition-all duration-200"
+                          className={cn(
+                            'flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200',
+                            active
+                              ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10'
+                              : 'text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800'
+                          )}
                         >
-                          <ShieldCheck className="w-5 h-5" />
-                          لوحة التحكم
+                          <span className="flex items-center gap-3">
+                            <Icon className="w-5 h-5" />
+                            {item.label}
+                          </span>
+                          {item.badge && unreadCount > 0 && (
+                            <span className="w-5 h-5 rounded-full bg-primary-500 text-white text-[10px] font-bold flex items-center justify-center">
+                              {unreadCount}
+                            </span>
+                          )}
                         </Link>
-                      )}
-                    </div>
+                      </motion.div>
+                    );
+                  })}
+                  {user?.role === 'ADMIN' && (
+                    <motion.div variants={itemVariants}>
+                      <Link
+                        href="/admin"
+                        onClick={() => setMoreOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800 transition-all duration-200"
+                      >
+                        <ShieldCheck className="w-5 h-5" />
+                        لوحة التحكم
+                      </Link>
+                    </motion.div>
+                  )}
+                </motion.div>
                     <div className="border-t border-surface-100 dark:border-surface-800 my-3" />
                   </div>
                 )}
 
                 {/* All navigation links */}
                 <p className="text-xs font-semibold text-surface-400 px-3 mb-2">الاستكشاف</p>
-                <div className="space-y-0.5">
+                <motion.div
+                  variants={listVariants}
+                  initial="hidden"
+                  animate="show"
+                  className="space-y-0.5"
+                >
                   {mainLinks.map((item) => {
                     const Icon = item.icon;
                     const active = pathname === item.href || pathname.startsWith(item.href + '/');
                     return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() => setMoreOpen(false)}
-                        className={cn(
-                          'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200',
-                          active
-                            ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10'
-                            : 'text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800'
-                        )}
-                      >
-                        <Icon className="w-5 h-5" />
-                        {item.label}
-                      </Link>
+                      <motion.div key={item.href} variants={itemVariants}>
+                        <Link
+                          href={item.href}
+                          onClick={() => setMoreOpen(false)}
+                          className={cn(
+                            'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200',
+                            active
+                              ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10'
+                              : 'text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800'
+                          )}
+                        >
+                          <Icon className="w-5 h-5" />
+                          {item.label}
+                        </Link>
+                      </motion.div>
                     );
                   })}
-                </div>
+                </motion.div>
 
                 {/* Login/Register for guests */}
                 {!isAuthenticated && (

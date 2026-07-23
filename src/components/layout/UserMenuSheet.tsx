@@ -11,6 +11,21 @@ export function UserMenuSheet() {
   const { user, isAuthenticated, logout } = useAuth();
   const { unreadCount } = useNotificationStore();
   const [open, setOpen] = useState(false);
+  const listVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.04,
+        delayChildren: 0.03,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10, scale: 0.985 },
+    show: { opacity: 1, y: 0, scale: 1 },
+  };
 
   useEffect(() => {
     const handler = () => setOpen(true);
@@ -61,7 +76,13 @@ export function UserMenuSheet() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto overscroll-contain p-3">
+            <motion.div
+              variants={listVariants}
+              initial="hidden"
+              animate="show"
+              exit="hidden"
+              className="flex-1 overflow-y-auto overscroll-contain p-3"
+            >
               {[
                 { href: '/auth/profile', label: 'الملف الشخصي', icon: User },
                 { href: '/favorites', label: 'المفضلة', icon: Heart },
@@ -73,39 +94,42 @@ export function UserMenuSheet() {
               ].map((item) => {
                 const Icon = item.icon;
                 return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={close}
-                    className="flex items-center justify-between px-4 py-3.5 rounded-xl text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 active:bg-surface-100 dark:active:bg-surface-700 transition-all duration-200"
-                  >
-                    <span className="flex items-center gap-3">
-                      <Icon className="w-5 h-5 text-surface-400" />
-                      {item.label}
-                    </span>
-                    {item.badge ? (
-                      <span className="w-5 h-5 rounded-full bg-primary-500 text-white text-[10px] font-bold flex items-center justify-center">
-                        {item.badge}
+                  <motion.div key={item.href} variants={itemVariants}>
+                    <Link
+                      href={item.href}
+                      onClick={close}
+                      className="flex items-center justify-between px-4 py-3.5 rounded-xl text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 active:bg-surface-100 dark:active:bg-surface-700 transition-all duration-200"
+                    >
+                      <span className="flex items-center gap-3">
+                        <Icon className="w-5 h-5 text-surface-400" />
+                        {item.label}
                       </span>
-                    ) : (
-                      <svg className="w-4 h-4 text-surface-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    )}
-                  </Link>
+                      {item.badge ? (
+                        <span className="w-5 h-5 rounded-full bg-primary-500 text-white text-[10px] font-bold flex items-center justify-center">
+                          {item.badge}
+                        </span>
+                      ) : (
+                        <svg className="w-4 h-4 text-surface-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      )}
+                    </Link>
+                  </motion.div>
                 );
               })}
               {user?.role === 'ADMIN' && (
-                <Link
-                  href="/admin"
-                  onClick={close}
-                  className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-all duration-200"
-                >
-                  <ShieldCheck className="w-5 h-5 text-surface-400" />
-                  لوحة التحكم
-                </Link>
+                <motion.div variants={itemVariants}>
+                  <Link
+                    href="/admin"
+                    onClick={close}
+                    className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-all duration-200"
+                  >
+                    <ShieldCheck className="w-5 h-5 text-surface-400" />
+                    لوحة التحكم
+                  </Link>
+                </motion.div>
               )}
-            </div>
+            </motion.div>
 
             <div className="p-3 border-t border-surface-100 dark:border-surface-800">
               <button

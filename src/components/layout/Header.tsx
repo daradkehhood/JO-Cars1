@@ -27,6 +27,22 @@ export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [moreOpen, setMoreOpen] = useState(false);
+  const menuListVariants = {
+    hidden: { opacity: 0, y: 8 },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        staggerChildren: 0.04,
+        delayChildren: 0.03,
+      },
+    },
+  };
+
+  const menuItemVariants = {
+    hidden: { opacity: 0, y: 8, scale: 0.98 },
+    show: { opacity: 1, y: 0, scale: 1 },
+  };
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -152,12 +168,19 @@ export function Header() {
                       transition={{ duration: 0.15 }}
                       className="absolute right-0 top-full mt-2 w-56 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 shadow-soft-xl overflow-hidden z-50"
                     >
-                      <div className="p-1.5">
+                      <motion.div
+                        variants={menuListVariants}
+                        initial="hidden"
+                        animate="show"
+                        exit="hidden"
+                        className="p-1.5"
+                      >
                         {secondaryLinks.map((link) => {
                           const Icon = link.icon;
                           const active = pathname === link.href || pathname.startsWith(link.href + '/');
                           return (
-                            <Link
+                            <motion.div key={link.href} variants={menuItemVariants}>
+                              <Link
                               key={link.href}
                               href={link.href}
                               onClick={() => setMoreOpen(false)}
@@ -170,10 +193,11 @@ export function Header() {
                             >
                               <Icon className="w-4 h-4" />
                               {link.label}
-                            </Link>
+                              </Link>
+                            </motion.div>
                           );
                         })}
-                      </div>
+                      </motion.div>
                     </motion.div>
                   </>
                 )}
@@ -300,39 +324,48 @@ function DesktopUserMenu({ user, items, logout }: { user: any; items: any[]; log
                 <p className="font-semibold text-surface-900 dark:text-white text-sm">{user?.name}</p>
                 <p className="text-xs text-surface-500 mt-0.5 truncate">{user?.email}</p>
               </div>
-              <div className="p-1.5 max-h-[300px] overflow-y-auto">
+              <motion.div
+                variants={menuListVariants}
+                initial="hidden"
+                animate="show"
+                exit="hidden"
+                className="p-1.5 max-h-[300px] overflow-y-auto"
+              >
                 {items.map((item: any) => {
                   const Icon = item.icon;
                   return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setOpen(false)}
-                      className="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700 transition-all duration-200"
-                    >
-                      <span className="flex items-center gap-3">
-                        <Icon className="w-4 h-4" />
-                        {item.label}
-                      </span>
-                      {item.badge ? (
-                        <span className="w-5 h-5 rounded-full bg-primary-500 text-white text-[10px] font-bold flex items-center justify-center">
-                          {item.badge}
+                    <motion.div key={item.href} variants={menuItemVariants}>
+                      <Link
+                        href={item.href}
+                        onClick={() => setOpen(false)}
+                        className="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700 transition-all duration-200"
+                      >
+                        <span className="flex items-center gap-3">
+                          <Icon className="w-4 h-4" />
+                          {item.label}
                         </span>
-                      ) : null}
-                    </Link>
+                        {item.badge ? (
+                          <span className="w-5 h-5 rounded-full bg-primary-500 text-white text-[10px] font-bold flex items-center justify-center">
+                            {item.badge}
+                          </span>
+                        ) : null}
+                      </Link>
+                    </motion.div>
                   );
                 })}
                 {user?.role === 'ADMIN' && (
-                  <Link
-                    href="/admin"
-                    onClick={() => setOpen(false)}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700 transition-all duration-200"
-                  >
-                    <ShieldCheck className="w-4 h-4" />
-                    لوحة التحكم
-                  </Link>
+                  <motion.div variants={menuItemVariants}>
+                    <Link
+                      href="/admin"
+                      onClick={() => setOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700 transition-all duration-200"
+                    >
+                      <ShieldCheck className="w-4 h-4" />
+                      لوحة التحكم
+                    </Link>
+                  </motion.div>
                 )}
-              </div>
+              </motion.div>
               <div className="p-1.5 border-t border-surface-100 dark:border-surface-700">
                 <button
                   onClick={() => { logout(); setOpen(false); }}

@@ -52,6 +52,7 @@
     background-image:
       radial-gradient(circle at top left, rgba(92, 124, 250, 0.05), transparent 28%),
       radial-gradient(circle at bottom right, rgba(247, 144, 9, 0.035), transparent 24%);
+    position: relative;
   }
 
   ::selection {
@@ -158,6 +159,26 @@
     animation: blinkCursor 0.9s step-end infinite;
   }
 
+  .ambient-grid {
+    background-image:
+      linear-gradient(to right, rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: radial-gradient(circle at center, black 55%, transparent 100%);
+    opacity: 0.35;
+  }
+
+  .ambient-orb {
+    filter: blur(60px);
+    opacity: 0.45;
+    animation: floatOrb 14s ease-in-out infinite;
+  }
+
+  .ambient-orb-slow {
+    animation-duration: 20s;
+    animation-direction: alternate-reverse;
+  }
+
   /* Shimmer */
   .shimmer {
     @apply bg-gradient-to-r from-surface-100 via-surface-50 to-surface-100 dark:from-surface-800 dark:via-surface-700 dark:to-surface-800 bg-[length:200%_100%] animate-[shimmer_2s_ease-in-out_infinite];
@@ -240,6 +261,11 @@
 @keyframes blinkCursor {
   0%, 49% { border-color: currentColor; }
   50%, 100% { border-color: transparent; }
+}
+
+@keyframes floatOrb {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(0, -18px, 0) scale(1.05); }
 }
 
 /* Scroll Reveal Animations */
