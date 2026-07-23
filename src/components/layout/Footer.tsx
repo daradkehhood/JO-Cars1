@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { Car, Phone, Mail, MapPin, Facebook, Twitter, Instagram, Youtube, ArrowUp } from 'lucide-react';
-import { useInScrollView } from '@/hooks/useInScrollView';
-import { cn } from '@/lib/utils';
+import { useInScrollView, scrollStyle } from '@/hooks/useInScrollView';
 
 export function Footer() {
   const { ref, isInView } = useInScrollView(0.05);
@@ -23,9 +22,9 @@ export function Footer() {
   return (
     <footer className="relative mt-16 pb-20 lg:pb-0 bg-surface-50 dark:bg-surface-900/50 border-t border-surface-200/60 dark:border-surface-700/60">
       <div ref={ref} className="container-custom py-14 lg:py-16">
-        <div className={cn('grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12', isInView ? 'scroll-visible' : 'scroll-hidden')}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12" style={scrollStyle(isInView)}>
           {/* Brand */}
-          <div className={cn('sm:col-span-2 lg:col-span-1', isInView ? 'scroll-visible' : 'scroll-hidden')} style={{ transitionDelay: '0.05s' }}>
+          <div className="sm:col-span-2 lg:col-span-1" style={scrollStyle(isInView, { delay: 0.05 })}>
             <Link href="/" className="flex items-center gap-2.5 mb-4">
               <div className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center shadow-primary">
                 <Car className="w-5 h-5 text-white" />
@@ -52,7 +51,7 @@ export function Footer() {
           </div>
 
           {/* Quick Links */}
-          <div className={isInView ? 'scroll-visible' : 'scroll-hidden'} style={{ transitionDelay: '0.1s' }}>
+          <div style={scrollStyle(isInView, { delay: 0.1 })}>
             <h3 className="font-bold text-surface-900 dark:text-white mb-4 text-sm">روابط سريعة</h3>
             <ul className="space-y-2.5">
               {[
@@ -72,7 +71,7 @@ export function Footer() {
           </div>
 
           {/* Services */}
-          <div className={isInView ? 'scroll-visible' : 'scroll-hidden'} style={{ transitionDelay: '0.15s' }}>
+          <div style={scrollStyle(isInView, { delay: 0.15 })}>
             <h3 className="font-bold text-surface-900 dark:text-white mb-4 text-sm">الخدمات</h3>
             <ul className="space-y-2.5">
               {[
@@ -92,7 +91,7 @@ export function Footer() {
           </div>
 
           {/* Contact */}
-          <div className={isInView ? 'scroll-visible' : 'scroll-hidden'} style={{ transitionDelay: '0.2s' }}>
+          <div style={scrollStyle(isInView, { delay: 0.2 })}>
             <h3 className="font-bold text-surface-900 dark:text-white mb-4 text-sm">تواصل معنا</h3>
             <ul className="space-y-3">
               <li className="flex items-center gap-3 text-surface-500 text-sm">
@@ -120,7 +119,8 @@ export function Footer() {
 
       {/* Bottom Bar */}
       <div ref={bottomRef} className="border-t border-surface-200/60 dark:border-surface-700/60">
-        <div className={cn('container-custom py-5 flex flex-col sm:flex-row items-center justify-between gap-4', bottomInView ? 'scroll-visible' : 'scroll-hidden')} style={{ transitionDelay: '0.1s' }}>
+        <div className="container-custom py-5 flex flex-col sm:flex-row items-center justify-between gap-4"
+          style={scrollStyle(bottomInView, { delay: 0.1 })}>
           <p className="text-surface-500 text-sm">
             © {new Date().getFullYear()} JO Cars. جميع الحقوق محفوظة.
           </p>

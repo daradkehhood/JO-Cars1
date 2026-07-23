@@ -3,19 +3,14 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Building2 } from 'lucide-react';
-import { useInScrollView } from '@/hooks/useInScrollView';
-import { cn } from '@/lib/utils';
+import { useInScrollView, scrollStyle } from '@/hooks/useInScrollView';
 import type { Brand } from '@/types';
 
 function BrandCard({ brand, index }: { brand: Brand; index: number }) {
   const { ref, isInView } = useInScrollView(0.05);
 
   return (
-    <div
-      ref={ref}
-      className={cn(isInView ? 'scroll-visible' : 'scroll-hidden')}
-      style={{ transitionDelay: `${index * 0.04}s` }}
-    >
+    <div ref={ref} style={scrollStyle(isInView, { delay: index * 0.04 })}>
       <Link
         href={`/cars?brandId=${brand.slug}`}
         className="group flex flex-col items-center gap-3 p-5 sm:p-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-100 dark:border-surface-700 hover:border-primary-200 dark:hover:border-primary-800 hover:shadow-soft transition-all duration-200 text-center"

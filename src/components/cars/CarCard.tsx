@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Heart, MapPin, Eye, Fuel, Gauge, Calendar, Shield, Camera, Settings, Flag } from 'lucide-react';
 import { cn, formatPrice, formatDistance, getFuelTypeLabel, getTransmissionLabel, formatDate } from '@/lib/utils';
-import { useInScrollView } from '@/hooks/useInScrollView';
+import { useInScrollView, scrollStyle } from '@/hooks/useInScrollView';
 import type { Car } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { ReportModal } from '@/components/cars/ReportModal';
@@ -51,8 +51,7 @@ export function CarCard({ car, featured, index = 0 }: CarCardProps) {
   return (
     <div
       ref={ref}
-      className={cn(isInView ? 'scroll-visible' : 'scroll-hidden')}
-      style={{ transitionDelay: `${index * 0.05}s` }}
+      style={scrollStyle(isInView, { delay: index * 0.05 })}
     >
       <Link href={`/cars/${car.slug || car.id}`} className="group block">
         <div className={cn(

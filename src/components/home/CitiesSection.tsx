@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { MapPin, ChevronDown, AlertCircle } from 'lucide-react';
-import { useInScrollView } from '@/hooks/useInScrollView';
-import { cn } from '@/lib/utils';
+import { useInScrollView, scrollStyle } from '@/hooks/useInScrollView';
 
 interface CityData {
   id: string;
@@ -17,11 +16,7 @@ function CityCard({ city, index }: { city: CityData; index: number }) {
   const { ref, isInView } = useInScrollView(0.05);
 
   return (
-    <div
-      ref={ref}
-      className={cn(isInView ? 'scroll-visible' : 'scroll-hidden')}
-      style={{ transitionDelay: `${index * 0.04}s` }}
-    >
+    <div ref={ref} style={scrollStyle(isInView, { delay: index * 0.04 })}>
       <Link
         href={`/cars?cityId=${city.id}`}
         className="group flex items-center justify-between p-4 rounded-xl bg-white dark:bg-surface-800 border border-surface-100 dark:border-surface-700 hover:border-primary-200 dark:hover:border-primary-800 hover:shadow-soft transition-all duration-200"
@@ -70,7 +65,7 @@ export function CitiesSection() {
           setError('فشل تحميل البيانات');
         }
       })
-      .catch(e => {
+      .catch(() => {
         if (cancelled) return;
         setError('تعذّر الاتصال بالخادم. حاول مرة أخرى.');
       })
