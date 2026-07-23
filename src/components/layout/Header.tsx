@@ -296,6 +296,22 @@ export function Header() {
 
 function DesktopUserMenu({ user, items, logout }: { user: any; items: any[]; logout: () => void }) {
   const [open, setOpen] = useState(false);
+  const menuListVariants = {
+    hidden: { opacity: 0, y: 8 },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        staggerChildren: 0.04,
+        delayChildren: 0.03,
+      },
+    },
+  };
+
+  const menuItemVariants = {
+    hidden: { opacity: 0, y: 8, scale: 0.98 },
+    show: { opacity: 1, y: 0, scale: 1 },
+  };
 
   return (
     <>
