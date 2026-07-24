@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, useScroll, useTransform } from 'framer-motion';
-import { Search, MapPin, SlidersHorizontal, TrendingUp, Shield, Zap, ChevronDown } from 'lucide-react';
+import { Search, MapPin, SlidersHorizontal, TrendingUp, Shield, Zap, ChevronDown, ArrowLeft, Star, Car } from 'lucide-react';
+import { useInScrollView, scrollStyle } from '@/hooks/useInScrollView';
 
 const typedWords = ['قارن', 'اختر', 'اعرض', 'ابحث'];
 
@@ -13,10 +13,11 @@ export function HeroSection() {
   const [word, setWord] = useState(typedWords[0]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [wordIndex, setWordIndex] = useState(0);
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ['start start', 'end start'] });
-  const bgY = useTransform(scrollYProgress, [0, 1], ['0%', '12%']);
-  const opacity = useTransform(scrollYProgress, [0, 0.7], [1, 0.25]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    setTimeout(() => setLoaded(true), 100);
+  }, []);
 
   useEffect(() => {
     const current = typedWords[wordIndex];
@@ -27,17 +28,14 @@ export function HeroSection() {
         setWord(current.slice(0, word.length + 1));
         return;
       }
-
       if (!isDeleting && word.length === current.length) {
-        setTimeout(() => setIsDeleting(true), 1000);
+        setTimeout(() => setIsDeleting(true), 1200);
         return;
       }
-
       if (isDeleting && word.length > 0) {
         setWord(current.slice(0, word.length - 1));
         return;
       }
-
       if (isDeleting && word.length === 0) {
         setIsDeleting(false);
         setWordIndex((prev) => (prev + 1) % typedWords.length);
@@ -55,64 +53,65 @@ export function HeroSection() {
   };
 
   return (
-    <section ref={sectionRef} className="relative min-h-[86vh] lg:min-h-[90vh] flex items-center justify-center overflow-hidden">
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-surface-50 via-white to-white dark:from-surface-950 dark:via-surface-900 dark:to-surface-900" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[500px] w-[800px] rounded-full bg-primary-500/[0.04] blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[360px] w-[360px] rounded-full bg-primary-500/[0.03] blur-[100px]" />
-      </div>
+    <section className="relative min-h-[90vh] lg:min-h-[92vh] flex items-center justify-center overflow-hidden">
+      {/* Background orbs */}
+      <div className="hero-orb hero-orb-1" />
+      <div className="hero-orb hero-orb-2" />
+      <div className="hero-orb hero-orb-3" />
 
-      <div
-        className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04]"
-        style={{
-          backgroundImage: 'linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px)',
-          backgroundSize: '80px 80px',
-        }}
-      />
+      {/* Grid pattern */}
+      <div className="absolute inset-0 grid-pattern opacity-50" />
 
-      <motion.div style={{ y: bgY, opacity }} className="container-custom relative z-10 pt-20">
+      {/* Content */}
+      <div className="container-custom relative z-10 pt-20">
         <div className="mx-auto max-w-4xl text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45 }}
-            className="mb-7 inline-flex items-center gap-2 rounded-full border border-primary-100 bg-primary-50 px-4 py-2 dark:border-primary-500/20 dark:bg-primary-500/10"
+          {/* Badge */}
+          <div style={loaded ? {
+            opacity: 1, transform: 'translateY(0)',
+            transition: 'opacity 0.6s ease-out, transform 0.6s ease-out'
+          } : { opacity: 0, transform: 'translateY(20px)' }}
+            className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-primary-200/60 bg-primary-50/80 px-5 py-2.5 backdrop-blur-sm dark:border-primary-500/20 dark:bg-primary-500/10"
           >
-            <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary-500" />
+            <div className="pulse-dot" />
             <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
               منصة السيارات الأولى في الأردن
             </span>
-          </motion.div>
+          </div>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.08, duration: 0.55 }}
-            className="text-4xl font-extrabold leading-[1.15] text-surface-900 dark:text-white sm:text-5xl md:text-6xl lg:text-7xl"
+          {/* Heading */}
+          <h1 style={loaded ? {
+            opacity: 1, transform: 'translateY(0)',
+            transition: 'opacity 0.7s ease-out 0.1s, transform 0.7s ease-out 0.1s'
+          } : { opacity: 0, transform: 'translateY(24px)' }}
+            className="text-4xl font-extrabold leading-[1.1] text-surface-900 dark:text-white sm:text-5xl md:text-6xl lg:text-7xl"
           >
-            ابحث، <span className="typewriter text-primary-600 dark:text-primary-300">{word}</span>
+            ابحث،{' '}
+            <span className="typewriter text-primary-600 dark:text-primary-300">{word}</span>
             <br />
             <span className="gradient-text">وتملك سيارتك</span>
-          </motion.h1>
+          </h1>
 
-          <motion.p
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.16, duration: 0.5 }}
-            className="mx-auto mb-9 mt-6 max-w-xl text-base leading-relaxed text-surface-500 dark:text-surface-400 sm:text-lg"
+          {/* Subtitle */}
+          <p style={loaded ? {
+            opacity: 1, transform: 'translateY(0)',
+            transition: 'opacity 0.6s ease-out 0.2s, transform 0.6s ease-out 0.2s'
+          } : { opacity: 0, transform: 'translateY(20px)' }}
+            className="mx-auto mb-10 mt-7 max-w-xl text-base leading-relaxed text-surface-500 dark:text-surface-400 sm:text-lg"
           >
             منصة ذكية تساعدك على البحث والمقارنة والعثور على السيارة المناسبة بأفضل سعر، مع تجربة نظيفة ومريحة على الهاتف.
-          </motion.p>
+          </p>
 
-          <motion.form
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.24, duration: 0.5 }}
-            onSubmit={handleSearch}
-            className="mx-auto mb-10 max-w-2xl px-4"
+          {/* Search bar */}
+          <form onSubmit={handleSearch} style={loaded ? {
+            opacity: 1, transform: 'translateY(0)',
+            transition: 'opacity 0.6s ease-out 0.3s, transform 0.6s ease-out 0.3s'
+          } : { opacity: 0, transform: 'translateY(20px)' }}
+            className="mx-auto mb-12 max-w-2xl px-4"
           >
-            <div className="overflow-hidden rounded-2xl border border-surface-200 bg-white shadow-soft-lg transition-shadow duration-300 focus-within:border-primary-300 focus-within:shadow-primary-lg dark:border-surface-700 dark:bg-surface-800 dark:focus-within:border-primary-600">
-              <div className="flex items-center gap-2">
+            <div className="group relative overflow-hidden rounded-2xl border border-surface-200 bg-white shadow-soft-lg transition-all duration-300 focus-within:border-primary-300 focus-within:shadow-primary-lg dark:border-surface-700 dark:bg-surface-800 dark:focus-within:border-primary-600">
+              {/* Shine effect on focus */}
+              <div className="absolute inset-0 bg-gradient-to-r from-primary-500/0 via-primary-500/5 to-primary-500/0 opacity-0 transition-opacity duration-500 group-focus-within:opacity-100" />
+              <div className="relative flex items-center gap-2">
                 <div className="hidden items-center pr-4 sm:flex">
                   <MapPin className="h-5 w-5 text-surface-400" />
                 </div>
@@ -133,7 +132,7 @@ export function HeroSection() {
                   </button>
                   <button
                     type="submit"
-                    className="flex h-11 items-center gap-2 rounded-xl bg-primary-600 px-5 text-sm font-semibold text-white shadow-primary transition-all duration-200 hover:bg-primary-700 active:scale-[0.98] sm:h-12 sm:px-7"
+                    className="flex h-11 items-center gap-2 rounded-xl bg-primary-600 px-5 text-sm font-semibold text-white shadow-primary transition-all duration-200 hover:bg-primary-700 hover:shadow-lg hover:shadow-primary/30 active:scale-[0.97] sm:h-12 sm:px-7"
                   >
                     <Search className="h-4 w-4 sm:h-5 sm:w-5" />
                     <span className="hidden sm:inline">بحث</span>
@@ -141,47 +140,48 @@ export function HeroSection() {
                 </div>
               </div>
             </div>
-          </motion.form>
+          </form>
 
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.34, duration: 0.45 }}
+          {/* Stats */}
+          <div style={loaded ? {
+            opacity: 1, transform: 'translateY(0)',
+            transition: 'opacity 0.6s ease-out 0.4s, transform 0.6s ease-out 0.4s'
+          } : { opacity: 0, transform: 'translateY(20px)' }}
             className="grid gap-3 sm:grid-cols-3 sm:gap-4"
           >
             {[
-              { icon: TrendingUp, value: '1,500+', label: 'سيارة مسجلة' },
-              { icon: Shield, value: '100%', label: 'شراء آمن' },
-              { icon: Zap, value: '24/7', label: 'دعم متواصل' },
-            ].map((stat) => (
-              <div
-                key={stat.label}
-                className="flex items-center gap-3 rounded-2xl border border-surface-200 bg-white/80 px-4 py-4 text-right shadow-soft backdrop-blur dark:border-surface-700 dark:bg-surface-800/80"
+              { icon: TrendingUp, value: '1,500+', label: 'سيارة مسجلة', color: 'text-primary-500', bg: 'bg-primary-50 dark:bg-primary-500/10' },
+              { icon: Shield, value: '100%', label: 'شراء آمن', color: 'text-success-500', bg: 'bg-success-50 dark:bg-success-500/10' },
+              { icon: Zap, value: '24/7', label: 'دعم متواصل', color: 'text-warning-500', bg: 'bg-warning-50 dark:bg-warning-500/10' },
+            ].map((stat, i) => (
+              <div key={stat.label}
+                className="glass-premium shine-hover group flex items-center gap-4 rounded-2xl px-5 py-4 text-right transition-all duration-300 hover:shadow-soft-md hover:-translate-y-0.5"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700">
-                  <stat.icon className="h-5 w-5 text-primary-500" />
+                <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${stat.bg} transition-transform duration-300 group-hover:scale-110`}>
+                  <stat.icon className={`h-5 w-5 ${stat.color}`} />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-surface-900 dark:text-white">{stat.value}</p>
+                  <p className="text-lg font-bold text-surface-900 dark:text-white">{stat.value}</p>
                   <p className="text-xs text-surface-500 dark:text-surface-400">{stat.label}</p>
                 </div>
               </div>
             ))}
-          </motion.div>
+          </div>
         </div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.75 }}
-          className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5"
+        {/* Scroll indicator */}
+        <div style={loaded ? {
+          opacity: 1,
+          transition: 'opacity 0.6s ease-out 0.8s'
+        } : { opacity: 0 }}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
         >
-          <span className="text-xs text-surface-400">اكتشف</span>
-          <motion.div animate={{ y: [0, 6, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}>
-            <ChevronDown className="h-4 w-4 text-surface-400" />
-          </motion.div>
-        </motion.div>
-      </motion.div>
+          <span className="text-xs text-surface-400 tracking-wider">اكتشف</span>
+          <div className="animate-bounce">
+            <ChevronDown className="h-5 w-5 text-surface-400" />
+          </div>
+        </div>
+      </div>
     </section>
   );
 }

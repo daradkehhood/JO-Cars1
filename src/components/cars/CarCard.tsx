@@ -1,238 +1,144 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Heart, MapPin, Eye, Fuel, Gauge, Calendar, Shield, Camera, Settings, Flag } from 'lucide-react';
-import { cn, formatPrice, formatDistance, getFuelTypeLabel, getTransmissionLabel, formatDate } from '@/lib/utils';
+import { MapPin, Fuel, Cog, Calendar, ArrowLeft, Eye, Shield } from 'lucide-react';
 import { useInScrollView, scrollStyle } from '@/hooks/useInScrollView';
 import type { Car } from '@/types';
-import { useAuth } from '@/hooks/useAuth';
-import { ReportModal } from '@/components/cars/ReportModal';
-import { BadgeDisplay } from '@/components/badges/BadgeDisplay';
-import { PriceFairnessBadge } from '@/components/cars/PriceFairnessIndicator';
-import { StarRating } from '@/components/ratings/StarRating';
+import { formatPrice, formatDistance, getTransmissionLabel, getFuelTypeLabel } from '@/lib/utils';
 
 interface CarCardProps {
   car: Car;
-  featured?: boolean;
   index?: number;
 }
 
-export function CarCard({ car, featured, index = 0 }: CarCardProps) {
-  const { isAuthenticated } = useAuth();
-  const [isSaved, setIsSaved] = useState(car.isFavorited || false);
-  const [saving, setSaving] = useState(false);
-  const [reportOpen, setReportOpen] = useState(false);
-  const isPending = car.status === 'PENDING';
+export function CarCard({ car, index = 0 }: CarCardProps) {
   const { ref, isInView } = useInScrollView(0.1);
+  const [imgLoaded, setImgLoaded] = useState(false);
 
-  const toggleFavorite = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!isAuthenticated || saving) return;
-    setSaving(true);
-    const prev = isSaved;
-    setIsSaved(!isSaved);
-    try {
-      const res = await fetch('/api/cars/favorites', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ carId: car.id }),
-      });
-      const data = await res.json();
-      if (!data.success) setIsSaved(prev);
-    } catch {
-      setIsSaved(prev);
-    } finally {
-      setSaving(false);
+  const thumbnail = useMemo(() => {
+    if (car.coverImage) return car.coverImage;
+    if (car.images && car.images.length > 0) {
+      const cover = car.images.find((img) => img.isCover);
+      return cover?.url || car.images[0]?.url || null;
     }
-  };
+    return null;
+  }, [car.coverImage, car.images]);
+
+  const brandName = car.brand?.nameAr || '';
+  const modelName = car.model?.nameAr || '';
+  const cityName = car.city?.nameAr || '';
 
   return (
-    <div
-      ref={ref}
-      style={scrollStyle(isInView, { delay: index * 0.05 })}
-    >
-      <Link href={`/cars/${car.slug || car.id}`} className="group block">
-        <div className={cn(
-          'relative rounded-2xl overflow-hidden bg-white dark:bg-surface-800 border transition-all duration-200',
-          featured
-            ? 'border-warning-200 dark:border-warning-800 hover:shadow-soft-lg hover:-translate-y-0.5'
-            : 'border-surface-200/80 dark:border-surface-700/80 hover:shadow-soft-md hover:-translate-y-0.5'
-        )}>
-          {featured && (
-            <div className="absolute top-3 right-3 z-10">
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-warning-500 text-white text-[11px] font-semibold shadow-soft">
+    <div ref={ref} style={scrollStyle(isInView, { delay: Math.min(index * 0.04, 0.3) })}>
+      <Link
+        href={`/cars/${car.id}`}
+        className="group relative flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-surface-800/80 border border-surface-100 dark:border-surface-700/50 transition-all duration-300 hover:border-primary-300/60 dark:hover:border-primary-700/40 hover:shadow-soft-lg hover:-translate-y-1"
+      >
+        {/* Image */}
+        <div className="relative aspect-[4/3] overflow-hidden bg-surface-100 dark:bg-surface-700/50">
+          {thumbnail ? (
+            <>
+              <img
+                src={thumbnail}
+                alt={`${car.year} ${brandName} ${modelName}`}
+                loading="lazy"
+                onLoad={() => setImgLoaded(true)}
+                className={`absolute inset-0 h-full w-full object-cover transition-all duration-500 group-hover:scale-105 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+              />
+              {!imgLoaded && (
+                <div className="absolute inset-0 shimmer" />
+              )}
+            </>
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-surface-300 dark:text-surface-600">
+              <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2" />
+              </svg>
+            </div>
+          )}
+
+          {/* Badges */}
+          <div className="absolute top-3 right-3 flex flex-col gap-1.5 z-10">
+            {car.featured && (
+              <span className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-warning-500 to-warning-600 px-2.5 py-1 text-[11px] font-bold text-white shadow-md backdrop-blur-sm">
                 <Shield className="w-3 h-3" />
                 مميزة
               </span>
-            </div>
-          )}
-
-          {(car as any).auction?.status === 'ACTIVE' && new Date((car as any).auction.endDate) > new Date() && (
-            <div className="absolute top-3 left-3 z-10">
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-warning-500 text-white text-[11px] font-semibold shadow-soft">
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                مزاد
+            )}
+            {car.isNew && (
+              <span className="inline-flex items-center rounded-lg bg-success-500 px-2.5 py-1 text-[11px] font-bold text-white shadow-md backdrop-blur-sm">
+                جديد
               </span>
-            </div>
-          )}
-          {car.status === 'SOLD' && (
-            <div className="absolute top-3 left-3 z-10">
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-success-500 text-white text-[11px] font-semibold shadow-soft">
-                تم البيع
-              </span>
-            </div>
-          )}
-          {isPending && (
-            <div className="absolute top-3 left-3 z-10">
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-warning-500 text-white text-[11px] font-semibold shadow-soft">
-                قيد المراجعة
-              </span>
-            </div>
-          )}
-          {car.refCode && (
-            <div className="absolute bottom-3 right-3 z-10">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface-900/70 text-white text-[10px] font-mono font-bold backdrop-blur-sm">
-                {car.refCode}
-              </span>
-            </div>
-          )}
+            )}
+          </div>
 
-          {car.fairPriceEstimate && car.status === 'ACTIVE' && (
-            <div className="absolute top-3 left-3 z-10">
-              <PriceFairnessBadge price={car.price} fairPriceEstimate={car.fairPriceEstimate} />
-            </div>
-          )}
+          {/* Gradient overlay at bottom */}
+          <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black/20 to-transparent" />
+        </div>
 
-          {car.images && car.images.length > 0 && car.images[0] ? (
-            <div className="relative h-52 overflow-hidden">
-              <img
-                src={car.images[0].url || car.coverImage || '/images/placeholder-car.svg'}
-                alt={`${car.brand?.nameAr || ''} ${car.model?.nameAr || ''}`}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-surface-900/40 via-transparent to-transparent" />
-              <div className="absolute bottom-3 left-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-1 group-hover:translate-y-0">
-                <span className="inline-flex items-center gap-1.5 text-white text-xs bg-surface-900/60 backdrop-blur-sm rounded-lg px-2.5 py-1.5">
-                  <Camera className="w-3 h-3" />
-                  {car.images.length} صورة
-                </span>
-              </div>
-            </div>
-          ) : car.coverImage ? (
-            <div className="relative h-52 overflow-hidden">
-              <img
-                src={car.coverImage}
-                alt={`${car.brand?.nameAr || ''} ${car.model?.nameAr || ''}`}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-surface-900/40 via-transparent to-transparent" />
-            </div>
-          ) : (
-            <div className="relative h-52 bg-surface-100 dark:bg-surface-700 flex items-center justify-center">
-              <div className="text-center">
-                <div className="w-14 h-14 rounded-xl bg-surface-200 dark:bg-surface-600 flex items-center justify-center mx-auto mb-2">
-                  <Settings className="w-7 h-7 text-surface-400" />
-                </div>
-                <p className="text-surface-400 text-sm">لا توجد صور</p>
-              </div>
-            </div>
-          )}
-
-          <div className="p-4 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <h3 className="font-bold text-surface-900 dark:text-white text-sm leading-tight group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                {car.brand?.nameAr || ''} {car.model?.nameAr || ''} {car.year}
+        {/* Content */}
+        <div className="flex flex-1 flex-col gap-3 p-4 sm:p-5">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <h3 className="font-bold text-surface-900 dark:text-white text-base leading-tight line-clamp-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                {car.year} {brandName} {modelName}
               </h3>
-              {car.isNew && (
-                <span className="px-2 py-0.5 rounded-md bg-success-50 dark:bg-success-500/10 text-success-600 dark:text-success-400 text-[10px] font-semibold">
-                  جديد
-                </span>
+            </div>
+            <div className="text-left shrink-0">
+              <p className="font-extrabold text-lg text-primary-600 dark:text-primary-400 leading-tight">
+                {formatPrice(car.price)}
+              </p>
+              {car.isNegotiable && (
+                <span className="text-[10px] font-semibold text-success-600 dark:text-success-400">قابل للتفاوض</span>
               )}
             </div>
+          </div>
 
-            <div className="flex items-center gap-1.5 text-surface-500 text-xs">
-              <MapPin className="w-3 h-3" />
-              {car.city?.nameAr || 'الاردن'}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2.5 text-xs text-surface-500">
+          {/* Specs */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-surface-500 dark:text-surface-400">
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5" />
+              {car.year}
+            </span>
+            <span className="flex items-center gap-1">
+              <Fuel className="w-3.5 h-3.5" />
+              {getFuelTypeLabel(car.fuelType)}
+            </span>
+            <span className="flex items-center gap-1">
+              <Cog className="w-3.5 h-3.5" />
+              {getTransmissionLabel(car.transmission)}
+            </span>
+            {car.kilometers !== undefined && car.kilometers !== null && (
               <span className="flex items-center gap-1">
-                <Fuel className="w-3.5 h-3.5" />
-                {getFuelTypeLabel(car.fuelType)}
-              </span>
-              <span className="flex items-center gap-1">
-                <Gauge className="w-3.5 h-3.5" />
                 {formatDistance(car.kilometers)}
               </span>
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5" />
-                {car.year}
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="mt-auto flex items-center justify-between border-t border-surface-100 dark:border-surface-700/50 pt-3">
+            {cityName && (
+              <span className="flex items-center gap-1 text-xs text-surface-500 dark:text-surface-400">
+                <MapPin className="w-3.5 h-3.5" />
+                {cityName}
               </span>
-              {car.transmission && (
+            )}
+            <div className="flex items-center gap-2 text-xs text-surface-400">
+              {car.views !== undefined && (
                 <span className="flex items-center gap-1">
-                  <Settings className="w-3.5 h-3.5" />
-                  {getTransmissionLabel(car.transmission)}
+                  <Eye className="w-3.5 h-3.5" />
+                  {car.views}
                 </span>
               )}
-            </div>
-
-            <div className="flex items-center justify-between pt-2.5 border-t border-surface-100 dark:border-surface-700">
-              <div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-base font-bold text-surface-900 dark:text-white">
-                    {formatPrice(car.price)}
-                  </span>
-                  {car.isNegotiable && (
-                    <span className="text-xs text-primary-500 font-medium">قابل للتفاوض</span>
-                  )}
-                </div>
-                {(car as any).auction?.status === 'ACTIVE' && new Date((car as any).auction.endDate) > new Date() && (
-                  <span className="text-xs text-warning-600 font-medium">مزاد: {formatPrice((car as any).auction.currentPrice)}</span>
-                )}
-              </div>
-              <div className="flex items-center gap-1.5 text-surface-400 text-xs">
-                <span className="flex items-center gap-1">
-                  <Eye className="w-3 h-3" />
-                  {car.views || 0}
-                </span>
-                {isAuthenticated && (
-                  <button
-                    onClick={toggleFavorite}
-                    className={cn(
-                      'p-1.5 rounded-lg transition-all duration-200',
-                      isSaved ? 'bg-accent-50 dark:bg-accent-500/10 text-accent-500' : 'hover:bg-accent-50 dark:hover:bg-accent-500/10 text-surface-400 hover:text-accent-500'
-                    )}
-                  >
-                    <Heart className={cn('w-3.5 h-3.5', isSaved && 'fill-accent-500')} />
-                  </button>
-                )}
-                <button
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setReportOpen(true); }}
-                  className="p-1.5 rounded-lg hover:bg-accent-50 dark:hover:bg-accent-500/10 text-surface-400 hover:text-accent-500 transition-all duration-200"
-                  title="الإبلاغ"
-                >
-                  <Flag className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between text-[11px] text-surface-400">
-              <span>{formatDate(car.createdAt)}</span>
-              <div className="flex items-center gap-1">
-                {car.user?.dealerName && (
-                  <span className="text-primary-500 font-medium">{car.user.dealerName}</span>
-                )}
-                <BadgeDisplay badges={(car.user as any)?.badges} />
-                {car.user?.rating > 0 && <StarRating rating={car.user.rating} size="sm" />}
-              </div>
+              <span className="flex items-center gap-1 text-primary-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                التفاصيل
+                <ArrowLeft className="w-3.5 h-3.5" />
+              </span>
             </div>
           </div>
         </div>
       </Link>
-      <ReportModal carId={car.id} carTitle={`${car.brand?.nameAr || ''} ${car.model?.nameAr || ''} ${car.year}`}
-        isOpen={reportOpen} onClose={() => setReportOpen(false)} />
     </div>
   );
 }

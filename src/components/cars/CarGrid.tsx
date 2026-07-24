@@ -62,7 +62,7 @@ export function CarGrid({ cars, featured, columns = 3, loading, emptyMessage }: 
   return (
     <div className={`grid ${gridCols[columns]} gap-6`}>
       {cars.map((car, index) => (
-        <CarCard key={car.id} car={car} featured={featured} index={index} />
+        <CarCard key={car.id} car={car} index={index} />
       ))}
     </div>
   );

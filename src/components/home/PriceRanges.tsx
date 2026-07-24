@@ -1,58 +1,54 @@
 'use client';
 
 import Link from 'next/link';
-import { CircleDollarSign } from 'lucide-react';
 import { useInScrollView, scrollStyle } from '@/hooks/useInScrollView';
 
-const ranges = [
-  { label: 'أقل من 5,000 دينار', min: 0, max: 5000, icon: '💰' },
-  { label: '5,000 - 10,000 دينار', min: 5000, max: 10000, icon: '💵' },
-  { label: '10,000 - 15,000 دينار', min: 10000, max: 15000, icon: '🏦' },
-  { label: '15,000 - 25,000 دينار', min: 15000, max: 25000, icon: '💎' },
-  { label: '25,000 - 50,000 دينار', min: 25000, max: 50000, icon: '🏆' },
-  { label: 'أكثر من 50,000 دينار', min: 50000, max: undefined, icon: '👑' },
+const priceRanges = [
+  { label: 'أقل من 5,000', min: 0, max: 5000, icon: '💰', color: 'from-emerald-400 to-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
+  { label: '5,000 - 10,000', min: 5000, max: 10000, icon: '🏷️', color: 'from-blue-400 to-blue-600', bg: 'bg-blue-50 dark:bg-blue-500/10' },
+  { label: '10,000 - 20,000', min: 10000, max: 20000, icon: '💎', color: 'from-violet-400 to-violet-600', bg: 'bg-violet-50 dark:bg-violet-500/10' },
+  { label: '20,000 - 40,000', min: 20000, max: 40000, icon: '🚗', color: 'from-amber-400 to-amber-600', bg: 'bg-amber-50 dark:bg-amber-500/10' },
+  { label: 'أكثر من 40,000', min: 40000, max: 0, icon: '👑', color: 'from-rose-400 to-rose-600', bg: 'bg-rose-50 dark:bg-rose-500/10' },
 ];
 
-function RangeCard({ range, index }: { range: typeof ranges[0]; index: number }) {
+export function PriceRanges() {
   const { ref, isInView } = useInScrollView(0.05);
 
   return (
-    <div ref={ref} style={scrollStyle(isInView, { delay: index * 0.05 })}>
-      <Link
-        href={`/cars?priceMin=${range.min}${range.max ? `&priceMax=${range.max}` : ''}`}
-        className="group flex items-center justify-between p-5 rounded-xl bg-white dark:bg-surface-800 border border-surface-100 dark:border-surface-700 hover:border-primary-200 dark:hover:border-primary-800 hover:shadow-soft transition-all duration-200"
-      >
-        <div className="flex items-center gap-4">
-          <span className="text-2xl">{range.icon}</span>
-          <p className="font-semibold text-surface-900 dark:text-white text-sm">{range.label}</p>
-        </div>
-        <svg className="w-4 h-4 text-surface-400 group-hover:text-primary-500 transition-colors duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-      </Link>
-    </div>
-  );
-}
-
-export function PriceRanges() {
-  return (
-    <section className="py-16 sm:py-20">
+    <section ref={ref} className="py-20 sm:py-24 relative">
       <div className="container-custom">
-        <div className="text-center mb-10">
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-500/10 flex items-center justify-center">
-              <CircleDollarSign className="w-4 h-4 text-primary-500" />
-            </div>
-            <span className="text-sm font-semibold text-primary-600 dark:text-primary-400">الميزانية</span>
-          </div>
-          <h2 className="section-title">تصفح حسب السعر</h2>
-          <p className="section-subtitle">اختر الميزانية المناسبة لك</p>
+        <div className="text-center mb-12" style={scrollStyle(isInView)}>
+          <h2 className="text-3xl md:text-4xl font-extrabold text-surface-900 dark:text-white"
+            style={scrollStyle(isInView, { delay: 0.1 })}>
+            تصفح حسب الميزانية
+          </h2>
+          <p className="text-surface-500 dark:text-surface-400 mt-2 text-base"
+            style={scrollStyle(isInView, { delay: 0.15 })}>
+            اختر النطاق السعري المناسب لميزانيتك
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {ranges.map((range, i) => (
-            <RangeCard key={range.label} range={range} index={i} />
-          ))}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
+          {priceRanges.map((range, i) => {
+            const href = range.max === 0
+              ? `/cars?minPrice=${range.min}`
+              : `/cars?minPrice=${range.min}&maxPrice=${range.max}`;
+
+            return (
+              <div key={range.label} style={scrollStyle(isInView, { delay: Math.min(i * 0.05, 0.4) })}>
+                <Link
+                  href={href}
+                  className={`group flex flex-col items-center gap-3 rounded-2xl border border-surface-100 dark:border-surface-700/50 bg-white dark:bg-surface-800/80 p-5 transition-all duration-300 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-soft-md hover:-translate-y-1`}
+                >
+                  <span className="text-3xl transition-transform duration-300 group-hover:scale-125 group-hover:-rotate-6">{range.icon}</span>
+                  <span className="text-sm font-semibold text-surface-900 dark:text-white text-center leading-tight">
+                    {range.label}
+                  </span>
+                  <span className="text-xs text-surface-400 dark:text-surface-500">دولار أمريكي</span>
+                </Link>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
