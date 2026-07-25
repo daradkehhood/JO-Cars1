@@ -29,6 +29,8 @@ export function Header() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const moreBtnRef = useRef<HTMLButtonElement>(null);
   const userBtnRef = useRef<HTMLButtonElement>(null);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -44,19 +46,37 @@ export function Header() {
     setMobileMenuOpen(false);
   }, [pathname, setMobileMenuOpen]);
 
-  // Close menus when clicking outside
+  // Close menus ONLY when clicking outside BOTH the button and the dropdown panel
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (moreBtnRef.current && !moreBtnRef.current.contains(e.target as Node)) {
-        setMoreOpen(false);
-      }
-      if (userBtnRef.current && !userBtnRef.current.contains(e.target as Node)) {
-        setUserMenuOpen(false);
-      }
+      const target = e.target as Node;
+      const clickedMore = moreBtnRef.current?.contains(target) || moreMenuRef.current?.contains(target);
+      const clickedUser = userBtnRef.current?.contains(target) || userMenuRef.current?.contains(target);
+      if (!clickedMore) setMoreOpen(false);
+      if (!clickedUser) setUserMenuOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Position the dropdown panels when they open (portal-style fixed positioning)
+  useEffect(() => {
+    if (moreOpen && moreMenuRef.current && moreBtnRef.current) {
+      const rect = moreBtnRef.current.getBoundingClientRect();
+      const el = moreMenuRef.current;
+      el.style.left = `${Math.min(rect.left, window.innerWidth - 264)}px`;
+      el.style.top = `${rect.bottom + 6}px`;
+    }
+  }, [moreOpen]);
+
+  useEffect(() => {
+    if (userMenuOpen && userMenuRef.current && userBtnRef.current) {
+      const rect = userBtnRef.current.getBoundingClientRect();
+      const el = userMenuRef.current;
+      el.style.left = `${Math.max(8, rect.right - 256)}px`;
+      el.style.top = `${rect.bottom + 6}px`;
+    }
+  }, [userMenuOpen, isAuthenticated]);
 
   const openUserMenu = useCallback(() => {
     window.dispatchEvent(new CustomEvent('toggleUserMenu'));
@@ -262,15 +282,8 @@ export function Header() {
       {/* ── "More" dropdown portal (renders OUTSIDE the header) ── */}
       {moreOpen && (
         <div
+          ref={moreMenuRef}
           className="fixed z-[70] w-60 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 shadow-soft-xl overflow-hidden"
-          ref={(el) => {
-            if (!el) return;
-            const rect = moreBtnRef.current?.getBoundingClientRect();
-            if (rect) {
-              el.style.left = `${Math.min(rect.left, window.innerWidth - 260)}px`;
-              el.style.top = `${rect.bottom + 6}px`;
-            }
-          }}
         >
           <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-gold opacity-80" />
           <div className="p-1.5">
@@ -301,15 +314,8 @@ export function Header() {
       {/* ── User dropdown portal (renders OUTSIDE the header) ── */}
       {userMenuOpen && isAuthenticated && (
         <div
+          ref={userMenuRef}
           className="fixed z-[70] w-64 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 shadow-soft-xl overflow-hidden"
-          ref={(el) => {
-            if (!el) return;
-            const rect = userBtnRef.current?.getBoundingClientRect();
-            if (rect) {
-              el.style.left = `${Math.max(8, rect.right - 256)}px`;
-              el.style.top = `${rect.bottom + 6}px`;
-            }
-          }}
         >
             <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-gold opacity-80" />
             {/* User header */}
