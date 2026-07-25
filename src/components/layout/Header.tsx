@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/hooks/useAuth';
 import { useUIStore, useNotificationStore, useCompareStore } from '@/store';
@@ -27,19 +26,6 @@ export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [moreOpen, setMoreOpen] = useState(false);
-
-  const menuListVariants = {
-    hidden: { opacity: 0, y: 8 },
-    show: {
-      opacity: 1,
-      y: 0,
-      transition: { staggerChildren: 0.04, delayChildren: 0.03 },
-    },
-  };
-  const menuItemVariants = {
-    hidden: { opacity: 0, y: 8, scale: 0.98 },
-    show: { opacity: 1, y: 0, scale: 1 },
-  };
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -141,46 +127,33 @@ export function Header() {
               );
             })}
 
-            {/* More dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setMoreOpen(!moreOpen)}
-                className={cn(
-                  'flex items-center gap-1 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200',
-                  moreOpen
-                    ? 'text-surface-900 dark:text-white bg-surface-100 dark:bg-surface-800'
-                    : 'text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-white hover:bg-surface-100 dark:hover:bg-surface-800'
-                )}
-              >
-                المزيد
-                <ChevronDown className={cn('w-3.5 h-3.5 transition-transform duration-200', moreOpen && 'rotate-180')} />
-              </button>
+                {/* More dropdown */}
+                <div className="relative" style={{ isolation: 'isolate' }}>
+                  <button
+                    onClick={() => setMoreOpen(!moreOpen)}
+                    className={cn(
+                      'flex items-center gap-1 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200',
+                      moreOpen
+                        ? 'text-surface-900 dark:text-white bg-surface-100 dark:bg-surface-800'
+                        : 'text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-white hover:bg-surface-100 dark:hover:bg-surface-800'
+                    )}
+                  >
+                    المزيد
+                    <ChevronDown className={cn('w-3.5 h-3.5 transition-transform duration-200', moreOpen && 'rotate-180')} />
+                  </button>
 
-              <AnimatePresence>
-                {moreOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setMoreOpen(false)} />
-                    <motion.div
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 8 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full mt-2 w-60 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 shadow-soft-xl overflow-hidden z-50"
-                    >
-                      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-gold opacity-80" />
-                      <motion.div
-                        variants={menuListVariants}
-                        initial="hidden"
-                        animate="show"
-                        exit="hidden"
-                        className="p-1.5"
-                      >
-                        {secondaryLinks.map((link) => {
-                          const Icon = link.icon;
-                          const active = pathname === link.href || pathname.startsWith(link.href + '/');
-                          return (
-                            <motion.div key={link.href} variants={menuItemVariants}>
+                  {moreOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setMoreOpen(false)} />
+                      <div className="absolute right-0 top-full mt-2 w-60 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 shadow-soft-xl overflow-hidden z-50">
+                        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-gold opacity-80" />
+                        <div className="p-1.5">
+                          {secondaryLinks.map((link) => {
+                            const Icon = link.icon;
+                            const active = pathname === link.href || pathname.startsWith(link.href + '/');
+                            return (
                               <Link
+                                key={link.href}
                                 href={link.href}
                                 onClick={() => setMoreOpen(false)}
                                 className={cn(
@@ -193,15 +166,13 @@ export function Header() {
                                 <Icon className="w-4 h-4" />
                                 {link.label}
                               </Link>
-                            </motion.div>
-                          );
-                        })}
-                      </motion.div>
-                    </motion.div>
-                  </>
-                )}
-              </AnimatePresence>
-            </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
           </nav>
 
           {/* Search */}
@@ -294,21 +265,9 @@ export function Header() {
 
 function DesktopUserMenu({ user, items, logout }: { user: any; items: any[]; logout: () => void }) {
   const [open, setOpen] = useState(false);
-  const menuListVariants = {
-    hidden: { opacity: 0, y: 8 },
-    show: {
-      opacity: 1,
-      y: 0,
-      transition: { staggerChildren: 0.04, delayChildren: 0.03 },
-    },
-  };
-  const menuItemVariants = {
-    hidden: { opacity: 0, y: 8, scale: 0.98 },
-    show: { opacity: 1, y: 0, scale: 1 },
-  };
 
   return (
-    <>
+    <div className="relative" style={{ isolation: 'isolate' }}>
       <button
         onClick={() => setOpen(!open)}
         className="flex items-center gap-1.5 p-1.5 pr-2.5 rounded-xl hover:bg-surface-100 dark:hover:bg-surface-800 transition-all duration-200"
@@ -323,89 +282,72 @@ function DesktopUserMenu({ user, items, logout }: { user: any; items: any[]; log
         <ChevronDown className={cn('w-4 h-4 text-surface-400 transition-transform duration-200', open && 'rotate-180')} />
       </button>
 
-      <AnimatePresence>
-        {open && (
-          <>
-            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              transition={{ duration: 0.15 }}
-              className="absolute left-0 top-full mt-2 w-64 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 shadow-soft-xl overflow-hidden z-50"
-            >
-              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-gold opacity-80" />
-              {/* User header */}
-              <div className="p-4 border-b border-surface-100 dark:border-surface-700 bg-gradient-to-br from-primary-50/50 to-transparent dark:from-primary-500/5">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-sm font-bold ring-2 ring-gold-400/30">
-                    {user?.image ? (
-                      <img src={user.image} alt="" className="w-10 h-10 rounded-full object-cover" />
-                    ) : (
-                      user?.name?.charAt(0) || 'U'
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-bold text-surface-900 dark:text-white text-sm truncate">{user?.name}</p>
-                    <p className="text-xs text-surface-500 truncate">{user?.email}</p>
-                  </div>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 top-full mt-2 w-64 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 shadow-soft-xl overflow-hidden z-50">
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-gold opacity-80" />
+            {/* User header */}
+            <div className="p-4 border-b border-surface-100 dark:border-surface-700 bg-gradient-to-br from-primary-50/50 to-transparent dark:from-primary-500/5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-sm font-bold ring-2 ring-gold-400/30">
+                  {user?.image ? (
+                    <img src={user.image} alt="" className="w-10 h-10 rounded-full object-cover" />
+                  ) : (
+                    user?.name?.charAt(0) || 'U'
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-surface-900 dark:text-white text-sm truncate">{user?.name}</p>
+                  <p className="text-xs text-surface-500 truncate">{user?.email}</p>
                 </div>
               </div>
-              <motion.div
-                variants={menuListVariants}
-                initial="hidden"
-                animate="show"
-                exit="hidden"
-                className="p-1.5 max-h-[300px] overflow-y-auto"
-              >
-                {items.map((item: any) => {
-                  const Icon = item.icon;
-                  return (
-                    <motion.div key={item.href} variants={menuItemVariants}>
-                      <Link
-                        href={item.href}
-                        onClick={() => setOpen(false)}
-                        className="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700 transition-all duration-200"
-                      >
-                        <span className="flex items-center gap-3">
-                          <Icon className="w-4 h-4" />
-                          {item.label}
-                        </span>
-                        {item.badge ? (
-                          <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-accent-500 text-white text-[10px] font-bold flex items-center justify-center">
-                            {item.badge}
-                          </span>
-                        ) : null}
-                      </Link>
-                    </motion.div>
-                  );
-                })}
-                {user?.role === 'ADMIN' && (
-                  <motion.div variants={menuItemVariants}>
-                    <Link
-                      href="/admin"
-                      onClick={() => setOpen(false)}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700 transition-all duration-200"
-                    >
-                      <ShieldCheck className="w-4 h-4" />
-                      لوحة التحكم
-                    </Link>
-                  </motion.div>
-                )}
-              </motion.div>
-              <div className="p-1.5 border-t border-surface-100 dark:border-surface-700">
-                <button
-                  onClick={() => { logout(); setOpen(false); }}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-accent-600 hover:bg-accent-50 dark:hover:bg-accent-500/10 w-full transition-all duration-200"
+            </div>
+            <div className="p-1.5 max-h-[300px] overflow-y-auto">
+              {items.map((item: any) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    className="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700 transition-all duration-200"
+                  >
+                    <span className="flex items-center gap-3">
+                      <Icon className="w-4 h-4" />
+                      {item.label}
+                    </span>
+                    {item.badge ? (
+                      <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-accent-500 text-white text-[10px] font-bold flex items-center justify-center">
+                        {item.badge}
+                      </span>
+                    ) : null}
+                  </Link>
+                );
+              })}
+              {user?.role === 'ADMIN' && (
+                <Link
+                  href="/admin"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700 transition-all duration-200"
                 >
-                  <LogOut className="w-4 h-4" />
-                  تسجيل خروج
-                </button>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </>
+                  <ShieldCheck className="w-4 h-4" />
+                  لوحة التحكم
+                </Link>
+              )}
+            </div>
+            <div className="p-1.5 border-t border-surface-100 dark:border-surface-700">
+              <button
+                onClick={() => { logout(); setOpen(false); }}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-accent-600 hover:bg-accent-50 dark:hover:bg-accent-500/10 w-full transition-all duration-200"
+              >
+                <LogOut className="w-4 h-4" />
+                تسجيل خروج
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
