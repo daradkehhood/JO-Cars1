@@ -1,9 +1,13 @@
 /**
- * ConditionScorer — realistic condition evaluation using OpenAI Vision.
+ * ConditionScorer — local, spec-based condition AI.
  *
- * The model inspects the car's images (exterior, interior, engine bay,
- * dashboard, tires) and returns a structured JSON assessment. Falls back
- * to a km/age heuristic when OpenAI is unavailable or no images exist.
+ * No images? No problem. The engine reads the car's actual specifications
+ * (km/year, seller-stated condition, owner count, paint originality,
+ * warranty, service history, reported damages) and computes a structured
+ * score with sub-scores per area (exterior, interior, engine). Every
+ * conclusion is grounded in the seller's declared data — nothing is invented.
+ *
+ * This replaces the previous OpenAI Vision integration entirely.
  */
 
 import { BaseAIModule, AIProviderType, AIResult } from './base';
@@ -13,13 +17,28 @@ export interface ConditionInput {
   kilometers: number;
   year: number;
   transmission?: string;
-  condition?: string; // Seller-stated condition (used as a tie-breaker)
+  /** Seller-stated condition (EX/VG/G/FAIR/NEEDS_MAINTENANCE/NEEDS_INSPECTION). */
+  condition?: string;
   description?: string;
+  // ── Spec-driven extra fields (optionally passed by callers that have the Car record) ──
+  ownerCount?: number;
+  isDamaged?: boolean;
+  isPaintOriginal?: boolean;
+  hasWarranty?: boolean;
+  hasServiceHistory?: boolean;
+  fuelType?: string;
+  bodyType?: string;
 }
 
 export interface ConditionFactor {
   name: string;
   score: number; // 0-100
+  description: string;
+}
+
+interface DamageItem {
+  part: string;
+  severity: 'minor' | 'moderate' | 'severe';
   description: string;
 }
 
@@ -30,168 +49,185 @@ export interface ConditionOutput {
   interiorScore: number;
   engineBayScore: number;
   factors: ConditionFactor[];
-  damages: Array<{ part: string; severity: 'minor' | 'moderate' | 'severe'; description: string }>;
+  damages: DamageItem[];
   summary: string;
+  /** Always false in local mode (kept for UI compatibility). */
   isRealVision: boolean;
+}
+
+const SELLER_CONDITION_BASE: Record<string, number> = {
+  EXCELLENT: 95, 'ممتازة': 95,
+  VERY_GOOD: 82, 'جيدة جداً': 82,
+  GOOD: 68, 'جيدة': 68,
+  FAIR: 48, 'مقبولة': 48,
+  NEEDS_MAINTENANCE: 28, 'تحتاج صيانة': 28,
+  NEEDS_INSPECTION: 18, 'تحتاج فحص': 18,
+};
+
+const EXPECTED_KM_PER_YEAR = 20000;
+
+function scoreToLabel(score: number): string {
+  if (score >= 90) return 'ممتازة';
+  if (score >= 78) return 'جيدة جداً';
+  if (score >= 62) return 'جيدة';
+  if (score >= 42) return 'مقبولة';
+  if (score >= 22) return 'تحتاج صيانة';
+  return 'سيئة';
 }
 
 export class ConditionScorer extends BaseAIModule<ConditionInput, ConditionOutput> {
   name = 'ConditionScorer';
-  version = '2.0.0';
-  provider: AIProviderType = 'openai';
+  version = '3.0.0';
+  provider: AIProviderType = 'local';
 
   async process(input: ConditionInput): Promise<AIResult<ConditionOutput>> {
     const startTime = Date.now();
-
-    // Try AI vision first if we have images and a key
-    if (this.isAIReady() && input.images && input.images.length > 0) {
-      const aiResult = await this.callAIWithVision(
-        this.buildVisionPrompt(input),
-        input.images.map((url) => ({ url, detail: 'low' as const })),
-        'أنت خبير فني تقييم سيارات. تحلّل الصور بدقة وتذكر العيوب الفعلية فقط. لا تخمن. أعد JSON عربي فقط.',
-        { temperature: 0.2, maxTokens: 1500, jsonMode: true }
-      );
-
-      if (aiResult) {
-        const parsed = this.parseJSON<any>(aiResult);
-        if (parsed) {
-          const score = this.clamp(Math.round(Number(parsed.overallScore) || 0), 0, 100);
-          const ext = this.clamp(Math.round(Number(parsed.exteriorScore) || 0), 0, 100);
-          const int = this.clamp(Math.round(Number(parsed.interiorScore) || 0), 0, 100);
-          const eng = this.clamp(Math.round(Number(parsed.engineBayScore) || 0), 0, 100);
-          const factors: ConditionFactor[] = Array.isArray(parsed.factors)
-            ? parsed.factors.slice(0, 6).map((f: any) => ({
-                name: String(f.name || '').slice(0, 100),
-                score: this.clamp(Math.round(Number(f.score) || 0), 0, 100),
-                description: String(f.description || '').slice(0, 300),
-              }))
-            : [];
-          const damages = Array.isArray(parsed.damageItems)
-            ? parsed.damageItems.slice(0, 12).map((d: any) => ({
-                part: String(d.part || d.name || '').slice(0, 100),
-                severity:
-                  d.severity === 'minor' || d.severity === 'moderate' || d.severity === 'severe'
-                    ? d.severity
-                    : 'minor',
-                description: String(d.description || '').slice(0, 300),
-              }))
-            : [];
-          return {
-            success: true,
-            data: {
-              score,
-              label: this.scoreToLabel(score),
-              exteriorScore: ext,
-              interiorScore: int,
-              engineBayScore: eng,
-              factors,
-              damages,
-              summary: String(parsed.reasoning || parsed.summary || this.scoreToLabel(score)).slice(0, 1000),
-              isRealVision: true,
-            },
-            confidence: Math.min(95, 60 + Math.floor(score / 5)),
-            processingTime: Date.now() - startTime,
-          };
-        }
-      }
+    if (!this.validate(input)) {
+      return { success: false, error: 'بيانات غير صالحة', processingTime: Date.now() - startTime };
     }
 
-    // Fallback heuristic (no images or AI unavailable)
+    const data = this.evaluate(input);
+    const confidence = this.confidenceFromFields(
+      [input.condition, input.ownerCount, input.isPaintOriginal, input.hasWarranty, input.hasServiceHistory, input.fuelType].filter(Boolean).length,
+      6,
+      55,
+      Math.min(15, input.images.length)
+    );
+
     return {
       success: true,
-      data: this.heuristic(input),
+      data,
+      confidence,
       processingTime: Date.now() - startTime,
     };
   }
 
-  private buildVisionPrompt(input: ConditionInput): string {
-    return `حلل حالة هذه السيارة بناءً على الصور المرفقة فقط. السيارة لديها ${input.kilometers.toLocaleString()} كم، سنة ${input.year}.
-
-أعد تقييمك بصيغة JSON فقط:
-{
-  "exteriorScore": 85,           // 0-100 حالة الطلاء والهيكل الخارجي
-  "interiorScore": 80,           // 0-100 حالة الداخل والمقاعد والتابلوه
-  "engineBayScore": 90,          // 0-100 حالة حجرة المحرك
-  "overallScore": 82,            // 0-100 التقييم العام
-  "factors": [
-    { "name": "الطلاء", "score": 80, "description": "وصف جميع الخدوش/الانبعاجات/أماكن الدهان" }
-  ],
-  "damageItems": [
-    { "part": "الباب الأمامي الأيمن", "severity": "minor",
-      "description": "خدش بسيط بطول 10 سم" }
-  ],
-  "reasoning": "شرح عام بشكل هرمي للحالة بناءً على ما تراه في الصور"
-}
-
-التعليمات:
-- اذكر فقط العيوب التي تراها فعلاً في الصور.
-- لا تخمن. إذا لم تتمكن من رؤية جزء محدد، اذكره كـ "factor" بقيمة منخفضة بدلاً من damageItem.
-- severity يجب أن تكون minor/moderate/severe فقط.
-- النصوص باللغة العربية.`;
-  }
-
-  private heuristic(input: ConditionInput): ConditionOutput {
+  private evaluate(input: ConditionInput): ConditionOutput {
     const age = Math.max(0, new Date().getFullYear() - input.year);
-    const kmPerYear = age > 0 ? input.kilometers / age : 0;
+    const kmPerYear = age > 0 ? input.kilometers / age : input.kilometers;
+    const kmDeviation = kmPerYear / EXPECTED_KM_PER_YEAR; // 1.0 == Jordan average
 
-    let score = 85;
-    if (kmPerYear > 30000) score -= 15;
-    else if (kmPerYear > 20000) score -= 10;
-    else if (kmPerYear < 10000) score += 5;
+    // ── Sub-scores per area (each grounded in observable spec data) ──
+    // Exterior —Proxy: paint originality + seller's stated mode of damage
+    let exterior = 78;
+    if (input.isPaintOriginal === true) exterior += 12;
+    else if (input.isPaintOriginal === false) exterior -= 18;
+    if (input.isDamaged) exterior -= 25;
+    // Age naturally dulls even original paint
+    exterior -= Math.min(15, age * 1.2);
+    exterior = this.clamp(exterior, 0, 100);
 
-    // Adjust for seller-stated condition if present
-    const condMap: Record<string, number> = {
-      EXCELLENT: 5, VERY_GOOD: 2, GOOD: 0, FAIR: -10,
-      NEEDS_MAINTENANCE: -20, NEEDS_INSPECTION: -25,
-      'ممتازة': 5, 'جيدة جداً': 2, 'جيدة': 0, 'مقبولة': -10,
-    };
-    if (input.condition && condMap[input.condition] !== undefined) {
-      score += condMap[input.condition];
-    }
-    score = this.clamp(score, 0, 100);
+    // Interior — proxy: km/year (more km = more use of seats/floor/wheel) + owner count
+    let interior = 78;
+    if (kmDeviation < 0.7) interior += 12;
+    else if (kmDeviation < 1.0) interior += 6;
+    else if (kmDeviation > 1.5) interior -= 15;
+    else if (kmDeviation > 1.2) interior -= 8;
+    if (input.ownerCount === 1) interior += 4;
+    else if (input.ownerCount && input.ownerCount >= 3) interior -= 6;
+    // Older cars naturally have more wear
+    interior -= Math.min(12, age * 1);
+    // Seller-declared interior reference (only condition maps onto the whole-car signal)
+    const sellerCondBase = input.condition ? SELLER_CONDITION_BASE[input.condition] : undefined;
+    if (sellerCondBase !== undefined) interior = Math.round((interior + sellerCondBase) / 2);
+    interior = this.clamp(interior, 0, 100);
 
+    // Engine bay — proxy: km/year (high km ⇒ more engine wear), service history, warranty
+    let engineBay = 75;
+    if (input.hasServiceHistory) engineBay += 14;
+    if (input.hasWarranty) engineBay += 8;
+    if (kmDeviation > 1.5) engineBay -= 20;
+    else if (kmDeviation > 1.2) engineBay -= 10;
+    else if (kmDeviation < 0.7) engineBay += 6;
+    if (input.condition === 'NEEDS_MAINTENANCE' || input.condition === 'تحتاج صيانة') engineBay -= 18;
+    if (input.condition === 'NEEDS_INSPECTION' || input.condition === 'تحتاج فحص') engineBay -= 24;
+    engineBay = this.clamp(engineBay, 0, 100);
+
+    // ── Overall score: weighted average emphasizing the seller's declaration
+    // but settling toward the sub-scores when the engine bay is concerning.
+    let overall = Math.round(exterior * 0.32 + interior * 0.33 + engineBay * 0.35);
+    if (sellerCondBase !== undefined) overall = Math.round((overall + sellerCondBase) / 2);
+    if (input.isDamaged) overall = overall - 8; // already in exterior; small reinforcement
+    overall = this.clamp(overall, 0, 100);
+
+    // ── Human-readable factors ──
     const factors: ConditionFactor[] = [
       {
         name: 'الكيلومترات',
-        score: this.clamp(Math.round(100 - (kmPerYear / 300) * 10), 0, 100),
-        description: `${input.kilometers.toLocaleString()} كم (${Math.round(kmPerYear).toLocaleString()} كم/سنة)`,
+        score: this.clamp(Math.round(100 - (kmDeviation - 1) * 35), 0, 100),
+        description: `${input.kilometers.toLocaleString()} كم (${Math.round(kmPerYear).toLocaleString()} كم/سنة — ${kmDeviation < 0.8 ? 'أقل من المعدل' : kmDeviation > 1.2 ? 'أعلى من المعدل' : 'مطابق للمعدل'})`,
       },
       {
         name: 'العمر',
-        score: this.clamp(Math.round(100 - age * 5), 0, 100),
-        description: `${age} سنوات`,
+        score: this.clamp(Math.round(100 - age * 4), 0, 100),
+        description: `${age} سنة من الاستخدام`,
       },
     ];
 
+    if (input.ownerCount === 1) {
+      factors.push({ name: 'مالك واحد', score: 95, description: 'مالك واحد سابق — علامة جودة قوية' });
+    } else if (input.ownerCount && input.ownerCount >= 2) {
+      factors.push({
+        name: 'عدد الملاك',
+        score: this.clamp(95 - (input.ownerCount - 1) * 15, 0, 100),
+        description: `${input.ownerCount} ملاك سابقين — ${input.ownerCount >= 4 ? 'يقلل الثقة' : 'مقبول土豪'}`.replace('土豪', ''),
+      });
+    }
+
+    if (input.isPaintOriginal === true) {
+      factors.push({ name: 'الدهان الأصلي', score: 92, description: 'الدهان أصلي بالكامل — دلالة على سيارة غير متعرضة لحوادث' });
+    } else if (input.isPaintOriginal === false) {
+      factors.push({ name: 'الدهان غير أصلي', score: 62, description: 'الدهان غير أصلي — قد يدل على إعادة دهان أو إصلاح بسيط' });
+    }
+
+    if (input.hasServiceHistory) {
+      factors.push({ name: 'سجل صيانة كامل', score: 90, description: 'وجود سجل صيانة كامل — يدل على عناية سابقة بالمحرك' });
+    }
+
+    if (input.hasWarranty) {
+      factors.push({ name: 'ضمان ساري', score: 88, description: 'الضمان ساري المفعول — حماية إضافية للمشتري' });
+    }
+
+    // ── Damages surfaced from declared data (no image inspection) ──
+    const damages: DamageItem[] = [];
+    if (input.isDamaged) {
+      damages.push({
+        part: 'عام',
+        severity: 'moderate',
+        description: 'سيارة مصدومة سابقاً (وفق تصريح البائع) — تقلل من القيمة ودرجة الحالة',
+      });
+    }
+    if (input.isPaintOriginal === false) {
+      damages.push({
+        part: 'الطلاء',
+        severity: 'minor',
+        description: 'الدهان غير أصلي (وفق تصريح البائع)',
+      });
+    }
+
+    // ── Summary ──
+    const summaryParts: string[] = [];
+    summaryParts.push(`الحالة العامة: ${scoreToLabel(overall)} (${overall}/100).`);
+    summaryParts.push(`الدرجات الفرعية — الخارج: ${exterior}، الداخل: ${interior}، غرفة المحرك: ${engineBay}.`);
+    if (input.hasServiceHistory) summaryParts.push('يوجد سجل صيانة كامل (ميزة قوية).');
+    if (input.hasWarranty) summaryParts.push('السيارة لا تزال تحت الضمان.');
+    if (input.ownerCount === 1) summaryParts.push('مالك واحد سابق (أفضل سيناريو للحالة).');
+    if (input.isDamaged) summaryParts.push('تنبيه: السيارة مصدومة سابقاً.');
+    if (input.isPaintOriginal === false) summaryParts.push('تنبيه: الدهان غير أصلي.');
+    summaryParts.push('هذا التقييم مبني على المواصفات المُدخل ة من البائع (لم يتم تحليل الصور — متاح عند الحاجة عبر وحدة كشف الأضرار).');
+
     return {
-      score,
-      label: this.scoreToLabel(score),
-      exteriorScore: score,
-      interiorScore: score,
-      engineBayScore: score,
+      score: overall,
+      label: scoreToLabel(overall),
+      exteriorScore: exterior,
+      interiorScore: interior,
+      engineBayScore: engineBay,
       factors,
-      damages: [],
-      summary: `تقييم تقديري (بدون تحليل صور): الحالة العامة ${this.scoreToLabel(score)} (${score}/100). لتحليل أدق بالاعتماد على الصور،яхен فعل OpenAI Vision.`,
+      damages,
+      summary: summaryParts.join(' '),
       isRealVision: false,
     };
   }
-
-  private scoreToLabel(score: number): string {
-    if (score >= 90) return 'ممتازة';
-    if (score >= 80) return 'جيدة جداً';
-    if (score >= 65) return 'جيدة';
-    if (score >= 45) return 'مقبولة';
-    if (score >= 25) return 'تحتاج صيانة';
-    return 'سيئة';
-  }
-
-  private clamp(n: number, min: number, max: number): number {
-    return Math.min(max, Math.max(min, n));
-  }
 }
 
-export const conditionScorer = new ConditionScorer({
-  type: 'openai',
-  apiKey: process.env.OPENAI_API_KEY || '',
-  model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-});
+export const conditionScorer = new ConditionScorer({ type: 'local' });

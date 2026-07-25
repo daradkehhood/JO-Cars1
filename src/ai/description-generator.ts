@@ -1,3 +1,11 @@
+/**
+ * DescriptionGenerator — pure template-based Arabic car description generator.
+ *
+ * Combines the seller's own notes with a structured Arabic marketing template
+ * tailored to the Jordanian market. No external AI is used; every output is
+ * deterministic and reflects only the inputs the seller provided.
+ */
+
 import { BaseAIModule, AIProviderType } from './base';
 
 interface DescriptionInput {
@@ -12,65 +20,110 @@ interface DescriptionInput {
   price: number;
   features: string[];
   currentDescription?: string;
+  bodyType?: string;
+  engineCapacity?: number | string;
+  ownerCount?: number;
+  hasWarranty?: boolean;
+  hasServiceHistory?: boolean;
+  isNegotiable?: boolean;
 }
+
+const CONDITION_LABELS: Record<string, string> = {
+  EXCELLENT: 'ممتازة', VERY_GOOD: 'جيدة جداً', GOOD: 'جيدة',
+  FAIR: 'مقبولة', NEEDS_MAINTENANCE: 'تحتاج صيانة', NEEDS_INSPECTION: 'تحتاج فحص',
+  'ممتازة': 'ممتازة', 'جيدة جداً': 'جيدة جداً', 'جيدة': 'جيدة', 'مقبولة': 'مقبولة',
+};
+
+const FUEL_LABELS: Record<string, string> = {
+  PETROL: 'بنزين', DIESEL: 'ديزل', HYBRID: 'هايبرد',
+  ELECTRIC: 'كهرباء', PLUGIN_HYBRID: 'هايبرد بلج إن',
+};
+
+const TRANSMISSION_LABELS: Record<string, string> = {
+  AUTOMATIC: 'أوتوماتيك', MANUAL: 'يدوي', CVT: 'CVT',
+  DCT: 'DCT', SEMI_AUTOMATIC: 'نصف أوتوماتيك',
+};
+
+const CONDITION_SALES_PITCH: Record<string, string> = {
+  'ممتازة': 'بحالة الوكالة — وكأنها جديدة',
+  'جيدة جداً': 'في حالة ممتازة جداً ولا يوجد فيها أي مشاكل',
+  'جيدة': 'بحالة جيدة جداً وجاهزة للقيادة فوراً',
+  'مقبولة': 'في حالة مقبولة — تحتاج بعض الاهتمام البسيط',
+  'تحتاج صيانة': 'تحتاج إلى بعض الصيانة البسيطة وفحصها قبل الشراء',
+  'تحتاج فحص': 'تحتاج فحص فني قبل الشراء',
+};
 
 export class DescriptionGenerator extends BaseAIModule<DescriptionInput, { description: string; tags: string[] }> {
   name = 'DescriptionGenerator';
-  version = '2.0.0';
-  provider: AIProviderType = 'openai';
+  version = '3.0.0';
+  provider: AIProviderType = 'local';
 
   async process(input: DescriptionInput) {
     const startTime = Date.now();
 
-    const prompt = `
-      أنت خبير في كتابة إعلانات السيارات في الأردن. اكتب وصفاً احترافياً مقنعاً لسيارة للبيع.
+    const conditionLabel = (input.condition && CONDITION_LABELS[input.condition]) || input.condition || 'جيدة';
+    const fuelLabel = (input.fuelType && FUEL_LABELS[input.fuelType]) || input.fuelType || 'بنزين';
+    const transLabel = (input.transmission && TRANSMISSION_LABELS[input.transmission]) || input.transmission || 'أوتوماتيك';
+    const pitch = CONDITION_SALES_PITCH[conditionLabel] || `بحالة ${conditionLabel}`;
 
-      بيانات السيارة:
-      - الموديل: ${input.brand} ${input.model} ${input.year}
-      - كيلومتر: ${input.kilometers.toLocaleString()} كم
-      - نوع الوقود: ${input.fuelType}
-      - القير: ${input.transmission}
-      - اللون: ${input.color}
-      - الحالة: ${input.condition}
-      - السعر: ${input.price.toLocaleString()} دينار أردني
-      ${input.features.length ? `- المميزات: ${input.features.join(', ')}` : ''}
-      ${input.currentDescription ? `- ملاحظات البائع: ${input.currentDescription}` : ''}
+    const ownersText = input.ownerCount === 1
+      ? 'مالك واحد فقط'
+      : input.ownerCount === 2
+        ? 'مالكان فقط'
+        : input.ownerCount
+          ? `${input.ownerCount} ملاك سابقين`
+          : '';
 
-      اكتب وصفاً تسويقياً احترافياً (لا يقل عن 100 كلمة) بالعربية الفصحى مع لغة سوقية جذابة.
-      ركز على نقاط القوة، اذكر حالة السيارة، وسبب كونها صفقة جيدة.
-      أعد النتيجة بصيغة JSON التالية تماماً:
-      {
-        "description": "الوصف الكامل",
-        "tags": ["وسم1", "وسم2", "وسم3", "وسم4", "وسم5"]
-      }
-    `;
+    const warrantyText = input.hasWarranty ? 'السيارة لا تزال تحت الضمان الوكيل.' : '';
+    const serviceText = input.hasServiceHistory ? 'يوجد سجل صيانة كامل لدى الوكيل.' : '';
+    const negotiationText = input.isNegotiable
+      ? 'السعر قابل للتفاوض البسيط للجادين.'
+      : 'السعر ثابت وغير قابل للتفاوض.';
 
-    const response = await this.callAI(prompt);
-    const parsed = this.parseJSON<{ description: string; tags: string[] }>(response);
+    const featuresText = input.features && input.features.length > 0
+      ? `تأتي هذه السيارة مزوّدة بمميزات بارزة: ${input.features.join('، ')}.`
+      : '';
 
-    if (parsed && parsed.description && parsed.description.length > 50) {
-      return { success: true, data: parsed, processingTime: Date.now() - startTime };
-    }
+    const sellerNotes = input.currentDescription ? `ملاحظات البائع: ${input.currentDescription.trim()}` : '';
 
-    const fallbackDesc = `
-      ${input.brand} ${input.model} ${input.year} بحالة ممتازة للبيع في الأردن.
-      السيارة ذات لون ${input.color}، تعمل بوقود ${input.fuelType}،
-      قير ${input.transmission}، عدد الكيلومترات ${input.kilometers.toLocaleString()} كم فقط.
-      السعر: ${input.price.toLocaleString()} دينار أردني شامل كافة الرسوم.
-      السيارة بحالة ${input.condition} وجاهزة للتسليم الفوري.
-      للاستفسار والمعاينة يرجى الاتصال على الرقم المرفق.
-    `.trim();
+    const descriptionParts: string[] = [];
+    descriptionParts.push(`للبيع ${input.brand} ${input.model} ${input.year} ${pitch}.`);
+    descriptionParts.push(
+      `السيارة ${input.color || 'بلون أنيق'}, تعمل بوقود ${fuelLabel}، قير ${transLabel}` +
+      (input.engineCapacity ? ` بسعة محرك ${input.engineCapacity}` : '') + '.'
+    );
+    descriptionParts.push(`عدد الكيلومترات: ${input.kilometers.toLocaleString()} كم فقط.`);
+    if (ownersText) descriptionParts.push(ownersText + '.');
+    descriptionParts.push(`السعر: ${input.price.toLocaleString()} دينار أردني. ${negotiationText}`);
+    if (warrantyText) descriptionParts.push(warrantyText);
+    if (serviceText) descriptionParts.push(serviceText);
+    if (featuresText) descriptionParts.push(featuresText);
+    descriptionParts.push('السيارة جاهزة للتسليم الفوري ومعاينة فورية في الأردن.');
+    if (sellerNotes) descriptionParts.push(sellerNotes);
+    descriptionParts.push('للاستفسار والمعاينة يرجى التواصل عبر رقم الهاتف المرفق. الجادين فقط.');
+
+    const description = descriptionParts.join(' ');
+
+    // Build tags — keep brand/model/year + any distinguishing specs (deduped)
+    const tags = Array.from(new Set([
+      input.brand,
+      input.model,
+      String(input.year),
+      fuelLabel,
+      transLabel,
+      conditionLabel,
+      ...(input.bodyType ? [input.bodyType] : []),
+      ...(input.color ? [input.color] : []),
+      ...(input.hasWarranty ? ['ضمان'] : []),
+      ...(input.hasServiceHistory ? ['سجل صيانة'] : []),
+    ].filter(Boolean))) as string[];
 
     return {
       success: true,
-      data: { description: fallbackDesc, tags: [input.brand, input.model, String(input.year), input.fuelType, input.condition] },
+      data: { description, tags },
       processingTime: Date.now() - startTime,
     };
   }
 }
 
-export const descriptionGenerator = new DescriptionGenerator({
-  type: 'openai',
-  apiKey: process.env.OPENAI_API_KEY || '',
-  model: process.env.OPENAI_MODEL || 'gpt-4o',
-});
+export const descriptionGenerator = new DescriptionGenerator({ type: 'local' });

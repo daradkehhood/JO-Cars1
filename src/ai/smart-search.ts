@@ -13,7 +13,7 @@ interface SmartSearchOutput {
 export class SmartSearch extends BaseAIModule<SmartSearchInput, SmartSearchOutput> {
   name = 'SmartSearch';
   version = '1.0.0';
-  provider: AIProviderType = 'openai';
+  provider: AIProviderType = 'local';
 
   async process(input: SmartSearchInput) {
     const startTime = Date.now();
@@ -73,8 +73,4 @@ export class SmartSearch extends BaseAIModule<SmartSearchInput, SmartSearchOutpu
   }
 }
 
-export const smartSearch = new SmartSearch({
-  type: 'openai',
-  apiKey: process.env.OPENAI_API_KEY || '',
-  model: process.env.OPENAI_MODEL || 'gpt-4o',
-});
+export const smartSearch = new SmartSearch({ type: 'local' });

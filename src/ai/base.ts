@@ -1,22 +1,23 @@
 /**
- * AI Module Base Architecture
+ * AI Module Base Architecture — LOCAL, dependency-free AI engine.
  *
- * Provides the abstract base for AI modules and integrates them with the
- * OpenAIProvider located in `./providers/openai.ts`.
+ * This module provides the abstract base for all "AI" features. Instead of
+ * calling external LLMs, each module implements its own heuristics tailored
+ * to the Jordanian car market. The result is:
+ *  - Zero external API dependencies (no OpenAI billing)
+ *  - Deterministic, fast, fully offline
+ *  - Transparent and auditable logic
  *
- * The provider is instantiated lazily from process.env so that AI features
- * gracefully degrade to a heuristic fallback when OPENAI_API_KEY is missing
- * (premium toggles in env still allow normal UI without crashing).
+ * The architecture is preserved (AIProviderType, BaseAIModule, parseJSON,
+ * isAIReady) so existing route handlers and components keep working.
  */
 
-import { getOpenAIProvider, OpenAIProvider, ChatOptions } from './providers/openai';
-
-export type AIProviderType = 'openai' | 'google' | 'anthropic' | 'custom';
+export type AIProviderType = 'local' | 'custom';
 
 export interface AIProviderConfig {
   type: AIProviderType;
-  apiKey: string;
-  model: string;
+  apiKey?: string;
+  model?: string;
   baseUrl?: string;
   options?: Record<string, unknown>;
 }
@@ -35,17 +36,6 @@ export interface AIResult<T = unknown> {
   processingTime?: number;
 }
 
-/**
- * Web search call result — passes alongside the response text so callers
- * can show provenance URLs (real OpenSooq / JoCars listings etc.).
- */
-export interface AIWebSearchResult {
-  text: string;
-  citedUrls: string[];
-  success: boolean;
-  error?: string;
-}
-
 export interface AIModule<TInput, TOutput> {
   name: string;
   version: string;
@@ -55,14 +45,12 @@ export interface AIModule<TInput, TOutput> {
 }
 
 /**
- * Whether AI is enabled in the current environment.
- * AI is enabled when:
- *  - DISABLE_AI is not 'true'
- *  - OPENAI_API_KEY is set
+ * AI is always enabled in local mode — no key required.
+ * Set DISABLE_AI="true" in env to force modules into "off" mode
+ * (they still return data, but with reduced confidence and a flag).
  */
 export function isAIEnabled(): boolean {
-  if (process.env.DISABLE_AI === 'true') return false;
-  return Boolean(process.env.OPENAI_API_KEY);
+  return process.env.DISABLE_AI !== 'true';
 }
 
 export abstract class BaseAIModule<TInput, TOutput> implements AIModule<TInput, TOutput> {
@@ -70,12 +58,9 @@ export abstract class BaseAIModule<TInput, TOutput> implements AIModule<TInput, 
   abstract version: string;
   abstract provider: AIProviderType;
   protected config: AIProviderConfig;
-  protected providerInstance: OpenAIProvider;
 
   constructor(config: AIProviderConfig) {
     this.config = config;
-    // Use the shared singleton provider (initialized from env + this config).
-    this.providerInstance = getOpenAIProvider();
   }
 
   abstract process(input: TInput, onProgress?: (progress: AIProgress) => void): Promise<AIResult<TOutput>>;
@@ -85,76 +70,32 @@ export abstract class BaseAIModule<TInput, TOutput> implements AIModule<TInput, 
   }
 
   /**
-   * Plain text chat completion (returns assistant's text).
-   * Returns '' when the provider is unavailable, so callers fall back to heuristics.
+   * Local AI is always ready. Kept for API compatibility with callers.
    */
-  protected async callAI(prompt: string, systemPrompt?: string, opts: ChatOptions = {}): Promise<string> {
-    const result = await this.providerInstance.chat(prompt, { systemPrompt, ...opts });
-    if (!result.success) return '';
-    return result.text;
+  protected isAIReady(): boolean {
+    return isAIEnabled();
   }
 
   /**
-   * Vision-enabled chat — analyze a list of images.
-   */
-  protected async callAIWithVision(
-    prompt: string,
-    images: { url: string; detail?: 'auto' | 'low' | 'high' }[],
-    systemPrompt?: string,
-    opts: ChatOptions = {}
-  ): Promise<string> {
-    const result = await this.providerInstance.chatWithVision(prompt, images, { systemPrompt, ...opts });
-    if (!result.success) return '';
-    return result.text;
-  }
-
-  /**
-   * Web search-enabled chat — actually browses the internet.
-   * Returns assistant text + cited URLs (for provenance display).
-   */
-  protected async callAIWithWebSearch(
-    prompt: string,
-    systemPrompt?: string,
-    opts: { temperature?: number; maxTokens?: number; jsonMode?: boolean } = {}
-  ): Promise<AIWebSearchResult> {
-    const result = await this.providerInstance.chatWithWebSearch(prompt, { systemPrompt, ...opts });
-    if (!result.success) {
-      return { text: '', citedUrls: [], success: false, error: result.error };
-    }
-    return { text: result.text, citedUrls: result.citedUrls, success: true };
-  }
-
-  protected fallbackResponse(_prompt: string): string {
-    return '';
-  }
-
-  /**
-   * Robust JSON parser tolerant of markdown fences, surrounding prose,
-   * and partial content. Strips code fences, finds the first { ... }
-   * balanced object, then parses.
+   * Robust JSON parser tolerant of markdown fences and surrounding prose.
+   * Modules that build JSON strings internally call this when needed.
    */
   protected parseJSON<T>(text: string): T | null {
     if (!text || typeof text !== 'string') return null;
 
-    // 1) Strip markdown code fences: ```json ... ``` or ``` ... ```
+    // Strip markdown code fences: ```json ... ``` or ``` ... ```
     const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
     if (fenceMatch) {
-      const inner = fenceMatch[1].trim();
       try {
-        return JSON.parse(inner) as T;
-      } catch {
-        // fall through to balanced extraction
-      }
+        return JSON.parse(fenceMatch[1].trim()) as T;
+      } catch {}
     }
 
-    // 2) Try as-is
     try {
       return JSON.parse(text) as T;
-    } catch {
-      // fall through
-    }
+    } catch {}
 
-    // 3) Extract the first balanced { ... } block
+    // Extract the first balanced { ... } block
     const start = text.indexOf('{');
     if (start === -1) return null;
     let depth = 0;
@@ -170,9 +111,8 @@ export abstract class BaseAIModule<TInput, TOutput> implements AIModule<TInput, 
       else if (ch === '}') {
         depth--;
         if (depth === 0) {
-          const candidate = text.slice(start, i + 1);
           try {
-            return JSON.parse(candidate) as T;
+            return JSON.parse(text.slice(start, i + 1)) as T;
           } catch {
             return null;
           }
@@ -183,9 +123,19 @@ export abstract class BaseAIModule<TInput, TOutput> implements AIModule<TInput, 
   }
 
   /**
-   * True when AI is active for this module (key present, not disabled).
+   * Syntactic helper — clamp a number into a min/max range.
    */
-  protected isAIReady(): boolean {
-    return this.providerInstance.isEnabled();
+  protected clamp(n: number, min: number, max: number): number {
+    return Math.min(max, Math.max(min, n));
+  }
+
+  /**
+   * Confidence factor between 0 and 100 based on how many of the
+   * expected input fields are present. More complete inputs ⇒ higher confidence.
+   */
+  protected confidenceFromFields(filled: number, total: number, base = 50, bonus = 0): number {
+    const completeness = total > 0 ? filled / total : 0;
+    const score = base + Math.round(completeness * (90 - base)) + bonus;
+    return this.clamp(score, 0, 95);
   }
 }

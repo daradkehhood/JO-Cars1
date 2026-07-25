@@ -3,7 +3,6 @@ import prisma from '@/lib/prisma';
 import { successResponse, errorResponse } from '@/lib/api';
 import { priceEstimator } from '@/ai/price-estimator';
 import { conditionScorer } from '@/ai/condition-scorer';
-import { isAIEnabled } from '@/ai/base';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -69,41 +68,39 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       if (brandCars.length >= 2) dbPrices = brandCars.map((c) => c.price);
     }
 
-    if (isAIEnabled()) {
-      // Real AI price estimate — actually browses Jordanian car sites
-      try {
-        const priceResult = await priceEstimator.process({
-          brand: car.brand?.nameAr || '',
-          model: car.model?.nameAr || '',
-          year: car.year,
-          kilometers: car.kilometers,
-          condition: car.condition,
-          city: car.city?.nameAr || '',
-          fuelType: car.fuelType,
-          transmission: car.transmission,
-          engineCapacity: car.engineCapacity || undefined,
-          bodyType: car.bodyType || undefined,
-          color: car.color || undefined,
-          ownerCount: car.ownerCount || undefined,
-          isDamaged: car.isDamaged,
-          hasWarranty: car.hasWarranty,
-          hasServiceHistory: car.hasServiceHistory,
-          isPaintOriginal: car.isPaintOriginal,
-        });
-        if (priceResult.success && priceResult.data) {
-          fairPrice = priceResult.data.fairPrice;
-          minPrice = priceResult.data.minPrice;
-          maxPrice = priceResult.data.maxPrice;
-          priceConfidence = priceResult.data.confidence;
-          priceReasoning = priceResult.data.reasoning;
-          marketFactors = priceResult.data.marketFactors;
-          similarListings = priceResult.data.similarListings;
-          aiSources = priceResult.data.sources;
-          isRealWebSearch = priceResult.data.isRealWebSearch;
-        }
-      } catch (e) {
-        console.error('[AI price estimate]', e);
+    // Local AI engine — always available
+    try {
+      const priceResult = await priceEstimator.process({
+        brand: car.brand?.nameAr || '',
+        model: car.model?.nameAr || '',
+        year: car.year,
+        kilometers: car.kilometers,
+        condition: car.condition,
+        city: car.city?.nameAr || '',
+        fuelType: car.fuelType,
+        transmission: car.transmission,
+        engineCapacity: car.engineCapacity || undefined,
+        bodyType: car.bodyType || undefined,
+        color: car.color || undefined,
+        ownerCount: car.ownerCount || undefined,
+        isDamaged: car.isDamaged,
+        hasWarranty: car.hasWarranty,
+        hasServiceHistory: car.hasServiceHistory,
+        isPaintOriginal: car.isPaintOriginal,
+      });
+      if (priceResult.success && priceResult.data) {
+        fairPrice = priceResult.data.fairPrice;
+        minPrice = priceResult.data.minPrice;
+        maxPrice = priceResult.data.maxPrice;
+        priceConfidence = priceResult.data.confidence;
+        priceReasoning = priceResult.data.reasoning;
+        marketFactors = priceResult.data.marketFactors;
+        similarListings = priceResult.data.similarListings;
+        aiSources = priceResult.data.sources;
+        isRealWebSearch = priceResult.data.isRealWebSearch;
       }
+    } catch (e) {
+      console.error('[local price estimate]', e);
     }
 
     // Bound price by database if AI didn't produce sane numbers
@@ -137,7 +134,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const pricePosition = car.price > avgPrice ? 'above' : car.price < avgPrice ? 'below' : 'match';
     const priceDiffPercent = avgPrice > 0 ? Math.round(Math.abs(car.price - avgPrice) / avgPrice * 100) : 0;
 
-    // ── 2) CONDITION + DAMAGE ANALYSIS ── real AI vision
+    // ── 2) CONDITION + DAMAGE ANALYSIS ── local spec-based engine
     let conditionScore = 50;
     let conditionLabel = 'جيدة';
     let conditionFactors: any[] = [];
@@ -147,30 +144,35 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     let isRealVision = false;
     let visionConfidence = 0;
 
-    if (isAIEnabled() && imageUrls.length > 0) {
-      try {
-        const condResult = await conditionScorer.process({
-          images: imageUrls,
-          kilometers: car.kilometers,
-          year: car.year,
-          condition: car.condition,
-          description: car.description,
-        });
-        if (condResult.success && condResult.data) {
-          conditionScore = condResult.data.score;
-          conditionLabel = condResult.data.label;
-          conditionFactors = condResult.data.factors;
-          exteriorScore = condResult.data.exteriorScore;
-          interiorScore = condResult.data.interiorScore;
-          engineBayScore = condResult.data.engineBayScore;
-          damages = condResult.data.damages;
-          conditionSummary = condResult.data.summary;
-          isRealVision = condResult.data.isRealVision;
-          visionConfidence = condResult.confidence || 0;
-        }
-      } catch (e) {
-        console.error('[AI vision]', e);
+    try {
+      const condResult = await conditionScorer.process({
+        images: imageUrls,
+        kilometers: car.kilometers,
+        year: car.year,
+        condition: car.condition ?? undefined,
+        description: car.description ?? undefined,
+        ownerCount: car.ownerCount || undefined,
+        isDamaged: car.isDamaged,
+        isPaintOriginal: car.isPaintOriginal,
+        hasWarranty: car.hasWarranty,
+        hasServiceHistory: car.hasServiceHistory,
+        fuelType: car.fuelType ?? undefined,
+        bodyType: car.bodyType ?? undefined,
+      });
+      if (condResult.success && condResult.data) {
+        conditionScore = condResult.data.score;
+        conditionLabel = condResult.data.label;
+        conditionFactors = condResult.data.factors;
+        exteriorScore = condResult.data.exteriorScore;
+        interiorScore = condResult.data.interiorScore;
+        engineBayScore = condResult.data.engineBayScore;
+        damages = condResult.data.damages;
+        conditionSummary = condResult.data.summary;
+        isRealVision = condResult.data.isRealVision;
+        visionConfidence = condResult.confidence || 0;
       }
+    } catch (e) {
+      console.error('[local condition scoring]', e);
     }
 
     // Fall back to seller-stated condition + heuristic

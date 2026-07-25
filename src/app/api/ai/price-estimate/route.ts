@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server';
 import { priceEstimator } from '@/ai/price-estimator';
-import { isAIEnabled } from '@/ai/base';
 import { successResponse, errorResponse } from '@/lib/api';
 import prisma from '@/lib/prisma';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
@@ -38,13 +37,6 @@ export async function POST(request: NextRequest) {
       hasServiceHistory,
       isPaintOriginal,
     });
-
-    // If AI is disabled, the estimator returns the heuristic fallback.
-    // Mark this in the response so the UI can show "تقدير مبدئي".
-    if (!isAIEnabled() && result.data) {
-      (result.data as any).isRealWebSearch = false;
-      (result.data as any).sources = ['تحليل محلي ذكي'];
-    }
 
     return successResponse(result.data);
   } catch (error) {
