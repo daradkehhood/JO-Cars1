@@ -7,6 +7,21 @@ const JWT_SECRET = process.env.JWT_SECRET as string;
 const TOKEN_EXPIRY = '24h';
 const ROTATION_THRESHOLD = 6 * 60 * 60 * 1000; // 6 hours
 
+if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
+  console.error(JSON.stringify({
+    level: 'SECURITY',
+    action: 'JWT_SECRET_MISSING',
+    severity: 'CRITICAL',
+    message: 'JWT_SECRET env var is not set — tokens will not validate correctly',
+  }));
+} else if (!JWT_SECRET) {
+  console.warn(JSON.stringify({
+    level: 'SECURITY',
+    action: 'JWT_SECRET_MISSING',
+    message: 'JWT_SECRET env var is not set in dev — using placeholder (signing will work but tokens are insecure)',
+  }));
+}
+
 export interface JWTPayload {
   userId: string;
   email: string;

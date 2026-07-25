@@ -12,6 +12,14 @@ export async function verifyRecaptcha(
   req?: Request
 ): Promise<RecaptchaResult> {
   if (!RECAPTCHA_SECRET) {
+    // reCAPTCHA not configured: log security warning and fail-open since
+    // rate-limiting + IP-blacklist + honeypot still provide protection.
+    // Apps that strictly require reCAPTCHA should set RECAPTCHA_SECRET_KEY.
+    console.warn(JSON.stringify({
+      level: 'SECURITY',
+      action: 'RECAPTCHA_DISABLED',
+      message: 'RECAPTCHA_SECRET_KEY missing — verification skipped (fail-open)',
+    }));
     return { success: true, score: 1.0, action };
   }
 
