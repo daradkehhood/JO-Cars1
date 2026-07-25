@@ -261,62 +261,56 @@ export function Header() {
 
       {/* ── "More" dropdown portal (renders OUTSIDE the header) ── */}
       {moreOpen && (
-        <>
-          <div className="fixed inset-0 z-[60]" onClick={() => setMoreOpen(false)} />
-          <div
-            className="fixed z-[70] w-60 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 shadow-soft-xl overflow-hidden"
-            style={{ top: 64 }}
-            ref={(el) => {
-              if (!el) return;
-              const rect = moreBtnRef.current?.getBoundingClientRect();
-              if (rect) {
-                el.style.left = `${Math.min(rect.left, window.innerWidth - 260)}px`;
-                el.style.top = `${rect.bottom + 6}px`;
-              }
-            }}
-          >
-            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-gold opacity-80" />
-            <div className="p-1.5">
-              {secondaryLinks.map((link) => {
-                const Icon = link.icon;
-                const active = pathname === link.href || pathname.startsWith(link.href + '/');
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setMoreOpen(false)}
-                    className={cn(
-                      'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
-                      active
-                        ? 'text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-500/10'
-                        : 'text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700'
-                    )}
-                  >
-                    <Icon className="w-4 h-4" />
-                    {link.label}
-                  </Link>
-                );
-              })}
-            </div>
+        <div
+          className="fixed z-[70] w-60 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 shadow-soft-xl overflow-hidden"
+          ref={(el) => {
+            if (!el) return;
+            const rect = moreBtnRef.current?.getBoundingClientRect();
+            if (rect) {
+              el.style.left = `${Math.min(rect.left, window.innerWidth - 260)}px`;
+              el.style.top = `${rect.bottom + 6}px`;
+            }
+          }}
+        >
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-gold opacity-80" />
+          <div className="p-1.5">
+            {secondaryLinks.map((link) => {
+              const Icon = link.icon;
+              const active = pathname === link.href || pathname.startsWith(link.href + '/');
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMoreOpen(false)}
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+                    active
+                      ? 'text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-500/10'
+                      : 'text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700'
+                  )}
+                >
+                  <Icon className="w-4 h-4" />
+                  {link.label}
+                </Link>
+              );
+            })}
           </div>
-        </>
+        </div>
       )}
 
       {/* ── User dropdown portal (renders OUTSIDE the header) ── */}
       {userMenuOpen && isAuthenticated && (
-        <>
-          <div className="fixed inset-0 z-[60]" onClick={() => setUserMenuOpen(false)} />
-          <div
-            className="fixed z-[70] w-64 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 shadow-soft-xl overflow-hidden"
-            ref={(el) => {
-              if (!el) return;
-              const rect = userBtnRef.current?.getBoundingClientRect();
-              if (rect) {
-                el.style.left = `${Math.max(8, rect.right - 256)}px`;
-                el.style.top = `${rect.bottom + 6}px`;
-              }
-            }}
-          >
+        <div
+          className="fixed z-[70] w-64 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 shadow-soft-xl overflow-hidden"
+          ref={(el) => {
+            if (!el) return;
+            const rect = userBtnRef.current?.getBoundingClientRect();
+            if (rect) {
+              el.style.left = `${Math.max(8, rect.right - 256)}px`;
+              el.style.top = `${rect.bottom + 6}px`;
+            }
+          }}
+        >
             <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-gold opacity-80" />
             {/* User header */}
             <div className="p-4 border-b border-surface-100 dark:border-surface-700 bg-gradient-to-br from-primary-50/50 to-transparent dark:from-primary-500/5">
@@ -376,8 +370,7 @@ export function Header() {
                 تسجيل خروج
               </button>
             </div>
-          </div>
-        </>
+        </div>
       )}
     </>
   );
