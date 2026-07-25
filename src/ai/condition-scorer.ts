@@ -170,7 +170,7 @@ export class ConditionScorer extends BaseAIModule<ConditionInput, ConditionOutpu
       factors.push({
         name: 'عدد الملاك',
         score: this.clamp(95 - (input.ownerCount - 1) * 15, 0, 100),
-        description: `${input.ownerCount} ملاك سابقين — ${input.ownerCount >= 4 ? 'يقلل الثقة' : 'مقبول土豪'}`.replace('土豪', ''),
+        description: `${input.ownerCount} ملاك سابقين — ${input.ownerCount >= 4 ? 'يقلل الثقة' : 'مقبول'}`,
       });
     }
 
@@ -214,7 +214,7 @@ export class ConditionScorer extends BaseAIModule<ConditionInput, ConditionOutpu
     if (input.ownerCount === 1) summaryParts.push('مالك واحد سابق (أفضل سيناريو للحالة).');
     if (input.isDamaged) summaryParts.push('تنبيه: السيارة مصدومة سابقاً.');
     if (input.isPaintOriginal === false) summaryParts.push('تنبيه: الدهان غير أصلي.');
-    summaryParts.push('هذا التقييم مبني على المواصفات المُدخل ة من البائع (لم يتم تحليل الصور — متاح عند الحاجة عبر وحدة كشف الأضرار).');
+    summaryParts.push('هذا التقييم مبني على المواصفات المدخلة من البائع (لم يتم تحليل الصور — متاح عند الحاجة عبر وحدة كشف الأضرار).');
 
     return {
       score: overall,
