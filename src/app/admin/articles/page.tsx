@@ -9,14 +9,14 @@ import type { Article } from '@/types';
 import toast from 'react-hot-toast';
 
 export default function AdminArticlesPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingAll, setDeletingAll] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/'); return; }
+    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
     fetch('/api/articles?limit=100&all=true')
       .then(r => r.json())
       .then(data => { if (data.success) setArticles(data.data); setLoading(false); })
@@ -33,7 +33,7 @@ export default function AdminArticlesPage() {
     } catch { toast.error('حدث خطأ'); }
   };
 
-  if (!isAuthenticated || user?.role !== 'ADMIN') return null;
+  if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) return null;
 
   return (
     <div>

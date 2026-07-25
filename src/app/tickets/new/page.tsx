@@ -8,7 +8,7 @@ import { Ticket, Send, Loader2, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function NewTicketPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
@@ -16,7 +16,7 @@ export default function NewTicketPage() {
   const [priority, setPriority] = useState('NORMAL');
   const [submitting, setSubmitting] = useState(false);
 
-  if (!isAuthenticated) { router.push('/login'); return null; }
+  if (_hydrated && !isAuthenticated) { router.push('/login'); return null; }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

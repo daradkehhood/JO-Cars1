@@ -72,15 +72,15 @@ function CitySelector({ cities, selected, onSelect }: { cities: City[]; selected
 
 export default function AddMaintenanceServicePage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, _hydrated } = useAuth();
   const [cities, setCities] = useState<City[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ title: '', description: '', category: 'MECHANIC', price: '', phone: user?.phone || '', whatsapp: user?.whatsapp || '', cityId: '' });
 
   useEffect(() => {
-    if (!user) { router.push('/login'); return; }
-    fetch('/api/admin/cities?active=true').then(r => r.json()).then(d => { if (d.success) setCities(d.data); });
-  }, [user]);
+    if (_hydrated && !user) { router.push('/login'); return; }
+    if (user) fetch('/api/admin/cities?active=true').then(r => r.json()).then(d => { if (d.success) setCities(d.data); });
+  }, [user, _hydrated]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

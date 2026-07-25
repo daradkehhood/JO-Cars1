@@ -13,7 +13,7 @@ import type { Car } from '@/types';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, isAuthenticated, logout, updateUser } = useAuth();
+  const { user, isAuthenticated, logout, updateUser, _hydrated } = useAuth();
   const [loading, setLoading] = useState(false);
   const [myCars, setMyCars] = useState<Car[]>([]);
   const [activeTab, setActiveTab] = useState<'profile' | 'cars'>('profile');
@@ -37,10 +37,13 @@ export default function ProfilePage() {
       .catch(() => {});
   }, []);
 
-  if (!isAuthenticated) {
-    router.push('/auth/login');
-    return null;
-  }
+  useEffect(() => {
+    if (_hydrated && !isAuthenticated) {
+      router.push('/auth/login');
+    }
+  }, [_hydrated, isAuthenticated, router]);
+
+  if (!_hydrated || !isAuthenticated) return null;
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

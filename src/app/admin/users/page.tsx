@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import type { User } from '@/types';
 
 export default function AdminUsersPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +29,7 @@ export default function AdminUsersPage() {
   const [availableBadges, setAvailableBadges] = useState<{ id: string; nameAr: string; icon: string }[]>([]);
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/'); return; }
+    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
     loadUsers();
     fetch('/api/admin/badges')
       .then(r => r.json())
@@ -159,7 +159,7 @@ export default function AdminUsersPage() {
     return { label: 'نشط', color: 'bg-green-100 dark:bg-green-500/10 text-green-600 dark:text-green-400' };
   };
 
-  if (!isAuthenticated || user?.role !== 'ADMIN') return null;
+  if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) return null;
 
   return (
     <div>

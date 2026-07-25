@@ -24,14 +24,14 @@ interface PremiumRequestItem {
 }
 
 export default function AdminPremiumRequestsPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [requests, setRequests] = useState<PremiumRequestItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('PENDING');
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/'); return; }
+    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
     loadRequests();
   }, [isAuthenticated, user, router, filter]);
 
@@ -85,7 +85,7 @@ export default function AdminPremiumRequestsPage() {
     { value: '', label: 'الكل' },
   ];
 
-  if (!isAuthenticated || user?.role !== 'ADMIN') return null;
+  if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) return null;
 
   return (
     <div>

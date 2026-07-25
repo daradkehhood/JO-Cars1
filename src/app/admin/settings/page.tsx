@@ -20,7 +20,7 @@ const tabs = [
 ];
 
 export default function AdminSettingsPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -30,7 +30,7 @@ export default function AdminSettingsPage() {
   const update = (key: string, value: any) => setForm(prev => ({ ...prev, [key]: value }));
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/'); return; }
+    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
     fetch('/api/admin/settings')
       .then(r => r.json())
       .then(data => { if (data.success) setForm(data.data); setLoading(false); })
@@ -102,7 +102,7 @@ export default function AdminSettingsPage() {
     update('bodyTypes', JSON.stringify(arr));
   };
 
-  if (!isAuthenticated || user?.role !== 'ADMIN') return null;
+  if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) return null;
   if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>;
 
   const TabButton = ({ tab }: { tab: typeof tabs[0] }) => (

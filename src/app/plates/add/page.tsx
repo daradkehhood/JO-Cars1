@@ -20,14 +20,14 @@ const plateTypes = [
 
 export default function AddPlatePage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, _hydrated } = useAuth();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     plateNumber: '', type: 'STANDARD', price: '', description: '',
     phone: '', whatsapp: '', isNegotiable: false,
   });
 
-  if (!isAuthenticated) { router.push('/auth/login'); return null; }
+  if (_hydrated && !isAuthenticated) { router.push('/auth/login'); return null; }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

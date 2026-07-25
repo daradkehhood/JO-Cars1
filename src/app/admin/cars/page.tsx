@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 import type { Car as CarType } from '@/types';
 
 export default function AdminCarsPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [cars, setCars] = useState<CarType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,7 +38,7 @@ export default function AdminCarsPage() {
   };
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/'); return; }
+    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
     loadCars('');
   }, [isAuthenticated, user, router]);
 
@@ -106,7 +106,7 @@ export default function AdminCarsPage() {
     } catch { toast.error('فشل حذف الإعلان'); }
   };
 
-  if (!isAuthenticated || user?.role !== 'ADMIN') return null;
+  if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) return null;
 
   return (
     <div className="min-h-screen py-8">

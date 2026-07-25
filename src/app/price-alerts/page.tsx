@@ -39,7 +39,7 @@ interface City {
 }
 
 export default function PriceAlertsPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [alerts, setAlerts] = useState<PriceAlert[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,9 +54,9 @@ export default function PriceAlertsPage() {
   });
 
   useEffect(() => {
-    if (!isAuthenticated) { router.push('/login'); return; }
-    loadData();
-  }, [isAuthenticated, router]);
+    if (_hydrated && !isAuthenticated) { router.push('/auth/login'); return; }
+    if (isAuthenticated) loadData();
+  }, [isAuthenticated, _hydrated, router]);
 
   const loadData = async () => {
     setLoading(true);
@@ -140,7 +140,7 @@ export default function PriceAlertsPage() {
     return parts.join(' • ') || 'تنبيه عام';
   };
 
-  if (!isAuthenticated) return null;
+  if (!_hydrated || !isAuthenticated) return null;
 
   return (
     <div className="min-h-[80vh] py-8">

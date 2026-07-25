@@ -8,7 +8,7 @@ import type { Province } from '@/types';
 import toast from 'react-hot-toast';
 
 export default function AdminProvincesPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = require('next/navigation').useRouter();
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [loading, setLoading] = useState(true);
@@ -16,7 +16,7 @@ export default function AdminProvincesPage() {
   const [form, setForm] = useState({ nameAr: '', nameEn: '' });
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/'); return; }
+    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
     loadProvinces();
   }, [isAuthenticated, user, router]);
 

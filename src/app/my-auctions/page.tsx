@@ -23,17 +23,17 @@ interface AuctionItem {
 
 export default function MyAuctionsPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, _hydrated } = useAuth();
   const [auctions, setAuctions] = useState<AuctionItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) { router.push('/login'); return; }
-    fetch('/api/auctions?type=seller')
+    if (_hydrated && !user) { router.push('/login'); return; }
+    if (user) fetch('/api/auctions?type=seller')
       .then(r => r.json())
       .then(data => { if (data.success) setAuctions(data.data); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [user]);
+  }, [user, _hydrated]);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>;
 

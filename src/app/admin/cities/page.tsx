@@ -10,7 +10,7 @@ import toast from 'react-hot-toast';
 
 export default function AdminCitiesPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, _hydrated } = useAuth();
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,7 +19,7 @@ export default function AdminCitiesPage() {
   const [form, setForm] = useState({ nameAr: '', nameEn: '', provinceId: '' });
 
   useEffect(() => {
-    if (!user || user.role !== 'ADMIN') { router.push('/login'); return; }
+    if (_hydrated && (!user || user.role !== 'ADMIN')) { router.push('/login'); return; }
     loadData();
   }, [user]);
 

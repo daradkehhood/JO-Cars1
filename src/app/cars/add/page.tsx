@@ -48,7 +48,7 @@ const initialForm: CarFormData = {
 
 export default function AddCarPage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, _hydrated } = useAuth();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -67,10 +67,12 @@ export default function AddCarPage() {
   const [conditionDetails, setConditionDetails] = useState<ConditionItem[]>([]);
 
   useEffect(() => {
-    if (!isAuthenticated) { router.push('/auth/login'); return; }
-    fetch('/api/cars/brands').then(r => r.json()).then(d => setBrands(d.data || [])).catch(() => {});
-    fetch('/api/cars/cities').then(r => r.json()).then(d => setCities(d.data || [])).catch(() => {});
-  }, [isAuthenticated, router]);
+    if (_hydrated && !isAuthenticated) { router.push('/auth/login'); return; }
+    if (isAuthenticated) {
+      fetch('/api/cars/brands').then(r => r.json()).then(d => setBrands(d.data || [])).catch(() => {});
+      fetch('/api/cars/cities').then(r => r.json()).then(d => setCities(d.data || [])).catch(() => {});
+    }
+  }, [isAuthenticated, _hydrated, router]);
 
   useEffect(() => {
     if (form.brandId) {

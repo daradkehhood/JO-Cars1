@@ -51,7 +51,7 @@ interface Reminder {
 
 export default function MyRemindersPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, _hydrated } = useAuth();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -60,9 +60,9 @@ export default function MyRemindersPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!user) { router.push('/login'); return; }
-    loadReminders();
-  }, [user]);
+    if (_hydrated && !user) { router.push('/login'); return; }
+    if (user) loadReminders();
+  }, [user, _hydrated]);
 
   const loadReminders = async () => {
     setLoading(true);

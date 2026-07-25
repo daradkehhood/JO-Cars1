@@ -39,7 +39,7 @@ const EXPENSE_TYPES = [
 export default function CarExpensesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, _hydrated } = useAuth();
   const [car, setCar] = useState<CarData | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -48,9 +48,9 @@ export default function CarExpensesPage({ params }: { params: Promise<{ id: stri
   const [form, setForm] = useState({ type: 'MAINTENANCE', title: '', description: '', cost: '', odometer: '', date: new Date().toISOString().split('T')[0], shopName: '' });
 
   useEffect(() => {
-    if (!isAuthenticated) { router.push('/auth/login'); return; }
-    fetchCar();
-  }, [isAuthenticated, router, id]);
+    if (_hydrated && !isAuthenticated) { router.push('/auth/login'); return; }
+    if (isAuthenticated) fetchCar();
+  }, [isAuthenticated, _hydrated, router, id]);
 
   const fetchCar = async () => {
     try {

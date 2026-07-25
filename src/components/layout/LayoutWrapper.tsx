@@ -25,7 +25,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Header />
-      <main className="pt-20 min-h-screen pb-16 lg:pb-0">
+      <main className="pt-16 min-h-screen pb-24 lg:pb-0">
         {children}
       </main>
       <Footer />

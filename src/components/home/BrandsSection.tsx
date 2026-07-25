@@ -13,22 +13,25 @@ function BrandCard({ brand, index }: { brand: Brand; index: number }) {
     <div ref={ref} style={scrollStyle(isInView, { delay: index * 0.04 })}>
       <Link
         href={`/cars?brandId=${brand.slug}`}
-        className="group relative flex flex-col items-center gap-3 p-5 sm:p-6 rounded-2xl bg-white dark:bg-surface-800/80 border border-surface-100 dark:border-surface-700/50 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-soft-md transition-all duration-300 hover:-translate-y-1 text-center overflow-hidden"
+        className="group relative flex flex-col items-center gap-3 p-5 sm:p-6 rounded-2xl bg-white dark:bg-surface-800/80 border border-surface-200/70 dark:border-surface-700/50 hover:border-gold-400 dark:hover:border-gold-500 hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1 text-center overflow-hidden"
       >
-        {/* Hover gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-primary-50/0 to-primary-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 dark:from-primary-500/0 dark:to-primary-500/5" />
+        {/* Hover gold gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-gold-50/0 to-gold-50/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 dark:from-gold-500/0 dark:to-gold-500/5" />
 
-        <div className="relative w-14 h-14 rounded-xl bg-surface-50 dark:bg-surface-700/50 flex items-center justify-center group-hover:bg-primary-50 dark:group-hover:bg-primary-500/15 transition-all duration-300 group-hover:scale-110 group-hover:shadow-md">
-          <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-500/20 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold text-lg transition-transform duration-300 group-hover:scale-110">
+        {/* Gold top accent on hover */}
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-gold opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+        <div className="relative w-14 h-14 rounded-xl bg-surface-50 dark:bg-surface-700/50 flex items-center justify-center group-hover:bg-gold-50 dark:group-hover:bg-gold-500/15 transition-all duration-300 group-hover:scale-110">
+          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-500/20 dark:to-primary-500/30 flex items-center justify-center text-primary-700 dark:text-primary-300 font-bold text-lg transition-transform duration-300 group-hover:scale-110">
             {brand.nameAr?.charAt(0) || 'B'}
           </div>
         </div>
-        <span className="relative text-sm font-medium text-surface-700 dark:text-surface-300 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300">
+        <span className="relative text-sm font-semibold text-surface-700 dark:text-surface-300 group-hover:text-primary-700 dark:group-hover:text-primary-300 transition-colors duration-300">
           {brand.nameAr}
         </span>
 
         {/* Arrow on hover */}
-        <ArrowUpLeft className="absolute top-3 left-3 w-4 h-4 text-primary-400 opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:-translate-x-0.5 group-hover:-translate-y-0.5" />
+        <ArrowUpLeft className="absolute top-3 left-3 w-4 h-4 text-gold-500 opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:-translate-x-0.5 group-hover:-translate-y-0.5" />
       </Link>
     </div>
   );
@@ -62,18 +65,18 @@ export function BrandsSection() {
   const displayBrands = brands.length > 0 ? brands : defaultBrands;
 
   return (
-    <section className="py-20 sm:py-24 relative">
+    <section className="py-16 sm:py-20 relative">
       <div className="container-custom">
-        <div className="text-center mb-12">
+        <div className="text-center mb-10 sm:mb-12">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 shadow-lg shadow-primary-500/20">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-luxury shadow-primary">
               <Building2 className="w-5 h-5 text-white" />
             </div>
           </div>
-          <h2 className="text-3xl md:text-4xl font-extrabold text-surface-900 dark:text-white">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-surface-900 dark:text-white tracking-tight">
             تصفح حسب الماركة
           </h2>
-          <p className="text-surface-500 dark:text-surface-400 mt-2 text-base">
+          <p className="text-surface-500 dark:text-surface-400 mt-2 text-sm sm:text-base">
             اختر الماركة المفضلة لديك
           </p>
         </div>

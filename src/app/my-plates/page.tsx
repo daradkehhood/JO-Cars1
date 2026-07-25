@@ -21,21 +21,21 @@ const statusColors: Record<string, string> = {
 };
 
 export default function MyPlatesPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [plates, setPlates] = useState<Plate[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isAuthenticated) { router.push('/auth/login'); return; }
-    fetch(`/api/plates?status=`)
+    if (_hydrated && !isAuthenticated) { router.push('/auth/login'); return; }
+    if (isAuthenticated) fetch(`/api/plates?status=`)
       .then(r => r.json())
       .then(data => {
         if (data.success) setPlates(data.data.filter((p: Plate) => p.sellerId === user?.id));
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, _hydrated, user]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('حذف اللوحة؟')) return;
@@ -60,7 +60,7 @@ export default function MyPlatesPage() {
     } catch { toast.error('حدث خطأ'); }
   };
 
-  if (!isAuthenticated || !user) return null;
+  if (_hydrated && (!isAuthenticated || !user)) return null;
 
   return (
     <div className="min-h-screen pb-16">

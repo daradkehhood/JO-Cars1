@@ -40,13 +40,13 @@ function SimpleBar({ data, color = '#3b82f6', height = 200 }: { data: { label: s
 }
 
 export default function AdminAdvancedStatsPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [stats, setStats] = useState<AdvancedStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/'); return; }
+    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
     fetch('/api/admin/advanced-stats')
       .then(r => r.json())
       .then(data => {
@@ -56,7 +56,7 @@ export default function AdminAdvancedStatsPage() {
       .catch(() => setLoading(false));
   }, [isAuthenticated, user, router]);
 
-  if (!isAuthenticated || user?.role !== 'ADMIN') return null;
+  if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) return null;
 
   const fuelLabels: Record<string, string> = {
     gasoline: 'بنزين', diesel: 'ديزل', hybrid: 'هايبرد', electric: 'كهرباء', gas: 'غاز',

@@ -130,7 +130,7 @@ const commentActions = ['ADD_COMMENT', 'EDIT_COMMENT', 'DELETE_COMMENT', 'LIKE_C
 const authActions = ['LOGIN', 'LOGOUT', 'REGISTER'];
 
 export default function AdminAuditLogsPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -148,7 +148,7 @@ export default function AdminAuditLogsPage() {
   const [expandedLog, setExpandedLog] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/'); return; }
+    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
   }, [isAuthenticated, user, router]);
 
   const loadLogs = useCallback(async () => {
@@ -233,7 +233,7 @@ export default function AdminAuditLogsPage() {
 
   const hasActiveFilters = searchQuery || filterAction || filterEntity || dateFrom || dateTo;
 
-  if (!isAuthenticated || user?.role !== 'ADMIN') return null;
+  if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) return null;
 
   return (
     <div className="space-y-6">

@@ -7,7 +7,7 @@ import { Sparkles, ImageOff, Search, Loader2, CheckCircle, AlertTriangle } from 
 import toast from 'react-hot-toast';
 
 export default function AdminContentToolsPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [carId, setCarId] = useState('');
   const [generating, setGenerating] = useState(false);
@@ -17,7 +17,7 @@ export default function AdminContentToolsPage() {
   const [recentCars, setRecentCars] = useState<{ id: string; slug: string; brand: { nameAr: string }; model: { nameAr: string }; year: number; user: { name: string } }[]>([]);
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/'); return; }
+    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
     fetch('/api/admin/cars?status=APPROVED')
       .then(r => r.json())
       .then(data => setRecentCars((data.data || []).slice(0, 20)))
@@ -56,7 +56,7 @@ export default function AdminContentToolsPage() {
     setChecking(false);
   };
 
-  if (!isAuthenticated || user?.role !== 'ADMIN') return null;
+  if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) return null;
 
   return (
     <div>

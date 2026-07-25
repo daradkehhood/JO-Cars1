@@ -8,20 +8,20 @@ import { Heart } from 'lucide-react';
 import type { Car } from '@/types';
 
 export default function FavoritesPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [cars, setCars] = useState<Car[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isAuthenticated) { router.push('/auth/login'); return; }
-    fetch('/api/cars/favorites')
+    if (_hydrated && !isAuthenticated) { router.push('/auth/login'); return; }
+    if (isAuthenticated) fetch('/api/cars/favorites')
       .then(r => r.json())
       .then(data => { setCars(data.data || []); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, _hydrated, router]);
 
-  if (!isAuthenticated) return null;
+  if (_hydrated && !isAuthenticated) return null;
 
   return (
     <div className="min-h-[80vh] py-8">

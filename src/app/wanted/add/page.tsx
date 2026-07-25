@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 
 export default function AddWantedPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, _hydrated } = useAuth();
   const [brands, setBrands] = useState<{ id: string; nameAr: string }[]>([]);
   const [models, setModels] = useState<{ id: string; nameAr: string }[]>([]);
   const [cities, setCities] = useState<{ id: string; nameAr: string }[]>([]);
@@ -16,10 +16,12 @@ export default function AddWantedPage() {
   const [form, setForm] = useState({ title: '', description: '', brandId: '', modelId: '', yearFrom: '', yearTo: '', maxPrice: '', phone: user?.phone || '', whatsapp: '', cityId: '' });
 
   useEffect(() => {
-    if (!user) { router.push('/login'); return; }
-    fetch('/api/brands').then(r => r.json()).then(d => { if (d.success) setBrands(d.data); });
-    fetch('/api/cities').then(r => r.json()).then(d => { if (d.success) setCities(d.data); });
-  }, [user]);
+    if (_hydrated && !user) { router.push('/login'); return; }
+    if (user) {
+      fetch('/api/brands').then(r => r.json()).then(d => { if (d.success) setBrands(d.data); });
+      fetch('/api/cities').then(r => r.json()).then(d => { if (d.success) setCities(d.data); });
+    }
+  }, [user, _hydrated]);
 
   useEffect(() => {
     if (!form.brandId) { setModels([]); return; }

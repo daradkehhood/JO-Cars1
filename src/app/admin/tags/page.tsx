@@ -18,7 +18,7 @@ interface CarTag {
 }
 
 export default function AdminTagsPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [tags, setTags] = useState<CarTag[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +31,7 @@ export default function AdminTagsPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/'); return; }
+    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
     loadTags();
   }, [isAuthenticated, user, router]);
 
@@ -103,7 +103,7 @@ export default function AdminTagsPage() {
 
   const iconOptions = ['Tag', 'Star', 'Flame', 'Zap', 'Shield', 'Award', 'Sparkles', 'Gem', 'Crown', 'Heart', 'Target', 'BadgeCheck'];
 
-  if (!isAuthenticated || user?.role !== 'ADMIN') return null;
+  if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) return null;
 
   return (
     <div>

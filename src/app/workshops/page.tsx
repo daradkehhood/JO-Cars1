@@ -4,10 +4,11 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/hooks/useAuth';
 import {
   Search, SlidersHorizontal, X, MapPin, Star, Wrench, Store,
-  Filter, DollarSign, Calendar, MessageCircle, ChevronDown,
-  ChevronLeft, ChevronRight, Phone, ShieldCheck, Clock,
+  Filter, Calendar, MessageCircle,
+  ChevronLeft, ChevronRight, ShieldCheck, Clock, Plus,
 } from 'lucide-react';
 
 interface Workshop {
@@ -47,6 +48,7 @@ const SERVICE_OPTIONS = [
 ];
 
 export default function WorkshopsPage() {
+  const { isAuthenticated } = useAuth();
   const [workshops, setWorkshops] = useState<Workshop[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -99,17 +101,30 @@ export default function WorkshopsPage() {
   const activeFilterCount = [filterService, filterProvince].filter(Boolean).length;
 
   return (
-    <div className="min-h-screen" style={{ background: '#1a1a2e' }}>
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <div className="min-h-screen">
+      <div className="container-custom py-8">
         {/* Header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">ورش السيارات</h1>
-          <p className="text-gray-400">ابحث عن أفضل ورش السيارات في الأردن</p>
+        <div className="mb-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-surface-900 dark:text-white mb-2">ورش السيارات</h1>
+              <p className="text-surface-500 dark:text-surface-400 text-sm">ابحث عن أفضل ورش السيارات في الأردن</p>
+            </div>
+            {isAuthenticated && (
+              <Link
+                href="/workshops/create"
+                className="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-semibold hover:bg-primary-700 transition-colors shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                أضف ورشتك
+              </Link>
+            )}
+          </div>
         </div>
 
         {/* Search & Filters */}
         <div className="mb-8">
-          <div className="flex flex-col md:flex-row gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <input
                 type="text"
@@ -117,19 +132,19 @@ export default function WorkshopsPage() {
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') { setPage(1); fetchWorkshops(); } }}
                 placeholder="ابحث عن ورشة..."
-                className="w-full rounded-xl border border-gray-700 bg-[#16213e] text-white px-4 py-3 pr-12 text-sm outline-none focus:border-[#0084ff] transition-colors"
+                className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-surface-900 dark:text-white px-4 py-3 pr-11 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all"
               />
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
             </div>
             <div className="flex gap-2">
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 px-4 py-3 rounded-xl border border-gray-700 bg-[#16213e] text-gray-300 hover:border-[#0084ff] hover:text-[#0084ff] transition-all"
+                className="flex items-center gap-2 px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-300 hover:border-primary-500 hover:text-primary-500 transition-all"
               >
                 <SlidersHorizontal className="w-4 h-4" />
                 <span className="text-sm">فلاتر</span>
                 {activeFilterCount > 0 && (
-                  <span className="w-5 h-5 bg-[#0084ff] text-white text-xs rounded-full flex items-center justify-center">
+                  <span className="w-5 h-5 bg-primary-500 text-white text-xs rounded-full flex items-center justify-center">
                     {activeFilterCount}
                   </span>
                 )}
@@ -137,7 +152,7 @@ export default function WorkshopsPage() {
               <select
                 value={sortBy}
                 onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
-                className="px-4 py-3 rounded-xl border border-gray-700 bg-[#16213e] text-gray-300 text-sm outline-none focus:border-[#0084ff] appearance-none cursor-pointer"
+                className="px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-300 text-sm outline-none focus:border-primary-500 appearance-none cursor-pointer"
               >
                 {SORT_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -145,7 +160,7 @@ export default function WorkshopsPage() {
               </select>
               <button
                 onClick={() => { setPage(1); fetchWorkshops(); }}
-                className="px-6 py-3 bg-[#0084ff] text-white rounded-xl text-sm font-medium hover:bg-[#006cd9] transition-colors"
+                className="px-5 py-3 bg-primary-600 text-white rounded-xl text-sm font-semibold hover:bg-primary-700 transition-colors"
               >
                 بحث
               </button>
@@ -153,11 +168,11 @@ export default function WorkshopsPage() {
           </div>
 
           {/* Mobile Filter Chips */}
-          <div className="md:hidden mt-3 flex flex-wrap gap-2">
+          <div className="sm:hidden mt-3 flex flex-wrap gap-2">
             {activeFilterCount > 0 && (
               <button
                 onClick={resetFilters}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-400 bg-red-900/20 rounded-full"
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-accent-600 bg-accent-50 dark:bg-accent-500/10 rounded-full"
               >
                 <X className="w-3 h-3" />
                 مسح الكل
@@ -166,7 +181,7 @@ export default function WorkshopsPage() {
             {filterService && (
               <button
                 onClick={() => { setFilterService(''); setPage(1); }}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-[#0084ff] bg-[#0084ff]/10 rounded-full"
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 dark:bg-primary-500/10 rounded-full"
               >
                 {filterService}
                 <X className="w-3 h-3" />
@@ -175,7 +190,7 @@ export default function WorkshopsPage() {
             {filterProvince && (
               <button
                 onClick={() => { setFilterProvince(''); setPage(1); }}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-[#0084ff] bg-[#0084ff]/10 rounded-full"
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 dark:bg-primary-500/10 rounded-full"
               >
                 {filterProvince}
                 <X className="w-3 h-3" />
@@ -188,26 +203,26 @@ export default function WorkshopsPage() {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="hidden md:block mt-4 p-5 rounded-xl border border-gray-700 bg-[#16213e]"
+              className="hidden sm:block mt-4 p-5 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800"
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-white font-semibold flex items-center gap-2">
+                <h3 className="font-semibold text-surface-900 dark:text-white flex items-center gap-2">
                   <Filter className="w-4 h-4" />
                   فلاتر متقدمة
                 </h3>
                 {activeFilterCount > 0 && (
-                  <button onClick={resetFilters} className="text-sm text-[#0084ff] hover:underline">
+                  <button onClick={resetFilters} className="text-sm text-primary-600 dark:text-primary-400 hover:underline">
                     مسح الكل
                   </button>
                 )}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">نوع الخدمة</label>
+                  <label className="block text-xs font-medium text-surface-500 mb-1">نوع الخدمة</label>
                   <select
                     value={filterService}
                     onChange={(e) => { setFilterService(e.target.value); setPage(1); }}
-                    className="w-full h-10 px-3 rounded-lg border border-gray-700 bg-[#0f3460] text-white text-sm outline-none focus:border-[#0084ff]"
+                    className="w-full h-10 px-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-surface-900 dark:text-white text-sm outline-none focus:border-primary-500"
                   >
                     <option value="">كل الخدمات</option>
                     {SERVICE_OPTIONS.map((s) => (
@@ -216,11 +231,11 @@ export default function WorkshopsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">المحافظة</label>
+                  <label className="block text-xs font-medium text-surface-500 mb-1">المحافظة</label>
                   <select
                     value={filterProvince}
                     onChange={(e) => { setFilterProvince(e.target.value); setPage(1); }}
-                    className="w-full h-10 px-3 rounded-lg border border-gray-700 bg-[#0f3460] text-white text-sm outline-none focus:border-[#0084ff]"
+                    className="w-full h-10 px-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-surface-900 dark:text-white text-sm outline-none focus:border-primary-500"
                   >
                     <option value="">كل المحافظات</option>
                     <option value="عمّان">عمّان</option>
@@ -232,10 +247,9 @@ export default function WorkshopsPage() {
                     <option value="المفرق">المفرق</option>
                     <option value="معان">معان</option>
                     <option value="الطفيلة">الطفيلة</option>
-                    <option value="الجبلة">الجبلة</option>
                     <option value="عجلون">عجلون</option>
                     <option value="جرش">جرش</option>
-                    <option value="المADABA">مادبا</option>
+                    <option value="مادبا">مادبا</option>
                   </select>
                 </div>
               </div>
@@ -249,31 +263,31 @@ export default function WorkshopsPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 md:hidden"
+                className="fixed inset-0 z-50 sm:hidden"
               >
-                <div className="absolute inset-0 bg-black/50" onClick={() => setShowFilters(false)} />
+                <div className="absolute inset-0 bg-surface-900/50 backdrop-blur-sm" onClick={() => setShowFilters(false)} />
                 <motion.div
                   initial={{ y: '100%' }}
                   animate={{ y: 0 }}
                   exit={{ y: '100%' }}
                   transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                  className="absolute bottom-0 left-0 right-0 bg-[#1a1a2e] rounded-t-3xl max-h-[80vh] overflow-y-auto"
+                  className="absolute bottom-0 left-0 right-0 bg-white dark:bg-surface-900 rounded-t-3xl max-h-[80vh] overflow-y-auto"
                 >
-                  <div className="sticky top-0 bg-[#1a1a2e] p-4 border-b border-gray-700">
+                  <div className="sticky top-0 bg-white dark:bg-surface-900 p-4 border-b border-surface-200 dark:border-surface-700">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-white font-semibold">فلاتر متقدمة</h3>
-                      <button onClick={() => setShowFilters(false)} className="p-2 hover:bg-gray-800 rounded-full">
-                        <X className="w-5 h-5 text-gray-400" />
+                      <h3 className="font-semibold text-surface-900 dark:text-white">فلاتر متقدمة</h3>
+                      <button onClick={() => setShowFilters(false)} className="p-2 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-xl">
+                        <X className="w-5 h-5 text-surface-500" />
                       </button>
                     </div>
                   </div>
                   <div className="p-4 space-y-4">
                     <div>
-                      <label className="block text-xs text-gray-400 mb-1">نوع الخدمة</label>
+                      <label className="block text-xs font-medium text-surface-500 mb-1">نوع الخدمة</label>
                       <select
                         value={filterService}
                         onChange={(e) => { setFilterService(e.target.value); setPage(1); }}
-                        className="w-full h-12 px-3 rounded-lg border border-gray-700 bg-[#0f3460] text-white text-sm outline-none focus:border-[#0084ff]"
+                        className="w-full h-12 px-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-surface-900 dark:text-white text-sm outline-none focus:border-primary-500"
                       >
                         <option value="">كل الخدمات</option>
                         {SERVICE_OPTIONS.map((s) => (
@@ -282,11 +296,11 @@ export default function WorkshopsPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-400 mb-1">المحافظة</label>
+                      <label className="block text-xs font-medium text-surface-500 mb-1">المحافظة</label>
                       <select
                         value={filterProvince}
                         onChange={(e) => { setFilterProvince(e.target.value); setPage(1); }}
-                        className="w-full h-12 px-3 rounded-lg border border-gray-700 bg-[#0f3460] text-white text-sm outline-none focus:border-[#0084ff]"
+                        className="w-full h-12 px-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-surface-900 dark:text-white text-sm outline-none focus:border-primary-500"
                       >
                         <option value="">كل المحافظات</option>
                         <option value="عمّان">عمّان</option>
@@ -298,16 +312,15 @@ export default function WorkshopsPage() {
                         <option value="المفرق">المفرق</option>
                         <option value="معان">معان</option>
                         <option value="الطفيلة">الطفيلة</option>
-                        <option value="الجبلة">الجبلة</option>
                         <option value="عجلون">عجلون</option>
                         <option value="جرش">جرش</option>
-                        <option value="المADABA">مادبا</option>
+                        <option value="مادبا">مادبا</option>
                       </select>
                     </div>
-                    <div className="sticky bottom-0 bg-[#1a1a2e] pt-4 pb-2">
+                    <div className="sticky bottom-0 bg-white dark:bg-surface-900 pt-4 pb-2">
                       <button
                         onClick={() => { setPage(1); setShowFilters(false); }}
-                        className="w-full py-3 bg-[#0084ff] text-white rounded-xl text-sm font-medium hover:bg-[#006cd9] transition-colors"
+                        className="w-full py-3 bg-primary-600 text-white rounded-xl text-sm font-semibold hover:bg-primary-700 transition-colors"
                       >
                         تطبيق الفلاتر
                       </button>
@@ -321,30 +334,30 @@ export default function WorkshopsPage() {
 
         {/* Results Count */}
         <div className="flex items-center justify-between mb-6">
-          <p className="text-gray-400 text-sm">
+          <p className="text-surface-500 dark:text-surface-400 text-sm">
             {loading ? 'جاري البحث...' : `${total} ورشة`}
           </p>
         </div>
 
         {/* Loading Skeleton */}
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="rounded-xl overflow-hidden border border-gray-700 bg-[#16213e] animate-pulse">
-                <div className="h-48 bg-gray-700/50" />
+              <div key={i} className="rounded-2xl overflow-hidden border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 animate-pulse">
+                <div className="h-48 bg-surface-200 dark:bg-surface-700" />
                 <div className="p-5">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 rounded-full bg-gray-700/50" />
+                    <div className="w-12 h-12 rounded-full bg-surface-200 dark:bg-surface-700" />
                     <div className="flex-1">
-                      <div className="h-4 bg-gray-700/50 rounded w-2/3 mb-2" />
-                      <div className="h-3 bg-gray-700/50 rounded w-1/3" />
+                      <div className="h-4 bg-surface-200 dark:bg-surface-700 rounded w-2/3 mb-2" />
+                      <div className="h-3 bg-surface-200 dark:bg-surface-700 rounded w-1/3" />
                     </div>
                   </div>
-                  <div className="h-3 bg-gray-700/50 rounded w-full mb-2" />
-                  <div className="h-3 bg-gray-700/50 rounded w-4/5 mb-4" />
+                  <div className="h-3 bg-surface-200 dark:bg-surface-700 rounded w-full mb-2" />
+                  <div className="h-3 bg-surface-200 dark:bg-surface-700 rounded w-4/5 mb-4" />
                   <div className="flex gap-2">
-                    <div className="h-9 bg-gray-700/50 rounded-lg flex-1" />
-                    <div className="h-9 bg-gray-700/50 rounded-lg flex-1" />
+                    <div className="h-9 bg-surface-200 dark:bg-surface-700 rounded-lg flex-1" />
+                    <div className="h-9 bg-surface-200 dark:bg-surface-700 rounded-lg flex-1" />
                   </div>
                 </div>
               </div>
@@ -353,26 +366,37 @@ export default function WorkshopsPage() {
         ) : workshops.length === 0 ? (
           /* Empty State */
           <div className="text-center py-20">
-            <Store className="w-20 h-20 mx-auto text-gray-600 mb-4" />
-            <h3 className="text-xl text-white font-semibold mb-2">لا توجد ورش</h3>
-            <p className="text-gray-400 mb-6">لم نتمكن من إيجاد ورش تطابق بحثك</p>
-            <button
-              onClick={resetFilters}
-              className="px-6 py-3 bg-[#0084ff] text-white rounded-xl hover:bg-[#006cd9] transition-colors"
-            >
-              مسح الفلاتر
-            </button>
+            <Store className="w-16 h-16 mx-auto text-surface-300 dark:text-surface-600 mb-4" />
+            <h3 className="text-lg font-semibold text-surface-900 dark:text-white mb-2">لا توجد ورش</h3>
+            <p className="text-surface-500 dark:text-surface-400 text-sm mb-6">لم نتمكن من إيجاد ورش تطابق بحثك</p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                onClick={resetFilters}
+                className="px-5 py-2.5 bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 rounded-xl text-sm font-medium hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
+              >
+                مسح الفلاتر
+              </button>
+              {isAuthenticated && (
+                <Link
+                  href="/workshops/create"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-semibold hover:bg-primary-700 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  أضف ورشتك
+                </Link>
+              )}
+            </div>
           </div>
         ) : (
           /* Workshop Cards */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {workshops.map((workshop, index) => (
               <motion.div
                 key={workshop.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="rounded-xl overflow-hidden border border-gray-700 bg-[#16213e] hover:border-[#0084ff]/50 transition-all group"
+                className="rounded-2xl overflow-hidden border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-soft-md transition-all group"
               >
                 {/* Cover */}
                 <div className="relative h-48 overflow-hidden">
@@ -384,13 +408,13 @@ export default function WorkshopsPage() {
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-[#0f3460] to-[#1a1a2e] flex items-center justify-center">
-                      <Wrench className="w-16 h-16 text-[#0084ff]/30" />
+                    <div className="w-full h-full bg-gradient-to-br from-primary-50 to-surface-100 dark:from-surface-700 dark:to-surface-800 flex items-center justify-center">
+                      <Wrench className="w-16 h-16 text-primary-300 dark:text-primary-700" />
                     </div>
                   )}
                   {workshop.isVerified && (
                     <div className="absolute top-3 left-3">
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-[#0084ff]/90 text-white flex items-center gap-1">
+                      <span className="px-2 py-1 rounded-lg text-xs font-semibold bg-primary-600 text-white flex items-center gap-1 shadow-md">
                         <ShieldCheck className="w-3 h-3" />
                         موثّق
                       </span>
@@ -399,18 +423,18 @@ export default function WorkshopsPage() {
                 </div>
 
                 {/* Content */}
-                <div className="p-5">
+                <div className="p-4 sm:p-5">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 rounded-full border-2 border-gray-700 overflow-hidden shrink-0 bg-[#0f3460] flex items-center justify-center">
+                    <div className="w-11 h-11 rounded-full border-2 border-surface-200 dark:border-surface-700 overflow-hidden shrink-0 bg-surface-100 dark:bg-surface-700 flex items-center justify-center">
                       {workshop.logo ? (
-                        <Image src={workshop.logo} alt={workshop.name} width={48} height={48} className="object-cover" />
+                        <Image src={workshop.logo} alt={workshop.name} width={44} height={44} className="object-cover" />
                       ) : (
-                        <Wrench className="w-5 h-5 text-[#0084ff]" />
+                        <Wrench className="w-4 h-4 text-primary-500" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-white font-semibold truncate">{workshop.name}</h3>
-                      <div className="flex items-center gap-2 text-sm text-gray-400">
+                      <h3 className="font-semibold text-surface-900 dark:text-white truncate">{workshop.name}</h3>
+                      <div className="flex items-center gap-1.5 text-xs text-surface-500 dark:text-surface-400">
                         <MapPin className="w-3 h-3 shrink-0" />
                         <span className="truncate">{workshop.address || 'الأردن'}</span>
                       </div>
@@ -423,28 +447,28 @@ export default function WorkshopsPage() {
                       {Array.from({ length: 5 }).map((_, i) => (
                         <Star
                           key={i}
-                          className={`w-4 h-4 ${
+                          className={`w-3.5 h-3.5 ${
                             i < Math.round(workshop.rating)
-                              ? 'text-yellow-400 fill-yellow-400'
-                              : 'text-gray-600'
+                              ? 'text-warning-400 fill-warning-400'
+                              : 'text-surface-300 dark:text-surface-600'
                           }`}
                         />
                       ))}
                     </div>
-                    <span className="text-white text-sm font-medium">{workshop.rating.toFixed(1)}</span>
-                    <span className="text-gray-500 text-xs">({workshop.reviewCount} تقييم)</span>
+                    <span className="text-sm font-semibold text-surface-900 dark:text-white">{workshop.rating.toFixed(1)}</span>
+                    <span className="text-xs text-surface-400">({workshop.reviewCount})</span>
                   </div>
 
                   {/* Services */}
                   {workshop.services && workshop.services.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mb-3">
                       {workshop.services.slice(0, 3).map((service) => (
-                        <span key={service.id} className="px-2 py-0.5 bg-[#0084ff]/10 text-[#0084ff] text-xs rounded-full">
+                        <span key={service.id} className="px-2 py-0.5 bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 text-xs rounded-lg font-medium">
                           {service.name}
                         </span>
                       ))}
                       {workshop.services.length > 3 && (
-                        <span className="px-2 py-0.5 bg-gray-700 text-gray-400 text-xs rounded-full">
+                        <span className="px-2 py-0.5 bg-surface-100 dark:bg-surface-700 text-surface-500 dark:text-surface-400 text-xs rounded-lg">
                           +{workshop.services.length - 3}
                         </span>
                       )}
@@ -452,7 +476,7 @@ export default function WorkshopsPage() {
                   )}
 
                   {/* Working Hours */}
-                  <div className="flex items-center gap-1 text-xs text-gray-500 mb-4">
+                  <div className="flex items-center gap-1.5 text-xs text-surface-400 dark:text-surface-500 mb-4">
                     <Clock className="w-3 h-3" />
                     <span>{workshop.workingHours}</span>
                   </div>
@@ -461,19 +485,19 @@ export default function WorkshopsPage() {
                   <div className="flex gap-2">
                     <Link
                       href={`/workshops/${workshop.id}`}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-[#0084ff] text-white rounded-lg text-sm font-medium hover:bg-[#006cd9] transition-colors"
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-semibold hover:bg-primary-700 transition-colors"
                     >
                       عرض التفاصيل
                     </Link>
                     <Link
                       href={`/workshops/${workshop.id}#book`}
-                      className="flex items-center justify-center gap-1.5 px-3 py-2.5 border border-[#0084ff] text-[#0084ff] rounded-lg text-sm hover:bg-[#0084ff]/10 transition-colors"
+                      className="flex items-center justify-center gap-1.5 px-3 py-2.5 border border-primary-200 dark:border-primary-800 text-primary-600 dark:text-primary-400 rounded-xl text-sm hover:bg-primary-50 dark:hover:bg-primary-500/10 transition-colors"
                     >
                       <Calendar className="w-4 h-4" />
                     </Link>
                     <Link
                       href={`/messages?workshop=${workshop.id}`}
-                      className="flex items-center justify-center gap-1.5 px-3 py-2.5 border border-gray-600 text-gray-300 rounded-lg text-sm hover:bg-gray-700/50 transition-colors"
+                      className="flex items-center justify-center gap-1.5 px-3 py-2.5 border border-surface-200 dark:border-surface-700 text-surface-500 dark:text-surface-400 rounded-xl text-sm hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
                     >
                       <MessageCircle className="w-4 h-4" />
                     </Link>
@@ -490,7 +514,7 @@ export default function WorkshopsPage() {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="p-2 rounded-lg border border-gray-700 bg-[#16213e] text-gray-400 hover:border-[#0084ff] hover:text-[#0084ff] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              className="p-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-surface-500 hover:border-primary-500 hover:text-primary-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -501,10 +525,10 @@ export default function WorkshopsPage() {
                   <button
                     key={pageNum}
                     onClick={() => setPage(pageNum)}
-                    className={`w-10 h-10 rounded-lg text-sm font-medium transition-all ${
+                    className={`w-10 h-10 rounded-xl text-sm font-medium transition-all ${
                       page === pageNum
-                        ? 'bg-[#0084ff] text-white'
-                        : 'border border-gray-700 bg-[#16213e] text-gray-400 hover:border-[#0084ff] hover:text-[#0084ff]'
+                        ? 'bg-primary-600 text-white'
+                        : 'border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-surface-500 hover:border-primary-500 hover:text-primary-500'
                     }`}
                   >
                     {pageNum}
@@ -516,7 +540,7 @@ export default function WorkshopsPage() {
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="p-2 rounded-lg border border-gray-700 bg-[#16213e] text-gray-400 hover:border-[#0084ff] hover:text-[#0084ff] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              className="p-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-surface-500 hover:border-primary-500 hover:text-primary-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>

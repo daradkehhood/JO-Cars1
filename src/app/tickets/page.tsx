@@ -29,18 +29,18 @@ const priorityColors: Record<string, string> = {
 };
 
 export default function TicketsPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [tickets, setTickets] = useState<TicketItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isAuthenticated) { router.push('/login'); return; }
-    fetch('/api/tickets')
+    if (_hydrated && !isAuthenticated) { router.push('/login'); return; }
+    if (isAuthenticated) fetch('/api/tickets')
       .then(r => r.json())
       .then(data => { setTickets(data.data || []); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, _hydrated, router]);
 
   return (
     <div className="min-h-screen py-8">

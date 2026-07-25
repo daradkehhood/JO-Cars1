@@ -10,16 +10,16 @@ import toast from 'react-hot-toast';
 import type { Car as CarType } from '@/types';
 
 export default function MyCarsPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [cars, setCars] = useState<(CarType & { _count: { favorites: number; messages: number; carViews: number } })[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'active' | 'sold' | 'deleted'>('active');
 
   useEffect(() => {
-    if (!isAuthenticated) { router.push('/login'); return; }
-    loadCars();
-  }, [isAuthenticated, router, activeTab]);
+    if (_hydrated && !isAuthenticated) { router.push('/login'); return; }
+    if (isAuthenticated) loadCars();
+  }, [isAuthenticated, _hydrated, router, activeTab]);
 
   const loadCars = () => {
     setLoading(true);
@@ -73,7 +73,7 @@ export default function MyCarsPage() {
     })(),
   };
 
-  if (!isAuthenticated) return null;
+  if (_hydrated && !isAuthenticated) return null;
 
   const tabs = [
     { id: 'active' as const, label: 'نشطة', icon: Car },

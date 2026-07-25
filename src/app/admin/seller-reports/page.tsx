@@ -26,7 +26,7 @@ interface SellerReport {
 }
 
 export default function AdminSellerReportsPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [reports, setReports] = useState<SellerReport[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,7 +35,7 @@ export default function AdminSellerReportsPage() {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/'); return; }
+    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
     loadReports();
   }, [isAuthenticated, user, router, search]);
 
@@ -71,7 +71,7 @@ export default function AdminSellerReportsPage() {
     ));
   };
 
-  if (!isAuthenticated || user?.role !== 'ADMIN') return null;
+  if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) return null;
 
   return (
     <div>

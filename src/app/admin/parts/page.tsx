@@ -26,14 +26,14 @@ const PART_TYPES: Record<string, string> = {
 };
 
 export default function AdminPartsPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [parts, setParts] = useState<PartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/login'); return; }
+    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/login'); return; }
     loadParts();
   }, [isAuthenticated, user, router, filter]);
 
@@ -65,7 +65,7 @@ export default function AdminPartsPage() {
     else toast.error('فشل');
   };
 
-  if (!isAuthenticated || user?.role !== 'ADMIN') return null;
+  if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) return null;
 
   return (
     <div className="min-h-screen py-8">

@@ -18,7 +18,7 @@ const defaultFeatures = [
 ];
 
 export default function AdminPlansPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +31,7 @@ export default function AdminPlansPage() {
   });
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/'); return; }
+    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
     loadPlans();
   }, [isAuthenticated, user, router]);
 
@@ -95,7 +95,7 @@ export default function AdminPlansPage() {
     setForm(prev => ({ ...prev, features: { ...prev.features, [key]: !prev.features[key] } }));
   };
 
-  if (!isAuthenticated || user?.role !== 'ADMIN') return null;
+  if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) return null;
 
   return (
     <div className="min-h-screen py-8">

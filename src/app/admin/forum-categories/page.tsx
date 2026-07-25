@@ -20,7 +20,7 @@ interface Category {
 }
 
 export default function AdminForumCategoriesPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +29,7 @@ export default function AdminForumCategoriesPage() {
   const [form, setForm] = useState({ nameAr: '', nameEn: '', slug: '', description: '', icon: 'MessageCircle', color: '#3b82f6', sortOrder: '0' });
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/login'); return; }
+    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/login'); return; }
     loadCategories();
   }, [isAuthenticated, user, router]);
 
@@ -74,7 +74,7 @@ export default function AdminForumCategoriesPage() {
     else toast.error(data.error || 'فشل');
   };
 
-  if (!isAuthenticated || user?.role !== 'ADMIN') return null;
+  if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) return null;
 
   return (
     <div className="min-h-screen py-8">

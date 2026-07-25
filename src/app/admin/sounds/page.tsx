@@ -64,7 +64,7 @@ const durationLabels: Record<string, string> = {
 };
 
 export default function SoundReportsAdmin() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [reports, setReports] = useState<SoundReport[]>([]);
   const [bans, setBans] = useState<SoundBan[]>([]);
@@ -86,7 +86,7 @@ export default function SoundReportsAdmin() {
   });
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/'); return; }
+    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
   }, [isAuthenticated, user, router]);
 
   useEffect(() => {

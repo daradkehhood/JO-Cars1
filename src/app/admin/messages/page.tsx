@@ -11,7 +11,7 @@ import type { Conversation, Message } from '@/types';
 import toast from 'react-hot-toast';
 
 export default function AdminMessagesPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [filtered, setFiltered] = useState<Conversation[]>([]);
@@ -24,7 +24,7 @@ export default function AdminMessagesPage() {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/'); return; }
+    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
     fetch('/api/admin/conversations')
       .then((r) => r.json())
       .then((data) => {
@@ -108,7 +108,7 @@ export default function AdminMessagesPage() {
     }
   };
 
-  if (!isAuthenticated || user?.role !== 'ADMIN') return null;
+  if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) return null;
 
   return (
     <div className="min-h-[80vh] py-4">

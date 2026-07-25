@@ -33,7 +33,7 @@ const statusColors: Record<string, string> = {
 const categoryLabels: Record<string, string> = { GENERAL: 'عام', TECHNICAL: 'تقني', ACCOUNT: 'حساب', PAYMENT: 'دفع', REPORT: 'بلاغ' };
 
 export default function AdminTicketsPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [tickets, setTickets] = useState<TicketItem[]>([]);
   const [admins, setAdmins] = useState<{ id: string; name: string }[]>([]);
@@ -45,7 +45,7 @@ export default function AdminTicketsPage() {
   const [expandedMessages, setExpandedMessages] = useState<Record<string, TicketItem['messages']>>({});
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/'); return; }
+    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
     loadTickets();
   }, [isAuthenticated, user, router, filter]);
 
@@ -113,7 +113,7 @@ export default function AdminTicketsPage() {
     } catch { toast.error('حدث خطأ'); }
   };
 
-  if (!isAuthenticated || user?.role !== 'ADMIN') return null;
+  if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) return null;
 
   return (
     <div>
@@ -212,7 +212,7 @@ export default function AdminTicketsPage() {
                         <select onChange={e => { if (e.target.value) handleAction(ticket.id, 'ASSIGN', e.target.value); }}
                           className="text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-1 outline-none">
                           <option value="">تعيين لـ...</option>
-                          {admins.filter(a => a.id !== user.id).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                          {admins.filter(a => a.id !== user?.id).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                         </select>
                       )}
                       {ticket.status !== 'CLOSED' && (

@@ -14,7 +14,7 @@ export default function NewTopicPage() {
 }
 
 function NewTopicForm() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [categories, setCategories] = useState<{ id: string; nameAr: string; slug: string }[]>([]);
@@ -24,8 +24,8 @@ function NewTopicForm() {
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated) { router.push('/login'); return; }
-    fetch('/api/forum/categories')
+    if (_hydrated && !isAuthenticated) { router.push('/login'); return; }
+    if (isAuthenticated) fetch('/api/forum/categories')
       .then(r => r.json())
       .then(data => {
         const cats = data.data || [];
@@ -37,7 +37,7 @@ function NewTopicForm() {
         }
       })
       .catch(() => {});
-  }, [isAuthenticated, router, searchParams]);
+  }, [isAuthenticated, _hydrated, router, searchParams]);
 
   const submit = async () => {
     if (!title.trim() || !content.trim() || !categoryId) {
@@ -59,7 +59,7 @@ function NewTopicForm() {
     setSending(false);
   };
 
-  if (!isAuthenticated) return null;
+  if (_hydrated && !isAuthenticated) return null;
 
   return (
     <div className="min-h-screen py-8">

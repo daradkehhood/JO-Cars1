@@ -10,43 +10,61 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // ===== Luxury Navy (Primary) — Mercedes/BMW inspired =====
         primary: {
-          50: '#f0f4ff',
-          100: '#dbe4ff',
-          200: '#bac8ff',
-          300: '#91a7ff',
-          400: '#748ffc',
-          500: '#5c7cfa',
-          600: '#4c6ef5',
-          700: '#4263eb',
-          800: '#3b5bdb',
-          900: '#364fc7',
-          950: '#1e3a8a',
+          50: '#eef4ff',
+          100: '#d9e6ff',
+          200: '#bcd2ff',
+          300: '#8eb4ff',
+          400: '#598bff',
+          500: '#3366ff',
+          600: '#1e40af', // royal blue
+          700: '#1e3a8a', // navy (main brand)
+          800: '#172554', // deep navy
+          900: '#0f1f3d', // near-black navy
+          950: '#0a1428', // darkest navy
         },
+        // ===== Gold (Accent) — luxury accent =====
+        gold: {
+          50: '#fbf6e9',
+          100: '#f5e9c6',
+          200: '#ecd592',
+          300: '#e0bd5c',
+          400: '#d4af37', // classic gold
+          500: '#c39826', // main gold
+          600: '#a8761c',
+          700: '#85591a',
+          800: '#70471b',
+          900: '#5f3b1c',
+          950: '#361f0e',
+        },
+        // ===== Neutral Surface (warmer, premium grays) =====
         surface: {
-          50: '#fafbfc',
-          100: '#f4f6f8',
-          200: '#eaecf0',
-          300: '#d0d5dd',
-          400: '#98a2b3',
-          500: '#667085',
-          600: '#475467',
-          700: '#344054',
-          800: '#1d2939',
-          900: '#101828',
-          950: '#0c1322',
+          50: '#fafafa',
+          100: '#f4f4f5',
+          200: '#e4e4e7',
+          300: '#d4d4d8',
+          400: '#a1a1aa',
+          500: '#71717a',
+          600: '#52525b',
+          700: '#3f3f46',
+          800: '#1e2130', // dark cards
+          900: '#13151f', // dark bg
+          950: '#0a0c14', // darkest
         },
+        // ===== Accent (kept red for danger/CTA) =====
         accent: {
-          50: '#fff0f0',
+          50: '#fff1f1',
           100: '#ffe0e0',
-          200: '#ffc7c7',
-          300: '#ffa3a3',
-          400: '#ff6b6b',
-          500: '#f03131',
-          600: '#e02020',
-          700: '#bc1818',
-          800: '#9a1818',
-          900: '#801a1a',
+          200: '#ffc5c5',
+          300: '#ff9d9d',
+          400: '#ff6464',
+          500: '#f83b3b',
+          600: '#e51d1d',
+          700: '#c11414',
+          800: '#a01414',
+          900: '#841818',
+          950: '#480505',
         },
         success: {
           50: '#ecfdf3',
@@ -76,6 +94,7 @@ const config: Config = {
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
         arabic: ["Tajawal", "Inter", "system-ui", "sans-serif"],
+        display: ["Tajawal", "Inter", "system-ui", "sans-serif"],
       },
       borderRadius: {
         '2xl': '1rem',
@@ -83,13 +102,25 @@ const config: Config = {
         '4xl': '1.5rem',
       },
       boxShadow: {
-        'soft': '0 2px 8px -2px rgba(16, 24, 40, 0.06), 0 4px 16px -4px rgba(16, 24, 40, 0.1)',
-        'soft-md': '0 4px 12px -2px rgba(16, 24, 40, 0.08), 0 8px 24px -4px rgba(16, 24, 40, 0.12)',
-        'soft-lg': '0 8px 24px -4px rgba(16, 24, 40, 0.1), 0 16px 48px -8px rgba(16, 24, 40, 0.14)',
-        'soft-xl': '0 12px 32px -4px rgba(16, 24, 40, 0.12), 0 24px 64px -8px rgba(16, 24, 40, 0.16)',
-        'inner-soft': 'inset 0 2px 4px 0 rgba(16, 24, 40, 0.04)',
-        'primary': '0 4px 14px -3px rgba(92, 124, 250, 0.4)',
-        'primary-lg': '0 8px 24px -4px rgba(92, 124, 250, 0.5)',
+        // soft layered shadows for premium feel
+        'soft': '0 1px 2px rgba(15, 31, 61, 0.04), 0 4px 12px -2px rgba(15, 31, 61, 0.06)',
+        'soft-md': '0 2px 4px rgba(15, 31, 61, 0.04), 0 8px 24px -4px rgba(15, 31, 61, 0.1)',
+        'soft-lg': '0 4px 8px rgba(15, 31, 61, 0.05), 0 16px 40px -8px rgba(15, 31, 61, 0.14)',
+        'soft-xl': '0 8px 16px rgba(15, 31, 61, 0.06), 0 24px 64px -12px rgba(15, 31, 61, 0.18)',
+        'inner-soft': 'inset 0 1px 2px 0 rgba(15, 31, 61, 0.04)',
+        // brand glows
+        'primary': '0 6px 20px -4px rgba(30, 58, 138, 0.45)',
+        'primary-lg': '0 12px 32px -6px rgba(30, 58, 138, 0.55)',
+        'gold': '0 6px 20px -4px rgba(212, 175, 55, 0.45)',
+        'gold-lg': '0 12px 32px -6px rgba(212, 175, 55, 0.55)',
+        // premium card lift
+        'card': '0 1px 3px rgba(15, 31, 61, 0.05), 0 10px 30px -10px rgba(15, 31, 61, 0.12)',
+        'card-hover': '0 4px 8px rgba(15, 31, 61, 0.06), 0 24px 48px -12px rgba(15, 31, 61, 0.22)',
+      },
+      backgroundImage: {
+        'gradient-luxury': 'linear-gradient(135deg, #1e3a8a 0%, #172554 50%, #0f1f3d 100%)',
+        'gradient-gold': 'linear-gradient(135deg, #e0bd5c 0%, #d4af37 50%, #c39826 100%)',
+        'gradient-shine': 'linear-gradient(110deg, transparent 25%, rgba(212,175,55,0.15) 50%, transparent 75%)',
       },
       animation: {
         'fade-in': 'fadeIn 0.6s ease-out',
@@ -98,6 +129,8 @@ const config: Config = {
         'scale-in': 'scaleIn 0.3s ease-out',
         'float': 'float 6s ease-in-out infinite',
         'glow': 'glow 3s ease-in-out infinite alternate',
+        'shimmer': 'shimmer 2.5s ease-in-out infinite',
+        'shine': 'shine 3s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -121,8 +154,16 @@ const config: Config = {
           '50%': { transform: 'translateY(-8px)' },
         },
         glow: {
-          '0%': { boxShadow: '0 0 20px rgba(92, 124, 250, 0.15)' },
-          '100%': { boxShadow: '0 0 40px rgba(92, 124, 250, 0.25)' },
+          '0%': { boxShadow: '0 0 20px rgba(30, 58, 138, 0.2)' },
+          '100%': { boxShadow: '0 0 40px rgba(30, 58, 138, 0.35)' },
+        },
+        shimmer: {
+          '0%': { backgroundPosition: '200% 0' },
+          '100%': { backgroundPosition: '-200% 0' },
+        },
+        shine: {
+          '0%': { backgroundPosition: '200% center' },
+          '100%': { backgroundPosition: '-200% center' },
         },
       },
     },

@@ -50,13 +50,13 @@ function banLabel(until: string | null): string {
 
 export default function AdminCarCommentReportsPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, _hydrated } = useAuth();
   const [reports, setReports] = useState<CommentReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [banning, setBanning] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user || user.role !== 'ADMIN') { router.push('/login'); return; }
+    if (_hydrated && (!user || user.role !== 'ADMIN')) { router.push('/login'); return; }
     loadReports();
   }, [user]);
 

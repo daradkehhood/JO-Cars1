@@ -24,7 +24,7 @@ const statusColors: Record<string, string> = {
 const categoryLabels: Record<string, string> = { GENERAL: 'عام', TECHNICAL: 'تقني', ACCOUNT: 'حساب', PAYMENT: 'دفع', REPORT: 'بلاغ' };
 
 export default function TicketDetailPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const params = useParams();
   const router = useRouter();
   const [ticket, setTicket] = useState<TicketDetail | null>(null);
@@ -34,8 +34,8 @@ export default function TicketDetailPage() {
   const [closing, setClosing] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated) { router.push('/login'); return; }
-    fetch(`/api/tickets/${params.id}`)
+    if (_hydrated && !isAuthenticated) { router.push('/login'); return; }
+    if (isAuthenticated) fetch(`/api/tickets/${params.id}`)
       .then(r => r.json())
       .then(data => {
         if (data.success) setTicket(data.data);
@@ -43,7 +43,7 @@ export default function TicketDetailPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [params.id, isAuthenticated, router]);
+  }, [params.id, isAuthenticated, _hydrated, router]);
 
   const handleReply = async () => {
     if (!replyText.trim()) return;

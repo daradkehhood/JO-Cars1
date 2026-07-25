@@ -23,7 +23,7 @@ interface AdminNotification {
 }
 
 export default function AdminPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [stats, setStats] = useState<DashboardStats>({
     totalCars: 0, activeCars: 0, pendingCars: 0, soldCars: 0,
@@ -34,7 +34,7 @@ export default function AdminPage() {
   const [notifOpen, setNotifOpen] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/'); return; }
+    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
     fetch('/api/admin/stats', { headers: { Authorization: `Bearer ${useAuth.getState().token}` } })
       .then(r => r.json())
       .then(data => { if (data.success) setStats(data.data); })
@@ -42,7 +42,7 @@ export default function AdminPage() {
   }, [isAuthenticated, user, router]);
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'ADMIN') return;
+    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) return;
     fetch('/api/admin/notifications', { headers: { Authorization: `Bearer ${useAuth.getState().token}` } })
       .then(r => r.json())
       .then(data => { if (data.success) { setNotifications(data.data.notifications); setUnreadCount(data.data.unreadCount); } })
@@ -60,7 +60,7 @@ export default function AdminPage() {
     } catch {}
   };
 
-  if (!isAuthenticated || user?.role !== 'ADMIN') return null;
+  if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) return null;
 
   const statCards = [
     { icon: Car, label: 'كل السيارات', value: stats.totalCars, color: 'from-blue-500 to-blue-600' },

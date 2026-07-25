@@ -20,7 +20,7 @@ interface GarageStats { totalSpent: number; totalExpenses: number; thisYearSpent
 
 export default function MyGaragePage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, _hydrated } = useAuth();
   const [cars, setCars] = useState<GarageCar[]>([]);
   const [stats, setStats] = useState<GarageStats>({ totalSpent: 0, totalExpenses: 0, thisYearSpent: 0 });
   const [loading, setLoading] = useState(true);
@@ -30,9 +30,9 @@ export default function MyGaragePage() {
   const [form, setForm] = useState({ carBrand: '', carModel: '', carYear: new Date().getFullYear().toString(), plateNumber: '', color: '', fuelType: '', transmission: '', currentKm: '', purchasePrice: '', notes: '' });
 
   useEffect(() => {
-    if (!isAuthenticated) { router.push('/auth/login'); return; }
-    fetchGarage();
-  }, [isAuthenticated, router]);
+    if (_hydrated && !isAuthenticated) { router.push('/auth/login'); return; }
+    if (isAuthenticated) fetchGarage();
+  }, [isAuthenticated, _hydrated, router]);
 
   const fetchGarage = async () => {
     try {

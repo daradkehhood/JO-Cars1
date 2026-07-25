@@ -29,7 +29,7 @@ const CONDITIONS = [
 ];
 
 export default function AddPartPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [brands, setBrands] = useState<{ id: string; nameAr: string }[]>([]);
@@ -43,11 +43,13 @@ export default function AddPartPage() {
   });
 
   useEffect(() => {
-    if (!isAuthenticated) { router.push('/login'); return; }
-    if (user?.phone) setForm(f => ({ ...f, phone: user.phone || '' }));
-    fetch('/api/cars/brands').then(r => r.json()).then(d => setBrands(d.data || [])).catch(() => {});
-    fetch('/api/cars/cities').then(r => r.json()).then(d => setCities(d.data || [])).catch(() => {});
-  }, [isAuthenticated, router, user]);
+    if (_hydrated && !isAuthenticated) { router.push('/login'); return; }
+    if (isAuthenticated) {
+      if (user?.phone) setForm(f => ({ ...f, phone: user.phone || '' }));
+      fetch('/api/cars/brands').then(r => r.json()).then(d => setBrands(d.data || [])).catch(() => {});
+      fetch('/api/cars/cities').then(r => r.json()).then(d => setCities(d.data || [])).catch(() => {});
+    }
+  }, [isAuthenticated, _hydrated, router, user]);
 
   const handleImages = (files: FileList | null) => {
     if (!files) return;
@@ -84,7 +86,7 @@ export default function AddPartPage() {
     setLoading(false);
   };
 
-  if (!isAuthenticated) return null;
+  if (_hydrated && !isAuthenticated) return null;
 
   return (
     <div className="min-h-screen py-8">

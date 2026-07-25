@@ -43,7 +43,7 @@ const statusIcons: Record<string, typeof CheckCircle> = {
 };
 
 export default function AdminSubscriptionsPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [subscriptions, setSubscriptions] = useState<SubscriptionEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,7 +56,7 @@ export default function AdminSubscriptionsPage() {
   const [filterPlan, setFilterPlan] = useState('');
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/'); }
+    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); }
   }, [isAuthenticated, user, router]);
 
   const loadSubscriptions = useCallback(async () => {
@@ -126,7 +126,7 @@ export default function AdminSubscriptionsPage() {
 
   const hasActiveFilters = searchQuery || filterStatus || filterPlan;
 
-  if (!isAuthenticated || user?.role !== 'ADMIN') return null;
+  if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) return null;
 
   return (
     <div className="min-h-screen py-8">

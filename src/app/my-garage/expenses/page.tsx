@@ -28,16 +28,16 @@ const EXPENSE_TYPES: Record<string, string> = {
 
 export default function AllExpensesPage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, _hydrated } = useAuth();
   const [data, setData] = useState<ExpensesData | null>(null);
   const [loading, setLoading] = useState(true);
   const [year, setYear] = useState(new Date().getFullYear().toString());
   const [typeFilter, setTypeFilter] = useState('');
 
   useEffect(() => {
-    if (!isAuthenticated) { router.push('/auth/login'); return; }
-    fetchExpenses();
-  }, [isAuthenticated, router, year, typeFilter]);
+    if (_hydrated && !isAuthenticated) { router.push('/auth/login'); return; }
+    if (isAuthenticated) fetchExpenses();
+  }, [isAuthenticated, _hydrated, router, year, typeFilter]);
 
   const fetchExpenses = async () => {
     setLoading(true);

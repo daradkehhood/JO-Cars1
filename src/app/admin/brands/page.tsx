@@ -12,7 +12,7 @@ interface Brand {
 }
 
 export default function AdminBrandsPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [brands, setBrands] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,7 +23,7 @@ export default function AdminBrandsPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/'); return; }
+    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
     fetch('/api/admin/brands').then(r => r.json()).then(d => { setBrands(d.data || []); setLoading(false); }).catch(() => setLoading(false));
   }, [isAuthenticated, user, router]);
 

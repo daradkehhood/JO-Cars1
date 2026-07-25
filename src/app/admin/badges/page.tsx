@@ -18,7 +18,7 @@ interface BadgeItem {
 }
 
 export default function AdminBadgesPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [badges, setBadges] = useState<BadgeItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +29,7 @@ export default function AdminBadgesPage() {
   const [formColor, setFormColor] = useState('#f59e0b');
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/'); return; }
+    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
     fetch('/api/admin/badges')
       .then(r => r.json())
       .then(data => { setBadges(data.data || []); setLoading(false); })
@@ -81,7 +81,7 @@ export default function AdminBadgesPage() {
     else toast.error('فشل التحديث');
   };
 
-  if (!isAuthenticated || user?.role !== 'ADMIN') return null;
+  if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) return null;
 
   return (
     <div>

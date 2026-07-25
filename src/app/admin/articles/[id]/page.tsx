@@ -9,7 +9,7 @@ import type { Article } from '@/types';
 import toast from 'react-hot-toast';
 
 export default function EditArticlePage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const params = useParams();
   const [loading, setLoading] = useState(true);
@@ -20,7 +20,7 @@ export default function EditArticlePage() {
   });
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/'); return; }
+    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
     fetch(`/api/articles/${params.id}`)
       .then(r => r.json())
       .then(data => {
@@ -58,7 +58,7 @@ export default function EditArticlePage() {
     setSaving(false);
   };
 
-  if (!isAuthenticated || user?.role !== 'ADMIN') return null;
+  if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) return null;
   if (loading) return <div className="flex items-center justify-center min-h-[40vh]"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>;
 
   return (

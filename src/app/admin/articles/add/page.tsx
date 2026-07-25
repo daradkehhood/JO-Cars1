@@ -8,7 +8,7 @@ import { Plus, Loader2, ChevronLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AddArticlePage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -16,7 +16,7 @@ export default function AddArticlePage() {
     category: 'NEWS', tags: '', published: false,
   });
 
-  if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/'); return null; }
+  if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return null; }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

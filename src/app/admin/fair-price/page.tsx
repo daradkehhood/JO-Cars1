@@ -8,14 +8,14 @@ import toast from 'react-hot-toast';
 
 export default function AdminFairPricePage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, _hydrated } = useAuth();
   const [data, setData] = useState<{ total: number; withEstimate: number; withoutEstimate: number; thresholds: { belowMarket: number; aboveMarket: number } } | null>(null);
   const [loading, setLoading] = useState(true);
   const [recalculating, setRecalculating] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
-    if (user.role !== 'ADMIN') { router.push('/'); return; }
+    if (!_hydrated) return;
+    if (!user || user.role !== 'ADMIN') { router.push('/'); return; }
     fetch('/api/admin/fair-price')
       .then(r => r.json())
       .then(d => { if (d.success) setData(d.data); setLoading(false); })

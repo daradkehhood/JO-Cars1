@@ -14,7 +14,7 @@ interface CarModel {
 interface Brand { id: string; nameAr: string; nameEn: string; }
 
 export default function AdminModelsPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const [models, setModels] = useState<CarModel[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -26,7 +26,7 @@ export default function AdminModelsPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/'); return; }
+    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
     Promise.all([
       fetch('/api/admin/models').then(r => r.json()),
       fetch('/api/admin/brands').then(r => r.json()),
