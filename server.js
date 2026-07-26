@@ -26,11 +26,15 @@ function log(level, msg, extra) {
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
-// Run prisma db push on startup to ensure all tables exist
+// Run prisma db push on startup to ensure all tables exist.
+// --accept-data-loss lets us add the new @@unique([bookingId]) on conversations
+// safely (existing rows have NULL bookingId, which is allowed by Postgres
+// unique constraints, so nothing is actually dropped). Without this flag, the
+// non-interactive prompt errors out and blocks startup intermittently.
 const { execSync } = require('child_process');
 try {
   log('INFO', 'Running prisma db push...');
-  execSync('./node_modules/.bin/prisma db push --skip-generate', { stdio: 'inherit', timeout: 30000 });
+  execSync('./node_modules/.bin/prisma db push --skip-generate --accept-data-loss', { stdio: 'inherit', timeout: 30000 });
   log('INFO', 'Prisma db push completed');
 } catch (e) {
   log('WARN', 'Prisma db push failed (non-fatal, will retry on first request)', e.message);
