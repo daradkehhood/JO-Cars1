@@ -24,14 +24,15 @@ import {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const user = await authenticateRequest(request);
   if (!user) return unauthorizedResponse();
 
+  const { id } = await params;
   try {
     const booking = await prisma.carBooking.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         car: {
           select: {
@@ -59,11 +60,12 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const user = await authenticateRequest(request);
   if (!user) return unauthorizedResponse();
 
+  const { id } = await params;
   try {
     const body = await request.json();
     const { status, rejectReason, finalPrice } = body as {
@@ -76,7 +78,7 @@ export async function PATCH(
     }
 
     const booking = await prisma.carBooking.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { car: { select: { id: true, slug: true, price: true } } },
     });
     if (!booking) return notFoundResponse('الحجز');
