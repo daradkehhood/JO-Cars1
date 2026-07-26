@@ -8,38 +8,110 @@ datasource db {
 }
 
 model User {
-  id                String   @id @default(cuid())
-  name              String
-  email             String   @unique
-  password          String
-  phone             String?
-  whatsapp          String?
-  image         String?
-  role          String   @default("USER")
-  bio               String?
-  dealerName        String?
-  dealerLogo        String?
-  dealerDescription String?
-  dealerAddress     String?
-  dealerLat         Float?
-  dealerLng         Float?
-  emailVerified     Boolean  @default(false)
-  phoneVerified     Boolean  @default(false)
-  whatsappNotifications Boolean @default(false)
-  rating            Float    @default(0)
-  ratingCount       Int      @default(0)
-  isActive          Boolean  @default(true)
-  canPost           Boolean  @default(true)
-  banStatus         String?
-  banReason         String?
-  banUntil          DateTime?
-  lastLoginAt       DateTime?
-  lastLoginIp       String?
-  failedLoginAttempts Int      @default(0)
-  lockedUntil       DateTime?
-  badges            String   @default("[]")
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                    String    @id @default(cuid())
+  name                  String
+  email                 String    @unique
+  password              String
+  phone                 String?
+  whatsapp              String?
+  image                 String?
+  role                  String    @default("USER")
+  bio                   String?
+  dealerName            String?
+  dealerLogo            String?
+  dealerDescription     String?
+  dealerAddress         String?
+  dealerLat             Float?
+  dealerLng             Float?
+  // Trader verification + profile extras (Phase C trader marketplace)
+  dealerVerified        Boolean   @default(false)
+  dealerViewCount       Int       @default(0)
+  dealerBannerImage     String?
+  dealerCommercialReg   String?
+  emailVerified         Boolean   @default(false)
+  phoneVerified         Boolean   @default(false)
+  whatsappNotifications Boolean   @default(false)
+  rating                Float     @default(0)
+  ratingCount           Int       @default(0)
+  isActive              Boolean   @default(true)
+  canPost               Boolean   @default(true)
+  banStatus             String?
+  banReason             String?
+  banUntil              DateTime?
+  lastLoginAt           DateTime?
+  lastLoginIp           String?
+  failedLoginAttempts   Int       @default(0)
+  lockedUntil           DateTime?
+  badges                String    @default("[]")
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  cars                        Car[]
+  favorites                   Favorite[]
+  messagesSent                Message[]             @relation("SentMessages")
+  messagesRecv                Message[]             @relation("ReceivedMessages")
+  buyerConversations          Conversation[]        @relation("BuyerConversations")
+  sellerConversations         Conversation[]        @relation("SellerConversations")
+  reports                     Report[]
+  notifications               Notification[]
+  subscription                Subscription?
+  savedSearches               SavedSearch[]
+  carViews                    CarView[]
+  carLogs                     CarLog[]
+  priceAlerts                 PriceAlert[]
+  givenRatings                UserRating[]          @relation("GivenRatings")
+  receivedRatings             UserRating[]          @relation("ReceivedRatings")
+  usedParts                   UsedPart[]
+  forumTopics                 ForumTopic[]
+  forumPosts                  ForumPost[]
+  forumPostReports            ForumPostReport[]     @relation("ReportedBy")
+  reportedInPosts             ForumPostReport[]     @relation("ReportedUser")
+  forumBannedCommentUntil     DateTime?
+  forumBannedTopicUntil       DateTime?
+  carCommentBannedUntil       DateTime?
+  auctions                    Auction[]             @relation("AuctionSeller")
+  wonAuctions                 Auction[]             @relation("AuctionWinner")
+  bids                        Bid[]
+  reportedCarHistories        CarHistory[]          @relation("UserHistoryReports")
+  premiumRequests             PremiumRequest[]
+  auditLogs                   AuditLog[]
+  tickets                     Ticket[]
+  assignedTickets             Ticket[]              @relation("AssignedTickets")
+  ticketMessages              TicketMessage[]
+  plates                      Plate[]
+  articles                    Article[]
+  wantedAds                   WantedAd[]
+  wantedOffers                WantedOffer[]
+  carComments                 CarComment[]
+  carCommentReports           CarCommentReport[]    @relation("ReportedComments")
+  commentReportsMade          CarCommentReport[]    @relation("CommentReporters")
+  maintenanceServices         MaintenanceService[]
+  carReminders                CarReminder[]
+  garage                      UserGarage[]
+  carExpenses                 CarExpense[]
+  soundRecordings             CarSoundRecording[]
+  soundReports                SoundReport[]
+  soundReportsReviewed        SoundReport[]         @relation("SoundReportReviewer")
+  soundBans                   SoundBan[]
+  soundBansGiven              SoundBan[]            @relation("SoundBanBanner")
+  workshops                   Workshop[]
+  workshopsVerified           Workshop[]            @relation("WorkshopVerifier")
+  workshopReviews             WorkshopReview[]
+  workshopAppointments        WorkshopAppointment[]
+  workshopAds                 WorkshopAd[]
+  workshopAdsReviewed         WorkshopAd[]          @relation("WorkshopAdReviewer")
+  workshopAdReports           WorkshopAdReport[]
+  workshopReports             WorkshopReport[]
+  workshopReportsReviewed     WorkshopReport[]      @relation("WorkshopReportReviewer")
+  workshopAdReportsReviewed   WorkshopAdReport[]    @relation("WorkshopAdReportReviewer")
+  costRecords                 CostRecord[]
+  // Phase C trader + booking + review relations
+  carBookingsAsBuyer          CarBooking[]          @relation("BookingBuyer")
+  carBookingsAsDealer         CarBooking[]          @relation("BookingDealer")
+  carReviewsGiven             CarReview[]           @relation("CarReviewAuthor")
+  carReviewsReceived          CarReview[]           @relation("CarReviewTarget")
+  traderVerifications         TraderVerification[]  @relation("TraderVerificationApplicant")
+  traderVerificationsReviewed TraderVerification[]  @relation("TraderVerificationReviewer")
 
   @@index([phone])
   @@index([role])
@@ -47,67 +119,6 @@ model User {
   @@index([canPost])
   @@index([createdAt])
   @@index([name])
-
-  cars          Car[]
-  favorites     Favorite[]
-  messagesSent          Message[]      @relation("SentMessages")
-  messagesRecv          Message[]      @relation("ReceivedMessages")
-  buyerConversations    Conversation[] @relation("BuyerConversations")
-  sellerConversations   Conversation[] @relation("SellerConversations")
-  reports               Report[]
-  notifications Notification[]
-  subscription  Subscription?
-  savedSearches SavedSearch[]
-  carViews      CarView[]
-  carLogs       CarLog[]
-  priceAlerts   PriceAlert[]
-  givenRatings      UserRating[] @relation("GivenRatings")
-  receivedRatings   UserRating[] @relation("ReceivedRatings")
-  usedParts     UsedPart[]
-  forumTopics   ForumTopic[]
-  forumPosts    ForumPost[]
-  forumPostReports ForumPostReport[] @relation("ReportedBy")
-  reportedInPosts  ForumPostReport[] @relation("ReportedUser")
-  forumBannedCommentUntil DateTime?
-  forumBannedTopicUntil   DateTime?
-  carCommentBannedUntil DateTime?
-  auctions  Auction[] @relation("AuctionSeller")
-  wonAuctions Auction[] @relation("AuctionWinner")
-  bids                 Bid[]
-  reportedCarHistories CarHistory[] @relation("UserHistoryReports")
-  premiumRequests      PremiumRequest[]
-  auditLogs            AuditLog[]
-  tickets              Ticket[]
-  assignedTickets      Ticket[]      @relation("AssignedTickets")
-  ticketMessages       TicketMessage[]
-  plates               Plate[]
-  articles             Article[]
-  wantedAds            WantedAd[]
-  wantedOffers         WantedOffer[]
-  carComments          CarComment[]
-  carCommentReports    CarCommentReport[] @relation("ReportedComments")
-  commentReportsMade   CarCommentReport[] @relation("CommentReporters")
-  maintenanceServices  MaintenanceService[]
-  carReminders         CarReminder[]
-  garage               UserGarage[]
-  carExpenses          CarExpense[]
-  soundRecordings      CarSoundRecording[]
-  soundReports         SoundReport[]
-  soundReportsReviewed SoundReport[]    @relation("SoundReportReviewer")
-  soundBans            SoundBan[]
-  soundBansGiven       SoundBan[]       @relation("SoundBanBanner")
-  workshops            Workshop[]
-  workshopsVerified    Workshop[]       @relation("WorkshopVerifier")
-  workshopReviews      WorkshopReview[]
-  workshopAppointments WorkshopAppointment[]
-  workshopAds          WorkshopAd[]
-  workshopAdsReviewed  WorkshopAd[]     @relation("WorkshopAdReviewer")
-  workshopAdReports    WorkshopAdReport[]
-  workshopReports      WorkshopReport[]
-  workshopReportsReviewed WorkshopReport[] @relation("WorkshopReportReviewer")
-  workshopAdReportsReviewed WorkshopAdReport[] @relation("WorkshopAdReportReviewer")
-  costRecords          CostRecord[]
-
   @@map("users")
 }
 
@@ -127,11 +138,11 @@ model CarTag {
 }
 
 model CarTagAssignment {
-  id        String   @id @default(cuid())
-  carId     String
-  tagId     String
+  id         String   @id @default(cuid())
+  carId      String
+  tagId      String
   assignedBy String?
-  createdAt DateTime @default(now())
+  createdAt  DateTime @default(now())
 
   car Car    @relation(fields: [carId], references: [id], onDelete: Cascade)
   tag CarTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
@@ -143,17 +154,17 @@ model CarTagAssignment {
 }
 
 model PremiumRequest {
-  id          String   @id @default(cuid())
-  type        String   // "FEATURE" or "PIN"
-  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
-  notes       String?
-  reviewedBy  String?
-  reviewedAt  DateTime?
-  createdAt   DateTime @default(now())
+  id         String    @id @default(cuid())
+  type       String // "FEATURE" or "PIN"
+  status     String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  notes      String?
+  reviewedBy String?
+  reviewedAt DateTime?
+  createdAt  DateTime  @default(now())
 
-  car   Car    @relation(fields: [carId], references: [id], onDelete: Cascade)
-  carId String
-  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  car    Car    @relation(fields: [carId], references: [id], onDelete: Cascade)
+  carId  String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
   @@index([status])
@@ -189,7 +200,7 @@ model CarModel {
   brandId  String
   isActive Boolean @default(true)
 
-  brand       Brand @relation(fields: [brandId], references: [id])
+  brand       Brand        @relation(fields: [brandId], references: [id])
   cars        Car[]
   priceAlerts PriceAlert[]
   wantedAds   WantedAd[]
@@ -206,8 +217,8 @@ model Province {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  cities  City[]
-  wantedAds WantedAd[]
+  cities              City[]
+  wantedAds           WantedAd[]
   maintenanceServices MaintenanceService[]
 
   @@map("provinces")
@@ -224,10 +235,10 @@ model City {
   provinceId String?
   province   Province? @relation(fields: [provinceId], references: [id], onDelete: SetNull)
 
-  cars        Car[]
-  priceAlerts PriceAlert[]
-  usedParts   UsedPart[]
-  wantedAds   WantedAd[]
+  cars                Car[]
+  priceAlerts         PriceAlert[]
+  usedParts           UsedPart[]
+  wantedAds           WantedAd[]
   maintenanceServices MaintenanceService[]
 
   @@index([provinceId])
@@ -238,7 +249,7 @@ model MaintenanceService {
   id          String   @id @default(cuid())
   title       String
   description String?
-  category    String   // OIL_CHANGE, TIRES, BODYWORK, MECHANIC, ELECTRICAL, AC, DETAILING, OTHER
+  category    String // OIL_CHANGE, TIRES, BODYWORK, MECHANIC, ELECTRICAL, AC, DETAILING, OTHER
   price       Float?
   currency    String   @default("JOD")
   phone       String
@@ -267,14 +278,14 @@ model MaintenanceService {
 }
 
 model Car {
-  id                String    @id @default(cuid())
-  slug              String    @unique
-  status            String    @default("PENDING")
-  featured          Boolean   @default(false)
-  featuredUntil     DateTime?
-  isNew             Boolean   @default(false)
-  views             Int       @default(0)
-  saves             Int       @default(0)
+  id            String    @id @default(cuid())
+  slug          String    @unique
+  status        String    @default("PENDING")
+  featured      Boolean   @default(false)
+  featuredUntil DateTime?
+  isNew         Boolean   @default(false)
+  views         Int       @default(0)
+  saves         Int       @default(0)
 
   brandId           String
   modelId           String
@@ -328,31 +339,36 @@ model Car {
   deletedAt         DateTime?
   deletedBy         String?
 
-  brand    Brand    @relation(fields: [brandId], references: [id])
-  model    CarModel @relation(fields: [modelId], references: [id])
-  city     City     @relation(fields: [cityId], references: [id])
-  user     User     @relation(fields: [userId], references: [id])
-  userId   String
+  brand  Brand    @relation(fields: [brandId], references: [id])
+  model  CarModel @relation(fields: [modelId], references: [id])
+  city   City     @relation(fields: [cityId], references: [id])
+  user   User     @relation(fields: [userId], references: [id])
+  userId String
 
-  images         CarImage[]
-  favorites      Favorite[]
-  messages       Message[]
-  conversations  Conversation[]
-  reports        Report[]
-  carViews       CarView[]
-  comparisonCars ComparisonItem[]
-  carLogs        CarLog[]
-  userRatings    UserRating[]
-  auction        Auction?
-  carHistory     CarHistory[] @relation("CarHistoryRecords")
-  tagAssignments CarTagAssignment[]
+  images          CarImage[]
+  favorites       Favorite[]
+  messages        Message[]
+  conversations   Conversation[]
+  reports         Report[]
+  carViews        CarView[]
+  comparisonCars  ComparisonItem[]
+  carLogs         CarLog[]
+  userRatings     UserRating[]
+  auction         Auction?
+  carHistory      CarHistory[]        @relation("CarHistoryRecords")
+  tagAssignments  CarTagAssignment[]
   premiumRequests PremiumRequest[]
-  comments CarComment[]
-  reminders CarReminder[]
-  viewers   CarViewer[]
+  comments        CarComment[]
+  reminders       CarReminder[]
+  viewers         CarViewer[]
   soundRecordings CarSoundRecording[]
   soundAnalyses   SoundAnalysis[]
   soundReports    SoundReport[]
+  // Phase C trader booking + reviews
+  rating          Float               @default(0)
+  reviewCount     Int                 @default(0)
+  carBookings     CarBooking[]
+  carReviews      CarReview[]
 
   @@index([brandId])
   @@index([modelId])
@@ -376,22 +392,22 @@ model Car {
 }
 
 model Plate {
-  id          String   @id @default(cuid())
-  plateNumber String
-  type        String   @default("STANDARD") // STANDARD, THREE_DIGIT, FOUR_DIGIT, FIVE_DIGIT, SIX_DIGIT, CUSTOM
-  price       Float
-  currency    String   @default("JOD")
-  status      String   @default("AVAILABLE") // AVAILABLE, PENDING, SOLD
-  description String?
-  images      String   @default("[]")
-  coverImage  String?
-  phone       String
-  whatsapp    String?
-  isNegotiable Boolean @default(false)
-  views       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  soldAt      DateTime?
+  id           String    @id @default(cuid())
+  plateNumber  String
+  type         String    @default("STANDARD") // STANDARD, THREE_DIGIT, FOUR_DIGIT, FIVE_DIGIT, SIX_DIGIT, CUSTOM
+  price        Float
+  currency     String    @default("JOD")
+  status       String    @default("AVAILABLE") // AVAILABLE, PENDING, SOLD
+  description  String?
+  images       String    @default("[]")
+  coverImage   String?
+  phone        String
+  whatsapp     String?
+  isNegotiable Boolean   @default(false)
+  views        Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  soldAt       DateTime?
 
   sellerId String
   seller   User   @relation(fields: [sellerId], references: [id])
@@ -405,21 +421,21 @@ model Plate {
 }
 
 model Article {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   title       String
-  slug        String   @unique
+  slug        String    @unique
   content     String
   excerpt     String?
   image       String?
-  category    String   @default("NEWS") // NEWS, FUEL_PRICES, CUSTOMS, REVIEWS, TIPS
-  tags        String   @default("[]")
-  published   Boolean  @default(false)
+  category    String    @default("NEWS") // NEWS, FUEL_PRICES, CUSTOMS, REVIEWS, TIPS
+  tags        String    @default("[]")
+  published   Boolean   @default(false)
   publishedAt DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   authorId String
-  author   User @relation(fields: [authorId], references: [id])
+  author   User   @relation(fields: [authorId], references: [id])
 
   @@index([category])
   @@index([published])
@@ -429,20 +445,20 @@ model Article {
 }
 
 model CarHistory {
-  id              String   @id @default(cuid())
-  vin             String
-  eventType       String
-  title           String
-  description     String?
-  eventDate       DateTime
-  mileage         Int?
-  source          String   @default("user")
-  sourceUrl       String?
-  createdAt       DateTime @default(now())
+  id          String   @id @default(cuid())
+  vin         String
+  eventType   String
+  title       String
+  description String?
+  eventDate   DateTime
+  mileage     Int?
+  source      String   @default("user")
+  sourceUrl   String?
+  createdAt   DateTime @default(now())
 
-  car   Car?  @relation("CarHistoryRecords", fields: [carId], references: [id], onDelete: SetNull)
-  carId String?
-  user  User? @relation("UserHistoryReports", fields: [userId], references: [id], onDelete: SetNull)
+  car    Car?    @relation("CarHistoryRecords", fields: [carId], references: [id], onDelete: SetNull)
+  carId  String?
+  user   User?   @relation("UserHistoryReports", fields: [userId], references: [id], onDelete: SetNull)
   userId String?
 
   @@index([vin])
@@ -479,16 +495,19 @@ model Favorite {
 }
 
 model Conversation {
-  id        String   @id @default(cuid())
+  id        String      @id @default(cuid())
   carId     String
-  car       Car      @relation(fields: [carId], references: [id])
+  car       Car         @relation(fields: [carId], references: [id])
   buyerId   String
-  buyer     User     @relation("BuyerConversations", fields: [buyerId], references: [id])
+  buyer     User        @relation("BuyerConversations", fields: [buyerId], references: [id])
   sellerId  String
-  seller    User     @relation("SellerConversations", fields: [sellerId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  seller    User        @relation("SellerConversations", fields: [sellerId], references: [id])
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
   messages  Message[]
+  // Phase C booking-bound chat (optional; legacy conversations remain car-bound)
+  bookingId String?     @unique
+  booking   CarBooking? @relation("BookingConversation", fields: [bookingId], references: [id], onDelete: SetNull)
 
   @@unique([carId, buyerId, sellerId])
   @@index([buyerId])
@@ -497,16 +516,16 @@ model Conversation {
 }
 
 model Message {
-  id             String       @id @default(cuid())
-  content        String
-  read           Boolean      @default(false)
-  createdAt      DateTime     @default(now())
+  id        String   @id @default(cuid())
+  content   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
 
-  sender         User         @relation("SentMessages", fields: [senderId], references: [id])
+  sender         User          @relation("SentMessages", fields: [senderId], references: [id])
   senderId       String
-  receiver       User         @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  receiver       User          @relation("ReceivedMessages", fields: [receiverId], references: [id])
   receiverId     String
-  car            Car?         @relation(fields: [carId], references: [id])
+  car            Car?          @relation(fields: [carId], references: [id])
   carId          String?
   conversation   Conversation? @relation(fields: [conversationId], references: [id])
   conversationId String?
@@ -519,16 +538,16 @@ model Message {
 }
 
 model Report {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   reason      String
   description String?
-  status      String   @default("PENDING")
-  createdAt   DateTime @default(now())
+  status      String    @default("PENDING")
+  createdAt   DateTime  @default(now())
   resolvedAt  DateTime?
 
-  user   User @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
   userId String
-  car    Car  @relation(fields: [carId], references: [id])
+  car    Car    @relation(fields: [carId], references: [id])
   carId  String
 
   @@index([status])
@@ -556,7 +575,7 @@ model Auction {
   id              String   @id @default(cuid())
   startingPrice   Float
   currentPrice    Float
-  minBidIncrement Float   @default(10)
+  minBidIncrement Float    @default(10)
   startDate       DateTime @default(now())
   endDate         DateTime
   status          String   @default("ACTIVE")
@@ -565,10 +584,10 @@ model Auction {
   car   Car    @relation(fields: [carId], references: [id])
   carId String @unique
 
-  seller   User @relation("AuctionSeller", fields: [sellerId], references: [id])
+  seller   User   @relation("AuctionSeller", fields: [sellerId], references: [id])
   sellerId String
 
-  winner   User?  @relation("AuctionWinner", fields: [winnerId], references: [id])
+  winner   User?   @relation("AuctionWinner", fields: [winnerId], references: [id])
   winnerId String?
 
   bids Bid[]
@@ -668,7 +687,7 @@ model CarLog {
   action    String
   createdAt DateTime @default(now())
 
-  car Car @relation(fields: [carId], references: [id])
+  car  Car  @relation(fields: [carId], references: [id])
   user User @relation(fields: [userId], references: [id])
 
   @@index([carId])
@@ -679,16 +698,16 @@ model CarLog {
 
 model AuditLog {
   id          String   @id @default(cuid())
-  action      String   // BAN_USER, DELETE_USER, UPDATE_USER_ROLE, APPROVE_CAR, REJECT_CAR, FEATURE_CAR, UPDATE_CAR_PRICE, DELETE_CAR, RESTORE_CAR, TICKET_CLOSE, SYSTEM
+  action      String // BAN_USER, DELETE_USER, UPDATE_USER_ROLE, APPROVE_CAR, REJECT_CAR, FEATURE_CAR, UPDATE_CAR_PRICE, DELETE_CAR, RESTORE_CAR, TICKET_CLOSE, SYSTEM
   description String?
-  entityType  String?  // "USER", "CAR", "TICKET", "SYSTEM"
+  entityType  String? // "USER", "CAR", "TICKET", "SYSTEM"
   entityId    String?
   oldValue    String?
   newValue    String?
   ip          String?
   createdAt   DateTime @default(now())
 
-  actor   User  @relation(fields: [actorId], references: [id])
+  actor   User   @relation(fields: [actorId], references: [id])
   actorId String
 
   @@index([action])
@@ -699,19 +718,19 @@ model AuditLog {
 }
 
 model Ticket {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   subject   String
   message   String
-  status    String   @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, CLOSED
-  priority  String   @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
-  category  String   @default("GENERAL") // GENERAL, TECHNICAL, ACCOUNT, PAYMENT, REPORT
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status    String    @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, CLOSED
+  priority  String    @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
+  category  String    @default("GENERAL") // GENERAL, TECHNICAL, ACCOUNT, PAYMENT, REPORT
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   closedAt  DateTime?
 
-  user   User   @relation(fields: [userId], references: [id])
-  userId String
-  assignee User? @relation("AssignedTickets", fields: [assigneeId], references: [id])
+  user       User    @relation(fields: [userId], references: [id])
+  userId     String
+  assignee   User?   @relation("AssignedTickets", fields: [assigneeId], references: [id])
   assigneeId String?
 
   messages TicketMessage[]
@@ -740,36 +759,36 @@ model TicketMessage {
 }
 
 model UsedPart {
-  id            String    @id @default(cuid())
-  slug          String    @unique
-  title         String
-  description   String?
-  partType      String
-  brandId       String?
-  partNumber    String?
-  condition     String    @default("USED")
-  price         Float
-  currency      String    @default("JOD")
-  quantity      Int       @default(1)
-  images        String    @default("[]")
-  coverImage    String?
-  phone         String
-  whatsapp      String?
-  cityId        String?
-  status        String    @default("PENDING")
-  isNegotiable  Boolean   @default(false)
-  views         Int       @default(0)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  expiresAt     DateTime?
-  soldAt        DateTime?
-  deletedAt     DateTime?
-  deletedBy     String?
+  id           String    @id @default(cuid())
+  slug         String    @unique
+  title        String
+  description  String?
+  partType     String
+  brandId      String?
+  partNumber   String?
+  condition    String    @default("USED")
+  price        Float
+  currency     String    @default("JOD")
+  quantity     Int       @default(1)
+  images       String    @default("[]")
+  coverImage   String?
+  phone        String
+  whatsapp     String?
+  cityId       String?
+  status       String    @default("PENDING")
+  isNegotiable Boolean   @default(false)
+  views        Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  expiresAt    DateTime?
+  soldAt       DateTime?
+  deletedAt    DateTime?
+  deletedBy    String?
 
-  userId  String
-  user    User    @relation(fields: [userId], references: [id])
-  brand   Brand?  @relation(fields: [brandId], references: [id])
-  city    City?   @relation(fields: [cityId], references: [id])
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+  brand  Brand? @relation(fields: [brandId], references: [id])
+  city   City?  @relation(fields: [cityId], references: [id])
 
   @@index([partType])
   @@index([brandId])
@@ -782,19 +801,19 @@ model UsedPart {
 }
 
 model PriceAlert {
-  id              String    @id @default(cuid())
-  userId          String
-  brandId         String?
-  modelId         String?
-  minPrice        Int?
-  maxPrice        Int?
-  yearFrom        Int?
-  yearTo          Int?
-  cityId          String?
-  isActive        Boolean   @default(true)
-  lastNotifiedAt  DateTime?
-  notifiedCount   Int       @default(0)
-  createdAt       DateTime  @default(now())
+  id             String    @id @default(cuid())
+  userId         String
+  brandId        String?
+  modelId        String?
+  minPrice       Int?
+  maxPrice       Int?
+  yearFrom       Int?
+  yearTo         Int?
+  cityId         String?
+  isActive       Boolean   @default(true)
+  lastNotifiedAt DateTime?
+  notifiedCount  Int       @default(0)
+  createdAt      DateTime  @default(now())
 
   user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   brand Brand?    @relation(fields: [brandId], references: [id], onDelete: SetNull)
@@ -807,17 +826,17 @@ model PriceAlert {
 }
 
 model UserRating {
-  id            String   @id @default(cuid())
-  score         Int
-  comment       String?
-  createdAt     DateTime @default(now())
+  id        String   @id @default(cuid())
+  score     Int
+  comment   String?
+  createdAt DateTime @default(now())
 
-  raterId       String
-  rater         User     @relation("GivenRatings", fields: [raterId], references: [id])
-  targetUserId  String
-  targetUser    User     @relation("ReceivedRatings", fields: [targetUserId], references: [id])
-  carId         String
-  car           Car      @relation(fields: [carId], references: [id])
+  raterId      String
+  rater        User   @relation("GivenRatings", fields: [raterId], references: [id])
+  targetUserId String
+  targetUser   User   @relation("ReceivedRatings", fields: [targetUserId], references: [id])
+  carId        String
+  car          Car    @relation(fields: [carId], references: [id])
 
   @@unique([raterId, targetUserId, carId])
   @@index([targetUserId])
@@ -879,7 +898,7 @@ model ForumPost {
   topic   ForumTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
 
   userId String
-  user   User @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 
   reports ForumPostReport[]
 
@@ -890,23 +909,23 @@ model ForumPost {
 }
 
 model ForumPostReport {
-  id          String   @id @default(cuid())
-  reason      String
-  description String?
-  status      String   @default("PENDING")
-  createdAt   DateTime @default(now())
-  resolvedAt  DateTime?
-  reportedContent    String @default("")
+  id                    String    @id @default(cuid())
+  reason                String
+  description           String?
+  status                String    @default("PENDING")
+  createdAt             DateTime  @default(now())
+  resolvedAt            DateTime?
+  reportedContent       String    @default("")
   reportedPostCreatedAt DateTime?
 
   postId String?
   post   ForumPost? @relation(fields: [postId], references: [id], onDelete: SetNull)
 
   reporterId String
-  reporter   User @relation("ReportedBy", fields: [reporterId], references: [id])
+  reporter   User   @relation("ReportedBy", fields: [reporterId], references: [id])
 
   reportedUserId String
-  reportedUser   User @relation("ReportedUser", fields: [reportedUserId], references: [id])
+  reportedUser   User   @relation("ReportedUser", fields: [reportedUserId], references: [id])
 
   @@index([status])
   @@index([postId])
@@ -931,18 +950,18 @@ model WantedAd {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  brandId   String?
-  brand     Brand?   @relation(fields: [brandId], references: [id], onDelete: SetNull)
-  modelId   String?
-  model     CarModel? @relation(fields: [modelId], references: [id], onDelete: SetNull)
-  cityId    String?
-  city      City?    @relation(fields: [cityId], references: [id], onDelete: SetNull)
+  brandId    String?
+  brand      Brand?    @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  modelId    String?
+  model      CarModel? @relation(fields: [modelId], references: [id], onDelete: SetNull)
+  cityId     String?
+  city       City?     @relation(fields: [cityId], references: [id], onDelete: SetNull)
   provinceId String?
-  province  Province? @relation(fields: [provinceId], references: [id], onDelete: SetNull)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  province   Province? @relation(fields: [provinceId], references: [id], onDelete: SetNull)
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
 
-  offers    WantedOffer[]
+  offers WantedOffer[]
 
   @@index([status])
   @@index([userId])
@@ -965,7 +984,7 @@ model WantedOffer {
   wantedAd   WantedAd @relation(fields: [wantedAdId], references: [id], onDelete: Cascade)
 
   userId String?
-  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([wantedAdId])
   @@map("wanted_offers")
@@ -977,9 +996,9 @@ model CarComment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  car   Car  @relation(fields: [carId], references: [id], onDelete: Cascade)
-  carId String
-  user  User @relation(fields: [userId], references: [id])
+  car    Car    @relation(fields: [carId], references: [id], onDelete: Cascade)
+  carId  String
+  user   User   @relation(fields: [userId], references: [id])
   userId String
 
   reports CarCommentReport[]
@@ -990,23 +1009,23 @@ model CarComment {
 }
 
 model CarCommentReport {
-  id          String   @id @default(cuid())
-  reason      String
-  description String?
-  status      String   @default("PENDING")
-  createdAt   DateTime @default(now())
-  resolvedAt  DateTime?
-  reportedContent String @default("")
+  id                       String    @id @default(cuid())
+  reason                   String
+  description              String?
+  status                   String    @default("PENDING")
+  createdAt                DateTime  @default(now())
+  resolvedAt               DateTime?
+  reportedContent          String    @default("")
   reportedCommentCreatedAt DateTime?
 
   commentId String?
   comment   CarComment? @relation(fields: [commentId], references: [id], onDelete: SetNull)
 
   reporterId String
-  reporter   User @relation("CommentReporters", fields: [reporterId], references: [id])
+  reporter   User   @relation("CommentReporters", fields: [reporterId], references: [id])
 
   reportedUserId String
-  reportedUser   User @relation("ReportedComments", fields: [reportedUserId], references: [id])
+  reportedUser   User   @relation("ReportedComments", fields: [reportedUserId], references: [id])
 
   @@index([status])
   @@index([commentId])
@@ -1062,30 +1081,30 @@ model SiteSettings {
 }
 
 model CarReminder {
-  id            String    @id @default(cuid())
-  userId        String
-  carId         String?
-  carBrand      String?
-  carModel      String?
-  carYear       Int?
-  plateNumber   String?
-  type          String
-  title         String
-  description   String?
-  dueDate       DateTime
-  lastOdometer  Int?
-  notifyBefore  Int       @default(7)
-  isCompleted   Boolean   @default(false)
-  completedAt   DateTime?
-  isNotified    Boolean   @default(false)
-  phone         String
-  whatsapp      String?
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id           String    @id @default(cuid())
+  userId       String
+  carId        String?
+  carBrand     String?
+  carModel     String?
+  carYear      Int?
+  plateNumber  String?
+  type         String
+  title        String
+  description  String?
+  dueDate      DateTime
+  lastOdometer Int?
+  notifyBefore Int       @default(7)
+  isCompleted  Boolean   @default(false)
+  completedAt  DateTime?
+  isNotified   Boolean   @default(false)
+  phone        String
+  whatsapp     String?
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  user          User      @relation(fields: [userId], references: [id])
-  car           Car?      @relation(fields: [carId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+  car  Car? @relation(fields: [carId], references: [id])
 
   @@index([userId])
   @@index([type])
@@ -1103,7 +1122,7 @@ model CarViewer {
   userAgent String?
   createdAt DateTime @default(now())
 
-  car       Car?     @relation(fields: [carId], references: [id])
+  car Car? @relation(fields: [carId], references: [id])
 
   @@unique([carId, sessionId])
   @@index([carId])
@@ -1112,7 +1131,7 @@ model CarViewer {
 }
 
 model UserGarage {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   userId        String
   carBrand      String
   carModel      String
@@ -1125,13 +1144,13 @@ model UserGarage {
   purchaseDate  DateTime?
   purchasePrice Float?
   notes         String?
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  user      User           @relation(fields: [userId], references: [id])
-  expenses  CarExpense[]
-  images    GarageImage[]
+  user     User          @relation(fields: [userId], references: [id])
+  expenses CarExpense[]
+  images   GarageImage[]
 
   @@index([userId])
   @@map("user_garage")
@@ -1174,21 +1193,21 @@ model GarageImage {
 }
 
 model CarSoundRecording {
-  id          String   @id @default(cuid())
-  carId       String
-  userId      String
-  url         String
-  fileName    String
-  duration    Float
-  fileSize    Int
-  mimeType    String   @default("audio/webm")
-  audioData   Bytes?
-  status      String   @default("pending") // pending, analyzing, completed, failed
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  carId     String
+  userId    String
+  url       String
+  fileName  String
+  duration  Float
+  fileSize  Int
+  mimeType  String   @default("audio/webm")
+  audioData Bytes?
+  status    String   @default("pending") // pending, analyzing, completed, failed
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  car      Car       @relation(fields: [carId], references: [id], onDelete: Cascade)
-  user     User      @relation(fields: [userId], references: [id])
+  car      Car            @relation(fields: [carId], references: [id], onDelete: Cascade)
+  user     User           @relation(fields: [userId], references: [id])
   analysis SoundAnalysis?
   reports  SoundReport[]
 
@@ -1199,28 +1218,28 @@ model CarSoundRecording {
 }
 
 model SoundAnalysis {
-  id               String   @id @default(cuid())
-  recordingId      String   @unique
-  carId            String
-  overallScore     Float
-  engineHealth     String   // excellent, good, fair, poor, critical
-  engineScore      Float
-  transmissionScore Float?
-  exhaustScore     Float?
-  beltScore        Float?
-  bearingScore     Float?
-  anomalyScore     Float
-  anomalyDetected  Boolean  @default(false)
-  anomalyDetails   String?
+  id                  String   @id @default(cuid())
+  recordingId         String   @unique
+  carId               String
+  overallScore        Float
+  engineHealth        String // excellent, good, fair, poor, critical
+  engineScore         Float
+  transmissionScore   Float?
+  exhaustScore        Float?
+  beltScore           Float?
+  bearingScore        Float?
+  anomalyScore        Float
+  anomalyDetected     Boolean  @default(false)
+  anomalyDetails      String?
   estimatedRepairCost Float?
-  repairCostCurrency  String @default("JOD")
-  diagnosis        String
-  recommendations  String
-  comparisonResult String?
-  referenceMatch   String?
-  modelYearMatch   String?
-  rawAnalysis      String?
-  analyzedAt       DateTime @default(now())
+  repairCostCurrency  String   @default("JOD")
+  diagnosis           String
+  recommendations     String
+  comparisonResult    String?
+  referenceMatch      String?
+  modelYearMatch      String?
+  rawAnalysis         String?
+  analyzedAt          DateTime @default(now())
 
   recording CarSoundRecording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
   car       Car               @relation(fields: [carId], references: [id], onDelete: Cascade)
@@ -1248,16 +1267,16 @@ model ReferenceSound {
 }
 
 model SoundReport {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   recordingId String
   carId       String
   reporterId  String
   reason      String
   description String?
-  status      String   @default("pending") // pending, reviewed, resolved, dismissed
+  status      String    @default("pending") // pending, reviewed, resolved, dismissed
   reviewedBy  String?
   reviewedAt  DateTime?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
 
   recording CarSoundRecording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
   car       Car               @relation(fields: [carId], references: [id], onDelete: Cascade)
@@ -1273,16 +1292,16 @@ model SoundReport {
 }
 
 model SoundBan {
-  id          String    @id @default(cuid())
-  userId      String
-  bannedBy    String
-  reason      String
-  message     String?   // رسالة المدير لصاحب الإعلان
-  duration    String    // "1hour", "2days", "1week", "2weeks", "1month", "permanent"
-  expiresAt   DateTime?
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        String    @id @default(cuid())
+  userId    String
+  bannedBy  String
+  reason    String
+  message   String? // رسالة المدير لصاحب الإعلان
+  duration  String // "1hour", "2days", "1week", "2weeks", "1month", "permanent"
+  expiresAt DateTime?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   user   User @relation(fields: [userId], references: [id])
   banner User @relation("SoundBanBanner", fields: [bannedBy], references: [id])
@@ -1296,58 +1315,58 @@ model SoundBan {
 // ==================== WORKSHOP MODELS ====================
 
 model Workshop {
-  id              String   @id @default(cuid())
-  userId          String
-  name            String
-  description     String?
-  phone           String?
-  whatsapp        String?
-  email           String?
-  website         String?
-  address         String?
-  lat             Float?
-  lng             Float?
-  cityId          String?
-  provinceId      String?
-  logo            String?
-  coverImage      String?
-  workingHours    String   @default("08:00-17:00")
-  workingDays     String   @default("Sun-Thu")
-  yearsOfExperience Int    @default(0)
-  employeeCount   Int      @default(1)
-  isVerified      Boolean  @default(false)
-  verifiedAt      DateTime?
-  verifiedBy      String?
+  id                 String    @id @default(cuid())
+  userId             String
+  name               String
+  description        String?
+  phone              String?
+  whatsapp           String?
+  email              String?
+  website            String?
+  address            String?
+  lat                Float?
+  lng                Float?
+  cityId             String?
+  provinceId         String?
+  logo               String?
+  coverImage         String?
+  workingHours       String    @default("08:00-17:00")
+  workingDays        String    @default("Sun-Thu")
+  yearsOfExperience  Int       @default(0)
+  employeeCount      Int       @default(1)
+  isVerified         Boolean   @default(false)
+  verifiedAt         DateTime?
+  verifiedBy         String?
   commercialRegister String?
-  isPaused        Boolean  @default(false)
-  pausedUntil     DateTime?
-  pauseReason     String?
-  isBanned        Boolean  @default(false)
-  banReason       String?
-  banUntil        DateTime?
-  rating          Float    @default(0)
-  reviewCount     Int      @default(0)
-  viewCount       Int      @default(0)
-  messageCount    Int      @default(0)
-  appointmentCount Int     @default(0)
-  callCount       Int      @default(0)
-  carFixedCount   Int      @default(0)
-  recommendPercent Float   @default(0)
-  priceRange      String?  // "cheap", "moderate", "expensive"
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  isPaused           Boolean   @default(false)
+  pausedUntil        DateTime?
+  pauseReason        String?
+  isBanned           Boolean   @default(false)
+  banReason          String?
+  banUntil           DateTime?
+  rating             Float     @default(0)
+  reviewCount        Int       @default(0)
+  viewCount          Int       @default(0)
+  messageCount       Int       @default(0)
+  appointmentCount   Int       @default(0)
+  callCount          Int       @default(0)
+  carFixedCount      Int       @default(0)
+  recommendPercent   Float     @default(0)
+  priceRange         String? // "cheap", "moderate", "expensive"
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  verifier        User?    @relation("WorkshopVerifier", fields: [verifiedBy], references: [id])
+  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verifier User? @relation("WorkshopVerifier", fields: [verifiedBy], references: [id])
 
-  services        WorkshopService[]
-  brands          WorkshopBrand[]
-  prices          WorkshopPrice[]
-  reviews         WorkshopReview[]
-  appointments    WorkshopAppointment[]
-  ads             WorkshopAd[]
-  reports         WorkshopReport[]
-  costRecords     CostRecord[]
+  services     WorkshopService[]
+  brands       WorkshopBrand[]
+  prices       WorkshopPrice[]
+  reviews      WorkshopReview[]
+  appointments WorkshopAppointment[]
+  ads          WorkshopAd[]
+  reports      WorkshopReport[]
+  costRecords  CostRecord[]
 
   @@index([userId])
   @@index([cityId])
@@ -1363,11 +1382,11 @@ model Workshop {
 }
 
 model WorkshopService {
-  id          String   @id @default(cuid())
-  workshopId  String
-  name        String
-  category    String?  // "mechanical", "electrical", "body", "maintenance", "other"
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  workshopId String
+  name       String
+  category   String? // "mechanical", "electrical", "body", "maintenance", "other"
+  createdAt  DateTime @default(now())
 
   workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
 
@@ -1377,10 +1396,10 @@ model WorkshopService {
 }
 
 model WorkshopBrand {
-  id          String   @id @default(cuid())
-  workshopId  String
-  brand       String
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  workshopId String
+  brand      String
+  createdAt  DateTime @default(now())
 
   workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
 
@@ -1404,37 +1423,37 @@ model WorkshopPrice {
 }
 
 model WorkshopReview {
-  id              String   @id @default(cuid())
-  workshopId      String
-  userId          String
-  carMake         String?
-  carModel        String?
-  carYear         Int?
-  repairType      String?
-  price           Float?
-  duration        String?  // "same-day", "1-2days", "3-7days", "more"
-  description     String?
-  beforeImage     String?
-  afterImage      String?
-  qualityRating   Int?     // 1-5
-  priceRating     Int?     // 1-5
-  speedRating     Int?     // 1-5
-  serviceRating   Int?     // 1-5
-  cleanlinessRating Int?  // 1-5
-  punctualityRating Int?  // 1-5
-  partsRating     Int?     // 1-5
-  recommend       Boolean  @default(true)
-  workshopReply   String?
-  repliedAt       DateTime?
-  helpfulCount    Int      @default(0)
-  isReported      Boolean  @default(false)
-  reportReason    String?
-  isHidden        Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                String    @id @default(cuid())
+  workshopId        String
+  userId            String
+  carMake           String?
+  carModel          String?
+  carYear           Int?
+  repairType        String?
+  price             Float?
+  duration          String? // "same-day", "1-2days", "3-7days", "more"
+  description       String?
+  beforeImage       String?
+  afterImage        String?
+  qualityRating     Int? // 1-5
+  priceRating       Int? // 1-5
+  speedRating       Int? // 1-5
+  serviceRating     Int? // 1-5
+  cleanlinessRating Int? // 1-5
+  punctualityRating Int? // 1-5
+  partsRating       Int? // 1-5
+  recommend         Boolean   @default(true)
+  workshopReply     String?
+  repliedAt         DateTime?
+  helpfulCount      Int       @default(0)
+  isReported        Boolean   @default(false)
+  reportReason      String?
+  isHidden          Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  workshop  Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([workshopId])
   @@index([userId])
@@ -1444,19 +1463,26 @@ model WorkshopReview {
 }
 
 model WorkshopAppointment {
-  id          String   @id @default(cuid())
-  workshopId  String
-  userId      String
-  date        DateTime
-  time        String
-  serviceType String
-  carMake     String?
-  carModel    String?
-  description String?
-  status      String   @default("pending") // pending, confirmed, completed, cancelled
+  id           String   @id @default(cuid())
+  workshopId   String
+  userId       String
+  date         DateTime
+  time         String
+  serviceType  String
+  carMake      String?
+  carModel     String?
+  description  String?
+  status       String   @default("pending") // pending, confirmed, completed, cancelled
   workshopNote String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  // Phase C workshop booking extras
+  carYear      Int?
+  plateNumber  String?
+  budget       Int?
+  isUrgent     Boolean  @default(false)
+  rejectReason String?
+  finalPrice   Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1469,27 +1495,27 @@ model WorkshopAppointment {
 }
 
 model WorkshopAd {
-  id          String   @id @default(cuid())
-  workshopId  String
-  title       String
-  description String?
-  images      String   @default("[]")
-  status      String   @default("pending") // pending, published, rejected
+  id           String    @id @default(cuid())
+  workshopId   String
+  title        String
+  description  String?
+  images       String    @default("[]")
+  status       String    @default("pending") // pending, published, rejected
   rejectReason String?
-  reviewedBy  String?
-  reviewedAt  DateTime?
-  startDate   DateTime?
-  endDate     DateTime?
-  isActive    Boolean  @default(true)
-  viewCount   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  reviewedBy   String?
+  reviewedAt   DateTime?
+  startDate    DateTime?
+  endDate      DateTime?
+  isActive     Boolean   @default(true)
+  viewCount    Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  workshop  Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
-  owner     User     @relation(fields: [createdBy], references: [id])
+  workshop  Workshop           @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  owner     User               @relation(fields: [createdBy], references: [id])
   createdBy String
-  reviewer  User?    @relation("WorkshopAdReviewer", fields: [reviewedBy], references: [id])
-  reports  WorkshopAdReport[]
+  reviewer  User?              @relation("WorkshopAdReviewer", fields: [reviewedBy], references: [id])
+  reports   WorkshopAdReport[]
 
   @@index([workshopId])
   @@index([status])
@@ -1498,19 +1524,19 @@ model WorkshopAd {
 }
 
 model WorkshopAdReport {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   adId        String
   userId      String
   reason      String
   description String?
-  status      String   @default("pending") // pending, reviewed, resolved, dismissed
+  status      String    @default("pending") // pending, reviewed, resolved, dismissed
   reviewedBy  String?
   reviewedAt  DateTime?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
 
-  ad       WorkshopAd  @relation(fields: [adId], references: [id], onDelete: Cascade)
-  user     User        @relation(fields: [userId], references: [id])
-  reviewer User?       @relation("WorkshopAdReportReviewer", fields: [reviewedBy], references: [id])
+  ad       WorkshopAd @relation(fields: [adId], references: [id], onDelete: Cascade)
+  user     User       @relation(fields: [userId], references: [id])
+  reviewer User?      @relation("WorkshopAdReportReviewer", fields: [reviewedBy], references: [id])
 
   @@index([adId])
   @@index([userId])
@@ -1519,17 +1545,17 @@ model WorkshopAdReport {
 }
 
 model WorkshopReport {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   workshopId  String
   userId      String
-  type        String   // "review", "ad", "workshop"
-  targetId    String?  // ID of the review/ad being reported
+  type        String // "review", "ad", "workshop"
+  targetId    String? // ID of the review/ad being reported
   reason      String
   description String?
-  status      String   @default("pending") // pending, reviewed, resolved, dismissed
+  status      String    @default("pending") // pending, reviewed, resolved, dismissed
   reviewedBy  String?
   reviewedAt  DateTime?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
 
   workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id])
@@ -1552,7 +1578,7 @@ model CostRecord {
   repairType  String
   price       Float
   duration    String?
-  partsType   String?  // "original", "aftermarket", "mixed"
+  partsType   String? // "original", "aftermarket", "mixed"
   description String?
   createdAt   DateTime @default(now())
 
@@ -1565,4 +1591,136 @@ model CostRecord {
   @@index([workshopId])
   @@index([createdAt])
   @@map("cost_records")
+}
+
+// ============================================================
+// Phase C — trader marketplace models
+// ============================================================
+
+/// Admin approval queue for trader (تاجر سيارات) accounts. Mirrors the
+/// PremiumRequest status/reviewer pattern. Until a row is APPROVED, the
+/// linked User keeps `dealerVerified = false` and is hidden from public
+/// dealer listings.
+model TraderVerification {
+  id                String    @id @default(cuid())
+  userId            String
+  status            String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  dealerName        String
+  dealerLogo        String?
+  dealerDescription String?
+  dealerAddress     String?
+  dealerLat         Float?
+  dealerLng         Float?
+  commercialReg     String?
+  notes             String? // applicant notes to admin
+  rejectReason      String?
+  reviewedBy        String?
+  reviewedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user     User  @relation("TraderVerificationApplicant", fields: [userId], references: [id], onDelete: Cascade)
+  reviewer User? @relation("TraderVerificationReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([reviewedBy])
+  @@index([createdAt])
+  @@map("trader_verifications")
+}
+
+/// Independent car-purchase booking (حجز شراء سيارة). One row per
+/// (car, buyer) pair — see @@unique. The dealer (=car.owner) reviews
+/// it from their dashboard. On ACCEPTED a Conversation is created and
+/// linked back via `conversationId`.
+model CarBooking {
+  id               String    @id @default(cuid())
+  carId            String
+  dealerId         String
+  buyerId          String
+  // Request type flags — a single booking can combine purchase+inspection+test
+  wantsPurchase    Boolean   @default(false)
+  wantsInspection  Boolean   @default(false)
+  wantsTestDrive   Boolean   @default(false)
+  // Visit logistics
+  visitDate        DateTime?
+  visitTime        String?
+  headcount        Int       @default(1)
+  // Price negotiation
+  proposedPrice    Int?
+  notes            String?
+  // Lifecycle
+  status           String    @default("PENDING") // PENDING | ACCEPTED | REJECTED | COMPLETED | CANCELLED
+  rejectReason     String?
+  // conversationId is a denormalized pointer set when a Conversation is
+  // created on ACCEPTED — kept as a plain String? so the trader dashboard
+  // can jump straight into the chat without an extra query. The canonical
+  // relation lives on the Conversation side (bookingId @unique).
+  conversationId   String?
+  viewedByDealer   Boolean   @default(false)
+  // Denormalized buyer contact (snapshot at booking time)
+  buyerName        String
+  buyerPhone       String
+  buyerEmail       String?
+  buyerCity        String?
+  buyerContactPref String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  car          Car           @relation(fields: [carId], references: [id], onDelete: Cascade)
+  dealer       User          @relation("BookingDealer", fields: [dealerId], references: [id])
+  buyer        User          @relation("BookingBuyer", fields: [buyerId], references: [id], onDelete: Cascade)
+  conversation Conversation? @relation("BookingConversation")
+  reviews      CarReview[]
+
+  @@unique([carId, buyerId])
+  @@index([carId])
+  @@index([dealerId])
+  @@index([buyerId])
+  @@index([status])
+  @@index([visitDate])
+  @@index([createdAt])
+  @@map("car_bookings")
+}
+
+/// Car + dealer review submitted by the buyer after a COMPLETED booking.
+/// Mirrors the WorkshopReview shape (multi-dimension ratings + reply +
+/// average aggregation handled in the API transaction).
+model CarReview {
+  id                  String    @id @default(cuid())
+  carId               String
+  userId              String
+  targetUserId        String // the dealer being reviewed
+  bookingId           String?
+  rating              Int // 1-5 overall
+  comment             String?
+  isVerified          Boolean   @default(false) // true once booking.status=COMPLETED
+  // Multi-dimension ratings (1-5, nullable = not provided)
+  carConditionRating  Int?
+  descriptionAccuracy Int?
+  valueForMoney       Int?
+  dealerExperience    Int?
+  // Dealer reply
+  dealerReply         String?
+  repliedAt           DateTime?
+  // Moderation
+  isHidden            Boolean   @default(false)
+  isReported          Boolean   @default(false)
+  reportReason        String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  car     Car         @relation(fields: [carId], references: [id], onDelete: Cascade)
+  user    User        @relation("CarReviewAuthor", fields: [userId], references: [id], onDelete: Cascade)
+  target  User        @relation("CarReviewTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+  booking CarBooking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  @@unique([carId, userId])
+  @@index([carId])
+  @@index([userId])
+  @@index([targetUserId])
+  @@index([bookingId])
+  @@index([rating])
+  @@index([createdAt])
+  @@map("car_reviews")
 }

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
-import { Car, User, Mail, Lock, Phone, Store, Eye, EyeOff, ArrowLeft, Check } from 'lucide-react';
+import { Car, User, Mail, Lock, Phone, Store, Eye, EyeOff, ArrowLeft, Check, Wrench } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function RegisterPage() {
@@ -13,14 +13,20 @@ export default function RegisterPage() {
   const { login } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [isDealer, setIsDealer] = useState(false);
+  // Three account types: USER, TRADER (تاجر سيارات — new marketplace, needs admin approval),
+  // DEALER (legacy car-dealer role, kept for backward compat).
+  const [accountType, setAccountType] = useState<'USER' | 'TRADER' | 'DEALER'>('USER');
+  const isDealerLike = accountType === 'TRADER' || accountType === 'DEALER';
+  const isTrader = accountType === 'TRADER';
   const [form, setForm] = useState({
     name: '',
     email: '',
     password: '',
     phone: '',
-    role: 'USER' as 'USER' | 'DEALER',
     dealerName: '',
+    dealerDescription: '',
+    dealerAddress: '',
+    commercialReg: '',
   });
 
   const passwordRequirements = [
@@ -42,7 +48,21 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const payload = { ...form, role: isDealer ? 'DEALER' : 'USER' };
+      // Map UI tabs to server roles. TRADER → 'TRADER' (adds TraderVerification
+      // PENDING row server-side); DEALER keeps legacy role; USER → 'USER'.
+      const role = accountType === 'USER' ? 'USER' : accountType;
+      const payload = isTrader
+        ? {
+            name: form.name, email: form.email, password: form.password,
+            phone: form.phone, role,
+            dealerName: form.dealerName,
+            dealerDescription: form.dealerDescription || undefined,
+            dealerAddress: form.dealerAddress || undefined,
+            commercialReg: form.commercialReg || undefined,
+          }
+        : isDealerLike // DEALER legacy: just dealerName
+        ? { name: form.name, email: form.email, password: form.password, phone: form.phone, role, dealerName: form.dealerName }
+        : { name: form.name, email: form.email, password: form.password, phone: form.phone, role };
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -53,8 +73,8 @@ export default function RegisterPage() {
 
       if (data.success) {
         login(data.data.user, data.data.token);
-        toast.success('تم إنشاء الحساب بنجاح');
-        router.push('/');
+        toast.success(isTrader ? 'تم استلام طلبك — سيتم مراجعته خلال 24 ساعة' : 'تم إنشاء الحساب بنجاح');
+        router.push(isTrader ? '/' : '/');
       } else {
         toast.error(data.error || 'فشل إنشاء الحساب');
       }
@@ -99,31 +119,57 @@ export default function RegisterPage() {
             <p className="text-surface-500 text-sm">انضم إلى مجتمع السيارات الأذكى في الأردن</p>
           </div>
 
-          {/* User Type Toggle */}
+          {/* Account Type Toggle */}
           <div className="flex bg-surface-100 dark:bg-surface-700 rounded-xl p-1 mb-6">
             <button
               type="button"
-              onClick={() => setIsDealer(false)}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                !isDealer
+              onClick={() => setAccountType('USER')}
+              className={`flex-1 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                accountType === 'USER'
                   ? 'bg-white dark:bg-surface-800 text-surface-900 dark:text-white shadow-soft'
                   : 'text-surface-500 hover:text-surface-700 dark:hover:text-surface-300'
               }`}
             >
-              مستخدم عادي
+              مستخدم
             </button>
             <button
               type="button"
-              onClick={() => setIsDealer(true)}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                isDealer
+              onClick={() => setAccountType('TRADER')}
+              className={`flex-1 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 flex items-center justify-center gap-1 ${
+                accountType === 'TRADER'
                   ? 'bg-white dark:bg-surface-800 text-surface-900 dark:text-white shadow-soft'
                   : 'text-surface-500 hover:text-surface-700 dark:hover:text-surface-300'
               }`}
             >
-              تاجر / معرض
+              <Store className="w-3.5 h-3.5" />
+              تاجر سيارات
+            </button>
+            <button
+              type="button"
+              onClick={() => setAccountType('DEALER')}
+              className={`flex-1 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                accountType === 'DEALER'
+                  ? 'bg-white dark:bg-surface-800 text-surface-900 dark:text-white shadow-soft'
+                  : 'text-surface-500 hover:text-surface-700 dark:hover:text-surface-300'
+              }`}
+            >
+              معرض
             </button>
           </div>
+
+          {isTrader && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="mb-6 p-3 rounded-xl bg-primary-500/5 border border-primary-500/20 text-primary-700 dark:text-primary-300 text-xs flex items-start gap-2"
+            >
+              <Wrench className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <p>
+                حساب التاجر يتيح لك عرض معرضك وسياراتك وتوصيل العملاء مباشرة بمعرضك.
+                سيتم مراجعة طلبك واعتماده من الإدارة خلال 24 ساعة قبل توانشط حسابك.
+              </p>
+            </motion.div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Name */}
@@ -184,7 +230,7 @@ export default function RegisterPage() {
             </div>
 
             {/* Dealer Name */}
-            {isDealer && (
+            {isDealerLike && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
@@ -201,6 +247,49 @@ export default function RegisterPage() {
                     value={form.dealerName}
                     onChange={(e) => setForm({ ...form, dealerName: e.target.value })}
                     className="input-field pr-12"
+                  />
+                </div>
+              </motion.div>
+            )}
+
+            {/* Trader-only fields (dealer description / address / commercial reg) */}
+            {isTrader && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="space-y-4"
+              >
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-surface-700 dark:text-surface-300">وصف المعرض</label>
+                  <textarea
+                    placeholder="نبذة قصيرة عن المعرض وأنواع السيارات المتوفرة…"
+                    value={form.dealerDescription}
+                    onChange={(e) => setForm({ ...form, dealerDescription: e.target.value })}
+                    rows={3}
+                    maxLength={1000}
+                    className="input-field resize-none"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-surface-700 dark:text-surface-300">عنوان المعرض</label>
+                  <input
+                    type="text"
+                    placeholder="المدينة، الشارع، أقرب نقطة دالة"
+                    value={form.dealerAddress}
+                    onChange={(e) => setForm({ ...form, dealerAddress: e.target.value })}
+                    maxLength={300}
+                    className="input-field"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-surface-700 dark:text-surface-300">السجل التجاري (اختياري)</label>
+                  <input
+                    type="text"
+                    placeholder="رقم السجل التجاري"
+                    value={form.commercialReg}
+                    onChange={(e) => setForm({ ...form, commercialReg: e.target.value })}
+                    maxLength={100}
+                    className="input-field"
                   />
                 </div>
               </motion.div>

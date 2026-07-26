@@ -8,7 +8,14 @@ let registered = false;
 export function getSocket(userId?: string): Socket {
   if (!socket) {
     socket = io(window.location.origin, {
-      transports: ['websocket', 'polling'],
+      // polling-first is more tolerant on flaky mobile networks; websocket
+      // upgrades happen automatically once a stable connection is available.
+      transports: ['polling', 'websocket'],
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 10000,
+      timeout: 30000,
     });
     socket.on('connect', () => {
       if (userId) {

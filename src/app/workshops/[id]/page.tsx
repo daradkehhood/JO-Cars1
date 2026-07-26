@@ -140,6 +140,10 @@ export default function WorkshopDetailPage() {
     serviceType: '',
     carMake: '',
     carModel: '',
+    carYear: '',
+    plateNumber: '',
+    budget: '',
+    isUrgent: false,
     description: '',
   });
   const [bookStatus, setBookStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -207,7 +211,7 @@ export default function WorkshopDetailPage() {
       });
       if (res.ok) {
         setBookStatus('success');
-        setBookForm({ date: '', time: '', serviceType: '', carMake: '', carModel: '', description: '' });
+        setBookForm({ date: '', time: '', serviceType: '', carMake: '', carModel: '', carYear: '', plateNumber: '', budget: '', isUrgent: false, description: '' });
         setTimeout(() => { setBookStatus('idle'); setShowBookForm(false); }, 2000);
       } else {
         setBookStatus('error');
@@ -772,6 +776,41 @@ export default function WorkshopDetailPage() {
                       className="px-3 py-2.5 bg-[#0f3460] border border-gray-700 rounded-lg text-white text-sm outline-none focus:border-[#0084ff]"
                     />
                   </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="number"
+                      min="1900"
+                      max="2100"
+                      value={bookForm.carYear}
+                      onChange={(e) => setBookForm({ ...bookForm, carYear: e.target.value })}
+                      placeholder="سنة الصنع (اختياري)"
+                      className="px-3 py-2.5 bg-[#0f3460] border border-gray-700 rounded-lg text-white text-sm outline-none focus:border-[#0084ff]"
+                    />
+                    <input
+                      type="text"
+                      value={bookForm.plateNumber}
+                      onChange={(e) => setBookForm({ ...bookForm, plateNumber: e.target.value })}
+                      placeholder="رقم اللوحة (اختياري)"
+                      className="px-3 py-2.5 bg-[#0f3460] border border-gray-700 rounded-lg text-white text-sm outline-none focus:border-[#0084ff]"
+                    />
+                  </div>
+                  <input
+                    type="number"
+                    min="0"
+                    value={bookForm.budget}
+                    onChange={(e) => setBookForm({ ...bookForm, budget: e.target.value })}
+                    placeholder="الميزانية المتوقعة (د.أ) — اختياري"
+                    className="w-full px-3 py-2.5 bg-[#0f3460] border border-gray-700 rounded-lg text-white text-sm outline-none focus:border-[#0084ff]"
+                  />
+                  <label className="flex items-center gap-2 px-3 py-2 bg-[#0f3460] border border-gray-700 rounded-lg cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={bookForm.isUrgent}
+                      onChange={(e) => setBookForm({ ...bookForm, isUrgent: e.target.checked })}
+                      className="w-4 h-4 accent-red-500"
+                    />
+                    <span className="text-white text-sm">⚡ حالة طارئة (أولوية قصوى)</span>
+                  </label>
                   <textarea
                     value={bookForm.description}
                     onChange={(e) => setBookForm({ ...bookForm, description: e.target.value })}

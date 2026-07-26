@@ -17,6 +17,12 @@ interface AuthState {
     bio?: string | null;
     dealerDescription?: string | null;
     dealerAddress?: string | null;
+    // Phase C trader marketplace fields
+    dealerVerified?: boolean | null;
+    dealerLogo?: string | null;
+    dealerBannerImage?: string | null;
+    dealerCommercialReg?: string | null;
+    dealerViewCount?: number | null;
     rating?: number;
     ratingCount?: number;
   } | null;
@@ -65,7 +71,19 @@ export const useAuth = create<AuthState>()(
                 role: d.data.role,
                 image: d.data.image,
                 phone: d.data.phone,
+                whatsapp: d.data.whatsapp,
+                bio: d.data.bio,
                 dealerName: d.data.dealerName,
+                dealerLogo: d.data.dealerLogo,
+                dealerDescription: d.data.dealerDescription,
+                dealerAddress: d.data.dealerAddress,
+                dealerVerified: d.data.dealerVerified,
+                dealerBannerImage: d.data.dealerBannerImage,
+                dealerCommercialReg: d.data.dealerCommercialReg,
+                dealerViewCount: d.data.dealerViewCount,
+                rating: d.data.rating,
+                ratingCount: d.data.ratingCount,
+                whatsappNotifications: d.data.whatsappNotifications,
               },
               isAuthenticated: true,
             });

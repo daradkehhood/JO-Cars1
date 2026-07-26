@@ -70,7 +70,8 @@ export async function POST(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { date, time, serviceType, carMake, carModel, description } = body;
+    const { date, time, serviceType, carMake, carModel, description,
+      carYear, plateNumber, budget, isUrgent } = body;
 
     if (!date || !time || !serviceType) {
       return errorResponse('التاريخ والوقت ونوع الخدمة مطلوبة');
@@ -93,6 +94,10 @@ export async function POST(
           carMake: carMake || null,
           carModel: carModel || null,
           description: description || null,
+          carYear: Number.isFinite(Number(carYear)) ? Number(carYear) : null,
+          plateNumber: typeof plateNumber === 'string' ? plateNumber.trim().slice(0, 30) || null : null,
+          budget: Number.isFinite(Number(budget)) ? Number(budget) : null,
+          isUrgent: Boolean(isUrgent),
         },
       });
 
@@ -103,7 +108,7 @@ export async function POST(
 
       // Send notification message to workshop owner
       const bookingDate = new Date(date).toLocaleDateString('ar-JO', { year: 'numeric', month: 'long', day: 'numeric' });
-      const notificationContent = `موعد جديد: ${user.name} حجز موعداً في ${bookingDate} الساعة ${time} للخدمة: ${serviceType}${carMake ? ` - سيارة ${carMake} ${carModel || ''}` : ''}${description ? `\nالوصف: ${description}` : ''}`;
+      const notificationContent = `موعد جديد: ${user.name} حجز موعداً في ${bookingDate} الساعة ${time} للخدمة: ${serviceType}${carMake ? ` - سيارة ${carMake} ${carModel || ''}${carYear ? ` ${carYear}` : ''}${plateNumber ? ` (${plateNumber})` : ''}` : ''}${isUrgent ? ` ⚡ طارئ` : ''}${budget ? `\nالميزانية: ${budget} د.أ` : ''}${description ? `\nالوصف: ${description}` : ''}`;
 
       await tx.message.create({
         data: {

@@ -47,7 +47,90 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { carId, sellerId, content } = body;
+    const { carId, sellerId, content, bookingId } = body;
+
+    // Booking-linked path — when `bookingId` is supplied we resolve
+    // carId/buyerId/sellerId from the booking record (authoritative), and
+    // reuse the conversation that the dealer's accept-flow already created
+    // (or upsert one if missing). Caller must be a party of the booking.
+    if (bookingId) {
+      const booking = await prisma.carBooking.findUnique({
+        where: { id: bookingId },
+        select: { id: true, carId: true, buyerId: true, dealerId: true },
+      });
+      if (!booking) return errorResponse('الحجز غير موجود', 404);
+      if (booking.buyerId !== user.id && booking.dealerId !== user.id) {
+        return errorResponse('غير مصرح لك بالوصول إلى محادثة هذا الحجز', 403);
+      }
+      if (booking.buyerId === booking.dealerId) {
+        return errorResponse('لا يمكنك مراسلة نفسك');
+      }
+      const peerId = booking.buyerId === user.id ? booking.dealerId : booking.buyerId;
+
+      let conversation = await prisma.conversation.findUnique({
+        where: { carId_buyerId_sellerId: {
+          carId: booking.carId, buyerId: booking.buyerId, sellerId: booking.dealerId,
+        } },
+        include: {
+          car: { select: { id: true, slug: true, price: true, images: { take: 1, orderBy: { order: 'asc' } } } },
+          buyer: { select: { id: true, name: true, image: true } },
+          seller: { select: { id: true, name: true, image: true } },
+        },
+      });
+
+      // Stitch an existing unlinked conversation back to the booking (idempotent).
+      if (conversation && !conversation.bookingId) {
+        await prisma.conversation.update({
+          where: { id: conversation.id },
+          data: { bookingId: booking.id },
+        }).catch(() => { /* best-effort — unique replay could clash */ });
+      }
+
+      if (!conversation) {
+        conversation = await prisma.conversation.create({
+          data: {
+            carId: booking.carId, buyerId: booking.buyerId, sellerId: booking.dealerId,
+            bookingId: booking.id,
+          },
+          include: {
+            car: { select: { id: true, slug: true, price: true, images: { take: 1, orderBy: { order: 'asc' } } } },
+            buyer: { select: { id: true, name: true, image: true } },
+            seller: { select: { id: true, name: true, image: true } },
+          },
+        });
+      }
+
+      if (content && content.trim()) {
+        const message = await prisma.message.create({
+          data: {
+            content: content.trim(),
+            senderId: user.id,
+            receiverId: peerId,
+            carId: conversation.carId,
+            conversationId: conversation.id,
+          },
+          include: { sender: { select: { id: true, name: true, image: true } } },
+        });
+
+        await prisma.conversation.update({
+          where: { id: conversation.id },
+          data: { updatedAt: new Date() },
+        });
+
+        await prisma.notification.create({
+          data: {
+            type: 'NEW_MESSAGE',
+            title: 'رسالة جديدة',
+            message: `رسالة جديدة من ${user.name} بخصوص ${conversation.car?.slug || 'سيارة'}`,
+            userId: peerId,
+            link: `/messages?conversationId=${conversation.id}`,
+          },
+        }).catch(() => { /* best-effort */ });
+
+        return successResponse({ conversation, message }, 201);
+      }
+      return successResponse({ conversation, message: null });
+    }
 
     if (!carId || !sellerId) {
       return errorResponse('معرّف السيارة والبائع مطلوبان');

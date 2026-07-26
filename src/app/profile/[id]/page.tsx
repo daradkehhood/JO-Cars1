@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Star, MapPin, Calendar, Car, MessageCircle, Shield, Store, ChevronLeft, Phone, Share2 } from 'lucide-react';
+import { Star, MapPin, Calendar, Car, MessageCircle, Shield, ShieldCheck, Store, ChevronLeft, Phone, Share2, Eye, LayoutDashboard } from 'lucide-react';
 import Link from 'next/link';
 import { CarCard } from '@/components/cars/CarCard';
 import { BadgeDisplay } from '@/components/badges/BadgeDisplay';
+import { useAuth } from '@/hooks/useAuth';
 
 interface UserProfile {
   id: string;
@@ -16,6 +17,10 @@ interface UserProfile {
   dealerLogo: string | null;
   dealerDescription: string | null;
   dealerAddress: string | null;
+  // Phase C trader marketplace fields
+  dealerVerified?: boolean;
+  dealerViewCount?: number;
+  dealerBannerImage?: string | null;
   phone: string | null;
   rating: number;
   ratingCount: number;
@@ -28,6 +33,7 @@ interface UserProfile {
 export default function PublicProfilePage() {
   const params = useParams();
   const router = useRouter();
+  const { user: currentUser } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [cars, setCars] = useState<any[]>([]);
   const [ratings, setRatings] = useState<any[]>([]);
@@ -70,7 +76,9 @@ export default function PublicProfilePage() {
     );
   }
 
-  const isDealer = !!profile.dealerName;
+  const isDealer = !!profile.dealerName || profile.role === 'TRADER' || profile.role === 'DEALER';
+  const isVerifiedTrader = !!profile.dealerVerified;
+  const isOwnProfile = currentUser?.id === profile.id;
 
   return (
     <div className="min-h-[80vh] py-6">
@@ -81,19 +89,42 @@ export default function PublicProfilePage() {
 
         {/* Profile Header */}
         <div className="card overflow-hidden">
-          <div className="h-32 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600" />
+          {/* Phase C: trader banner replaces the gradient strip when set */}
+          {profile.dealerBannerImage ? (
+            <div className="h-32 w-full overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={profile.dealerBannerImage} alt="" className="w-full h-full object-cover" />
+            </div>
+          ) : (
+            <div className={`h-32 bg-gradient-to-br ${
+              isVerifiedTrader
+                ? 'from-emerald-600 via-green-600 to-teal-600'
+                : 'from-blue-600 via-indigo-600 to-purple-600'
+            }`} />
+          )}
           <div className="px-6 pb-6">
             <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 -mt-12">
               <div className="w-24 h-24 rounded-2xl bg-white dark:bg-gray-800 border-4 border-white dark:border-gray-800 shadow-xl flex items-center justify-center overflow-hidden">
-                {profile.image ? (
+                {profile.dealerLogo && isDealer ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={profile.dealerLogo} alt="" className="w-full h-full object-cover" />
+                ) : profile.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img src={profile.image} alt="" className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-3xl font-bold text-blue-500">{profile.name.charAt(0)}</span>
                 )}
               </div>
               <div className="flex-1 text-center sm:text-right pb-1">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{profile.name}</h1>
-                {isDealer && (
+                <div className="flex items-center gap-2 justify-center sm:justify-start flex-wrap">
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{profile.name}</h1>
+                  {isVerifiedTrader && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold" title="تاجر موثّق">
+                      <ShieldCheck className="w-3.5 h-3.5" /> موثّق
+                    </span>
+                  )}
+                </div>
+                {isDealer && profile.dealerName && (
                   <div className="flex items-center gap-2 justify-center sm:justify-start mt-1">
                     <Store className="w-4 h-4 text-blue-500" />
                     <span className="text-sm text-blue-500 font-medium">{profile.dealerName}</span>
@@ -104,6 +135,14 @@ export default function PublicProfilePage() {
                 </div>
               </div>
               <div className="flex items-center gap-3 pb-1">
+                {isOwnProfile && (profile.role === 'TRADER' || profile.role === 'DEALER') && (
+                  <Link
+                    href="/dashboard/bookings"
+                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-medium transition-colors"
+                  >
+                    <LayoutDashboard className="w-4 h-4" /> لوحة التاجر
+                  </Link>
+                )}
                 {profile.phone && (
                   <a href={`tel:${profile.phone}`}
                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
@@ -193,6 +232,15 @@ export default function PublicProfilePage() {
                   <p className="text-xl font-bold text-green-500">{profile._count.forumPosts + profile._count.forumTopics}</p>
                   <p className="text-xs text-gray-500">منشور</p>
                 </div>
+                {isVerifiedTrader && (
+                  <div className="text-center p-3 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl col-span-2">
+                    <div className="flex items-center justify-center gap-1.5">
+                      <Eye className="w-4 h-4 text-emerald-500" />
+                      <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{profile.dealerViewCount || 0}</p>
+                    </div>
+                    <p className="text-xs text-gray-500">مشاهدة الملف</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

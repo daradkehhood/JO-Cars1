@@ -14,6 +14,9 @@ export async function GET(request: NextRequest) {
       id: true, name: true, email: true, role: true, image: true, phone: true,
       whatsapp: true, bio: true, dealerName: true, dealerLogo: true,
       dealerDescription: true, dealerAddress: true, dealerLat: true, dealerLng: true,
+      // Phase C trader marketplace fields
+      dealerVerified: true, dealerViewCount: true, dealerBannerImage: true,
+      dealerCommercialReg: true,
       rating: true, ratingCount: true, isActive: true, createdAt: true, whatsappNotifications: true,
     },
   });
@@ -36,7 +39,7 @@ export async function PUT(request: NextRequest) {
       select: {
         id: true, name: true, email: true, role: true, image: true, phone: true,
         whatsapp: true, whatsappNotifications: true, bio: true, dealerName: true, dealerLogo: true,
-        dealerDescription: true, dealerAddress: true,
+        dealerDescription: true, dealerAddress: true, dealerBannerImage: true, dealerCommercialReg: true,
       },
     });
 

@@ -7,17 +7,22 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const { id: carId } = await params;
   const user = await authenticateRequest(request).catch(() => null);
   try {
+    const trackView = request.nextUrl.searchParams.get('trackView') === 'true';
+
     const car = await prisma.car.findFirst({
       where: { OR: [{ id: carId }, { slug: carId }] },
       include: {
         brand: true,
         model: true,
         city: true,
-        images: { orderBy: { order: 'asc' } },
+        // Cap images at 15 — most listings have ≤ 12, and downloading the full
+        // set on a slow mobile connection caused the "no internet" page.
+        images: { orderBy: { order: 'asc' }, take: 15 },
         user: {
           select: {
             id: true, name: true, phone: true, whatsapp: true,
-            image: true, dealerName: true, dealerLogo: true, rating: true,
+            image: true, dealerName: true, dealerLogo: true, dealerDescription: true,
+            dealerAddress: true, dealerVerified: true, rating: true,
             ratingCount: true, createdAt: true, badges: true,
           },
         },
@@ -26,17 +31,22 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     if (!car) return notFoundResponse('السيارة');
 
-    const trackView = request.nextUrl.searchParams.get('trackView') === 'true';
+    // Fire-and-forget view increment — doesn't block the response. On flaky
+    // mobile networks awaiting this serial write often stalled the whole page.
     if (trackView) {
-      await prisma.car.update({ where: { id: car.id }, data: { views: { increment: 1 } } });
+      prisma.car
+        .update({ where: { id: car.id }, data: { views: { increment: 1 } } })
+        .catch(() => {});
     }
 
     let isFavorited = false;
     if (user) {
-      const fav = await prisma.favorite.findUnique({
-        where: { carId_userId: { carId: car.id, userId: user.id } },
-      });
-      isFavorited = !!fav;
+      try {
+        const fav = await prisma.favorite.findUnique({
+          where: { carId_userId: { carId: car.id, userId: user.id } },
+        });
+        isFavorited = !!fav;
+      } catch { /* ignore */ }
     }
 
     return successResponse({ ...car, views: trackView ? car.views + 1 : car.views, isFavorited });

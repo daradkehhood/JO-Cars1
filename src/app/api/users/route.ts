@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
+import { authenticateRequest } from '@/lib/auth';
 import { successResponse, errorResponse } from '@/lib/api';
 
 export async function GET(request: NextRequest) {
@@ -9,13 +10,26 @@ export async function GET(request: NextRequest) {
   if (!userId) return errorResponse('Missing user ID', 400);
 
   try {
+    const viewer = await authenticateRequest(request);
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true, name: true, image: true, bio: true,
         dealerName: true, dealerLogo: true, dealerDescription: true, dealerAddress: true,
+        dealerLat: true, dealerLng: true,
+        // Phase C trader marketplace fields
+        dealerVerified: true, dealerViewCount: true, dealerBannerImage: true,
+        dealerCommercialReg: true,
         rating: true, ratingCount: true, createdAt: true, role: true,
-        _count: { select: { cars: { where: { status: 'ACTIVE' } }, favorites: true, forumTopics: true, forumPosts: true } },
+        _count: {
+          select: {
+            cars: { where: { status: 'ACTIVE' } },
+            favorites: true,
+            forumTopics: true,
+            forumPosts: true,
+          },
+        },
       },
     });
 
@@ -38,8 +52,20 @@ export async function GET(request: NextRequest) {
       take: 5,
     });
 
+    // Anonymous view-count increment — only count views for verified traders
+    // who have a public profile, and don't count the user viewing their own
+    // profile. Fire-and-forget so the response isn't blocked by the write.
+    if (user.dealerVerified && (!viewer || viewer.id !== userId)) {
+      prisma.user.update({
+        where: { id: userId },
+        data: { dealerViewCount: { increment: 1 } },
+      }).catch(() => { /* view-count is best-effort */ });
+    }
+
     return successResponse({ user, cars, recentRatings });
   } catch (error) {
+    console.error('users GET error:', error);
     return errorResponse('Failed to load profile', 500);
   }
 }
+

@@ -5,7 +5,7 @@ export interface User {
   phone?: string | null;
   whatsapp?: string | null;
   image?: string | null;
-  role: 'USER' | 'DEALER' | 'ADMIN';
+  role: 'USER' | 'DEALER' | 'TRADER' | 'ADMIN';
   bio?: string | null;
   dealerName?: string | null;
   dealerLogo?: string | null;
@@ -13,6 +13,10 @@ export interface User {
   dealerAddress?: string | null;
   dealerLat?: number | null;
   dealerLng?: number | null;
+  dealerVerified?: boolean;
+  dealerViewCount?: number;
+  dealerBannerImage?: string | null;
+  dealerCommercialReg?: string | null;
   rating: number;
   ratingCount: number;
   isActive: boolean;
@@ -122,7 +126,9 @@ export interface Car {
   expiresAt?: Date | null;
   conditionDetails?: ConditionItem[] | null;
   isFavorited?: boolean;
-  
+  rating?: number;
+  reviewCount?: number;
+
   brand: Brand;
   model: CarModel;
   city: City;

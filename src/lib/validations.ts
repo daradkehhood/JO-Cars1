@@ -9,8 +9,14 @@ export const registerSchema = z.object({
     .min(8, 'كلمة المرور يجب أن تكون 8 أحرف على الأقل')
     .regex(passwordRegex, 'كلمة المرور يجب أن تحتوي على حرف كبير وصغير ورقم ورمز خاص (!@#$%^&*)'),
   phone: z.string().optional(),
-  role: z.enum(['USER', 'DEALER']).default('USER'),
+  // USER = regular member, DEALER = legacy car dealer, TRADER = new marketplace
+  // trader (تاجر سيارات) awaiting admin approval via TraderVerification.
+  role: z.enum(['USER', 'DEALER', 'TRADER']).default('USER'),
   dealerName: z.string().optional(),
+  dealerDescription: z.string().max(1000).optional(),
+  dealerAddress: z.string().max(300).optional(),
+  dealerLogo: z.string().optional(),
+  commercialReg: z.string().max(100).optional(), // trader commercial registration
 });
 
 export const loginSchema = z.object({
@@ -25,9 +31,11 @@ export const updateProfileSchema = z.object({
   bio: z.string().max(500).optional(),
   dealerName: z.string().max(100).optional(),
   dealerDescription: z.string().max(1000).optional(),
-  dealerAddress: z.string().optional(),
+  dealerAddress: z.string().max(300).optional(),
   dealerLat: z.number().optional(),
   dealerLng: z.number().optional(),
+  dealerLogo: z.string().optional(),
+  dealerBannerImage: z.string().optional(),
   whatsappNotifications: z.boolean().optional(),
 });
 

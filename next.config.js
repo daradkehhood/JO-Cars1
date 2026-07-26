@@ -41,8 +41,10 @@ const nextConfig = {
       {
         source: '/api/:path*',
         headers: [
-          { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate' },
-          { key: 'Pragma', value: 'no-cache' },
+          // Short public cache + stale-while-revalidate. Strict no-store forced
+          // every byte to be re-fetched on slow mobile networks, surfacing the
+          // browser's native offline page when the connection was merely slow.
+          { key: 'Cache-Control', value: 'public, max-age=10, stale-while-revalidate=30' },
         ],
       },
       {

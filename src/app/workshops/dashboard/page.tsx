@@ -87,7 +87,15 @@ interface Appointment {
   date: string;
   time: string;
   description: string;
-  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'APPROVED' | 'REJECTED';
+  carMake?: string;
+  carModel?: string;
+  carYear?: number | null;
+  plateNumber?: string;
+  budget?: number | null;
+  isUrgent?: boolean;
+  finalPrice?: number | null;
+  rejectReason?: string;
   createdAt: string;
 }
 
@@ -161,6 +169,10 @@ export default function WorkshopDashboard() {
   const [replyText, setReplyText] = useState('');
   const [adForm, setAdForm] = useState({ title: '', description: '', startDate: '', endDate: '', images: [] as File[] });
   const [saving, setSaving] = useState(false);
+  const [priceApptId, setPriceApptId] = useState<string | null>(null);
+  const [finalPriceInput, setFinalPriceInput] = useState('');
+  const [rejectApptId, setRejectApptId] = useState<string | null>(null);
+  const [rejectReasonInput, setRejectReasonInput] = useState('');
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -262,12 +274,16 @@ export default function WorkshopDashboard() {
     } catch {}
   };
 
-  const updateAppointmentStatus = async (id: string, status: string) => {
+  const updateAppointmentStatus = async (
+    id: string,
+    status: string,
+    extra?: { finalPrice?: number | string; rejectReason?: string }
+  ) => {
     try {
       await fetch('/api/workshops/dashboard/appointments', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ appointmentId: id, status }),
+        body: JSON.stringify({ appointmentId: id, status, ...extra }),
       });
       loadAll();
     } catch {}
@@ -609,40 +625,71 @@ export default function WorkshopDashboard() {
                           <div>
                             <span className="text-white font-medium">{appt.userName}</span>
                             <span className="text-gray-400 text-sm mr-3" dir="ltr">{appt.userPhone}</span>
+                            {appt.isUrgent && (
+                              <span className="mr-2 px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400 text-[10px] font-bold align-middle">⚡ طارئ</span>
+                            )}
                           </div>
                           <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusInfo.color}`}>
                             {statusInfo.label}
                           </span>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-400 mb-2">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-400 mb-2">
                           <span>{appt.service}</span>
                           <span>{appt.date} {appt.time}</span>
+                          {(appt.carMake || appt.carModel) && (
+                            <span>🚗 {appt.carMake} {appt.carModel}{appt.carYear ? ` ${appt.carYear}` : ''}{appt.plateNumber ? ` (${appt.plateNumber})` : ''}</span>
+                          )}
+                          {appt.budget != null && appt.budget > 0 && (
+                            <span>💰 الميزانية: {appt.budget} د.أ</span>
+                          )}
+                          {appt.finalPrice != null && appt.finalPrice > 0 && (
+                            <span className="text-green-400">💵 السعر النهائي: {appt.finalPrice} د.أ</span>
+                          )}
                         </div>
-                        {appt.description && <p className="text-gray-300 text-sm">{appt.description}</p>}
+                        {appt.description && <p className="text-gray-300 text-sm mb-2">{appt.description}</p>}
+                        {appt.rejectReason && (
+                          <p className="mt-1 text-xs text-red-300 bg-red-500/10 rounded-md px-2 py-1.5">سبب الرفض: {appt.rejectReason}</p>
+                        )}
                         {appt.status === 'PENDING' && (
-                          <div className="flex gap-2 mt-3">
+                          <div className="flex flex-wrap gap-2 mt-3">
                             <button onClick={() => updateAppointmentStatus(appt.id, 'CONFIRMED')}
                               className="flex items-center gap-1 px-3 py-1.5 bg-green-500/20 text-green-400 rounded-lg text-xs hover:bg-green-500/30 transition-colors">
                               <Check className="w-3 h-3" /> تأكيد
+                            </button>
+                            <button onClick={() => { setPriceApptId(appt.id); setFinalPriceInput(appt.finalPrice?.toString() || appt.budget?.toString() || ''); }}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500/20 text-emerald-400 rounded-lg text-xs hover:bg-emerald-500/30 transition-colors">
+                              <DollarSign className="w-3 h-3" /> تعيين السعر النهائي
                             </button>
                             <button onClick={() => updateAppointmentStatus(appt.id, 'COMPLETED')}
                               className="flex items-center gap-1 px-3 py-1.5 bg-blue-500/20 text-blue-400 rounded-lg text-xs hover:bg-blue-500/30 transition-colors">
                               <Check className="w-3 h-3" /> إكمال
                             </button>
-                            <button onClick={() => updateAppointmentStatus(appt.id, 'CANCELLED')}
+                            <button onClick={() => setRejectApptId(appt.id)}
                               className="flex items-center gap-1 px-3 py-1.5 bg-red-500/20 text-red-400 rounded-lg text-xs hover:bg-red-500/30 transition-colors">
+                              <XCircle className="w-3 h-3" /> رفض مع سبب
+                            </button>
+                            <button onClick={() => updateAppointmentStatus(appt.id, 'CANCELLED')}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-gray-500/20 text-gray-400 rounded-lg text-xs hover:bg-gray-500/30 transition-colors">
                               <X className="w-3 h-3" /> إلغاء
                             </button>
                           </div>
                         )}
                         {appt.status === 'CONFIRMED' && (
-                          <div className="flex gap-2 mt-3">
+                          <div className="flex flex-wrap gap-2 mt-3">
+                            <button onClick={() => { setPriceApptId(appt.id); setFinalPriceInput(appt.finalPrice?.toString() || appt.budget?.toString() || ''); }}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500/20 text-emerald-400 rounded-lg text-xs hover:bg-emerald-500/30 transition-colors">
+                              <DollarSign className="w-3 h-3" /> تعيين السعر النهائي
+                            </button>
                             <button onClick={() => updateAppointmentStatus(appt.id, 'COMPLETED')}
                               className="flex items-center gap-1 px-3 py-1.5 bg-blue-500/20 text-blue-400 rounded-lg text-xs hover:bg-blue-500/30 transition-colors">
                               <Check className="w-3 h-3" /> إكمال
                             </button>
-                            <button onClick={() => updateAppointmentStatus(appt.id, 'CANCELLED')}
+                            <button onClick={() => setRejectApptId(appt.id)}
                               className="flex items-center gap-1 px-3 py-1.5 bg-red-500/20 text-red-400 rounded-lg text-xs hover:bg-red-500/30 transition-colors">
+                              <XCircle className="w-3 h-3" /> رفض مع سبب
+                            </button>
+                            <button onClick={() => updateAppointmentStatus(appt.id, 'CANCELLED')}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-gray-500/20 text-gray-400 rounded-lg text-xs hover:bg-gray-500/30 transition-colors">
                               <X className="w-3 h-3" /> إلغاء
                             </button>
                           </div>
@@ -651,6 +698,75 @@ export default function WorkshopDashboard() {
                     );
                   })}
                   {appointments.length === 0 && <p className="text-gray-500 text-sm text-center py-4">لا توجد مواعيد</p>}
+                </div>
+              </div>
+            )}
+
+            {/* Set Final Price Modal */}
+            {priceApptId && (
+              <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setPriceApptId(null)}>
+                <div className="bg-[#16213e] rounded-2xl p-6 max-w-sm w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-base font-bold text-white flex items-center gap-2"><DollarSign className="w-5 h-5 text-emerald-400" /> تعيين السعر النهائي</h3>
+                    <button onClick={() => setPriceApptId(null)} className="p-1.5 rounded-lg hover:bg-gray-700/50"><X className="w-4 h-4 text-gray-400" /></button>
+                  </div>
+                  <input
+                    type="number"
+                    min="0"
+                    value={finalPriceInput}
+                    onChange={(e) => setFinalPriceInput(e.target.value)}
+                    placeholder="السعر النهائي بالدينار"
+                    className="w-full px-3 py-2.5 bg-[#0f3460] border border-gray-700 rounded-lg text-white text-sm outline-none focus:border-emerald-500 mb-3"
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        updateAppointmentStatus(priceApptId, 'CONFIRMED', { finalPrice: finalPriceInput });
+                        setPriceApptId(null);
+                      }}
+                      disabled={!finalPriceInput || Number(finalPriceInput) <= 0}
+                      className="flex-1 py-2.5 bg-emerald-500/20 text-emerald-400 rounded-lg text-sm font-medium hover:bg-emerald-500/30 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+                    >
+                      <DollarSign className="w-4 h-4" /> حفظ
+                    </button>
+                    <button onClick={() => setPriceApptId(null)} className="px-4 py-2.5 bg-gray-700/40 text-gray-300 rounded-lg text-sm hover:bg-gray-700/60 transition-colors">إلغاء</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Reject with Reason Modal */}
+            {rejectApptId && (
+              <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setRejectApptId(null)}>
+                <div className="bg-[#16213e] rounded-2xl p-6 max-w-sm w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-base font-bold text-white flex items-center gap-2"><XCircle className="w-5 h-5 text-red-400" /> رفض الموعد مع سبب</h3>
+                    <button onClick={() => setRejectApptId(null)} className="p-1.5 rounded-lg hover:bg-gray-700/50"><X className="w-4 h-4 text-gray-400" /></button>
+                  </div>
+                  <textarea
+                    value={rejectReasonInput}
+                    onChange={(e) => setRejectReasonInput(e.target.value)}
+                    placeholder="سبب الرفض (سيظهر للعميل)..."
+                    rows={4}
+                    maxLength={500}
+                    className="w-full px-3 py-2.5 bg-[#0f3460] border border-gray-700 rounded-lg text-white text-sm outline-none focus:border-red-500 resize-none mb-3"
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        updateAppointmentStatus(rejectApptId, 'REJECTED', { rejectReason: rejectReasonInput.trim() });
+                        setRejectApptId(null);
+                        setRejectReasonInput('');
+                      }}
+                      disabled={!rejectReasonInput.trim()}
+                      className="flex-1 py-2.5 bg-red-500/20 text-red-400 rounded-lg text-sm font-medium hover:bg-red-500/30 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+                    >
+                      <XCircle className="w-4 h-4" /> تأكيد الرفض
+                    </button>
+                    <button onClick={() => { setRejectApptId(null); setRejectReasonInput(''); }} className="px-4 py-2.5 bg-gray-700/40 text-gray-300 rounded-lg text-sm hover:bg-gray-700/60 transition-colors">إلغاء</button>
+                  </div>
                 </div>
               </div>
             )}

@@ -38,7 +38,7 @@ try {
 
 app.prepare().then(() => {
   const httpServer = createServer((req, res) => {
-    req.setTimeout(30000, () => {
+    req.setTimeout(60000, () => {
       if (!res.headersSent) { res.writeHead(504); res.end('Gateway Timeout'); }
     });
 
@@ -71,9 +71,14 @@ app.prepare().then(() => {
   });
 
   httpServer.on('connection', (socket) => {
-    socket.setTimeout(60000);
+    socket.setTimeout(120000);
     socket.setKeepAlive(true, 30000);
-    socket.on('timeout', () => socket.destroy());
+    // Don't hard-destroy sockets that still have an in-flight response — the
+    // previous timeout handler killed slow mobile connections before their
+    // response could ship, which made browsers show the native offline page.
+    socket.on('timeout', () => {
+      if (!socket.writableEnded) socket.destroy();
+    });
   });
 
   httpServer.keepAliveTimeout = 65000;
@@ -84,8 +89,10 @@ app.prepare().then(() => {
       origin: process.env.NEXT_PUBLIC_APP_URL || 'https://jo-cars-production.up.railway.app',
       methods: ['GET', 'POST'] 
     },
-    pingTimeout: 20000,
-    pingInterval: 10000,
+    // Mobile-friendly: looser ping timeouts + longer polling window keep
+    // slow / unstable cellular connections alive instead of dropping them.
+    pingTimeout: 30000,
+    pingInterval: 15000,
     maxHttpBufferSize: 1e6,
     transports: ['websocket', 'polling'],
   });

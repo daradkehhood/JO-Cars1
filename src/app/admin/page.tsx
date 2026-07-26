@@ -75,6 +75,7 @@ export default function AdminPage() {
 
   const menuItems = [
     { href: '/admin/users', label: 'المستخدمين', icon: Users, desc: 'إدارة المستخدمين والتجار' },
+    { href: '/admin/traders-approval', label: 'اعتماد التجار', icon: ShieldCheck, desc: 'مراجعة وقبول أو رفض طلبات اعتماد التجار' },
     { href: '/admin/cars', label: 'السيارات', icon: Car, desc: 'إدارة جميع السيارات' },
     { href: '/admin/reports', label: 'البلاغات', icon: Flag, desc: 'البلاغات المقدمة' },
     { href: '/admin/brands', label: 'الشركات', icon: Building2, desc: 'إدارة شركات السيارات' },

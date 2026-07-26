@@ -28,6 +28,14 @@ export async function GET(request: NextRequest) {
       time: a.time,
       description: a.description || '',
       status: a.status.toUpperCase(),
+      carMake: a.carMake || '',
+      carModel: a.carModel || '',
+      carYear: a.carYear ?? null,
+      plateNumber: a.plateNumber || '',
+      budget: a.budget ?? null,
+      isUrgent: a.isUrgent ?? false,
+      rejectReason: a.rejectReason || '',
+      finalPrice: a.finalPrice ?? null,
       createdAt: a.createdAt.toISOString(),
     }));
 
@@ -47,7 +55,7 @@ export async function PUT(request: NextRequest) {
     if (!workshop) return notFoundResponse('الورشة');
 
     const body = await request.json();
-    const { appointmentId, status } = body;
+    const { appointmentId, status, finalPrice, rejectReason } = body;
 
     if (!appointmentId) {
       return errorResponse('معرف الموعد مطلوب');
@@ -61,9 +69,19 @@ export async function PUT(request: NextRequest) {
     });
     if (!appointment) return notFoundResponse('الموعد');
 
+    const data: any = { status: status.toLowerCase() };
+    const statusUpper = status.toUpperCase();
+    const finalPriceNum = Number(finalPrice);
+    if (Number.isFinite(finalPriceNum) && finalPriceNum > 0) {
+      data.finalPrice = finalPriceNum;
+    }
+    if (statusUpper === 'REJECTED' && typeof rejectReason === 'string' && rejectReason.trim()) {
+      data.rejectReason = rejectReason.trim().slice(0, 500);
+    }
+
     const updated = await prisma.workshopAppointment.update({
       where: { id: appointmentId },
-      data: { status: status.toLowerCase() },
+      data,
     });
 
     return successResponse(updated);

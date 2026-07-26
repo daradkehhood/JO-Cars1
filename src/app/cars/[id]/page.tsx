@@ -12,7 +12,7 @@ import {
   Calendar, Settings, Star, ChevronLeft, ChevronRight, Maximize2,
   Shield, CheckCircle, AlertTriangle, BarChart3, Bot, Sparkles, Eye,
   Clock, Building2, Palette, DoorOpen, Cpu, Bike, Loader2, GitCompare, ChevronDown,
-  RotateCcw, Trash2, Crown, Send, Car as CarIcon, X
+  RotateCcw, Trash2, Crown, Send, Car as CarIcon, X, RefreshCw, CalendarCheck
 } from 'lucide-react';
 import { formatPrice, formatDistance, getFuelTypeLabel, getTransmissionLabel, getDrivetrainLabel, getConditionLabel, formatDate } from '@/lib/utils';
 import { AuctionSection } from '@/components/auctions/AuctionSection';
@@ -24,6 +24,7 @@ import { EngineSoundSection } from '@/components/cars/EngineSoundSection';
 import { useAuth } from '@/hooks/useAuth';
 import { useCompareStore } from '@/store';
 import { ReportModal } from '@/components/cars/ReportModal';
+import { BookingModal } from '@/components/cars/BookingModal';
 import { BadgeDisplay } from '@/components/badges/BadgeDisplay';
 import { PriceFairnessIndicator } from '@/components/cars/PriceFairnessIndicator';
 import { SocialProof } from '@/components/cars/SocialProof';
@@ -31,7 +32,9 @@ import { StarRating } from '@/components/ratings/StarRating';
 import { RatingModal } from '@/components/ratings/RatingModal';
 import type { Car } from '@/types';
 import { CarComments } from '@/components/cars/CarComments';
+import { CarReviews } from '@/components/cars/CarReviews';
 import { CarPriceAnalysis } from '@/components/cars/CarPriceAnalysis';
+import { fetchWithRetry } from '@/lib/fetch-retry';
 import toast from 'react-hot-toast';
 
 export default function CarDetailPage() {
@@ -42,39 +45,53 @@ export default function CarDetailPage() {
   const [car, setCar] = useState<Car | null>(null);
   const [similarCars, setSimilarCars] = useState<Car[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [currentImage, setCurrentImage] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
   const [showAI, setShowAI] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [ratingOpen, setRatingOpen] = useState(false);
+  const [bookingOpen, setBookingOpen] = useState(false);
   const [carTags, setCarTags] = useState<{ id: string; nameAr: string; slug: string; icon: string; color: string }[]>([]);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
-  useEffect(() => {
-    const carId = params.id;
+  const loadCar = (carId: string, trackView: boolean) => {
     setLoading(true);
+    setLoadError(false);
+    fetchWithRetry<{ success: boolean; data?: Car; error?: string }>(
+      `/api/cars/${carId}${trackView ? '?trackView=true' : ''}`
+    )
+      .then((data) => {
+        if (data?.success && data.data) {
+          setCar(data.data);
+          setIsSaved(data.data.isFavorited || false);
+          document.title = `${data.data.brand?.nameAr || ''} ${data.data.model?.nameAr || ''} ${data.data.year} | JO Cars`;
+        } else {
+          toast.error(data?.error || 'السيارة غير موجودة');
+          router.push('/cars');
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        // Show the in-page error fallback instead of a blank page — a single
+        // failed fetch on a slow mobile network shouldn't kill the screen.
+        setLoading(false);
+        setLoadError(true);
+      });
+  };
+
+  useEffect(() => {
+    const carId = params.id as string;
     const viewed = JSON.parse(localStorage.getItem('viewedCars') || '[]');
     const alreadyViewed = viewed.includes(carId);
     if (!alreadyViewed) {
       viewed.push(carId);
       localStorage.setItem('viewedCars', JSON.stringify(viewed));
     }
-    fetch(`/api/cars/${carId}${alreadyViewed ? '' : '?trackView=true'}`)
-      .then(r => r.json())
-      .then(data => {
-        if (data.success) {
-          setCar(data.data);
-          setIsSaved(data.data.isFavorited || false);
-          document.title = `${data.data.brand?.nameAr || ''} ${data.data.model?.nameAr || ''} ${data.data.year} | JO Cars`;
-        } else {
-          toast.error('السيارة غير موجودة');
-          router.push('/cars');
-        }
-        setLoading(false);
-      })
-      .catch(() => { setLoading(false); toast.error('حدث خطأ في تحميل البيانات'); });
-  }, [params.id, router]);
+    loadCar(carId, !alreadyViewed);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.id]);
 
   useEffect(() => {
     if (car) {
@@ -138,7 +155,35 @@ export default function CarDetailPage() {
     );
   }
 
-  if (!car) return null;
+  if (loadError || !car) {
+    return (
+      <div className="max-w-md mx-auto mt-16 mb-24 p-6 text-center">
+        <div className="text-6xl mb-4">🚗</div>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+          حدث خطأ في تحميل السيارة
+        </h2>
+        <p className="text-gray-500 dark:text-gray-400 mb-6 text-sm leading-relaxed">
+          قد تكون الشبكة بطيئة أو السيارة لم تعد متاحة. حاول مرة أخرى أو تصفّح
+          بقية السيارات.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Button
+            onClick={() => loadCar(params.id as string, false)}
+            icon={<RefreshCw className="w-4 h-4" />}
+          >
+            إعادة المحاولة
+          </Button>
+          <Button
+            variant="ghost"
+            icon={<CarIcon className="w-4 h-4" />}
+            onClick={() => (window.location.href = '/cars')}
+          >
+            تصفّح السيارات
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const allImages = car.images?.length > 0 ? car.images : (car.coverImage ? [{ url: car.coverImage }] : []);
   const inCompare = isInCompare(car.id);
@@ -629,6 +674,14 @@ export default function CarDetailPage() {
                 </Button>
               </div>
 
+              {car.status === 'ACTIVE' && car.user?.dealerVerified && (!currentUser || currentUser.id !== car.user.id) && (
+                <button onClick={() => setBookingOpen(true)}
+                  className="w-full mt-3 py-3 rounded-xl bg-gradient-to-l from-emerald-500 to-green-600 text-white text-sm font-bold hover:from-emerald-600 hover:to-green-700 transition-all flex items-center justify-center gap-2 shadow-md shadow-emerald-500/20">
+                  <CalendarCheck className="w-4 h-4" />
+                  إنشاء حجز / طلب شراء
+                </button>
+              )}
+
               {car.status === 'SOLD' && currentUser && currentUser.id !== car.user.id && (
                 <button onClick={() => setRatingOpen(true)}
                   className="w-full mt-2 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-sm font-medium hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-all flex items-center justify-center gap-2">
@@ -758,6 +811,11 @@ export default function CarDetailPage() {
           </div>
         </div>
 
+        {/* Reviews */}
+        <CarReviews carId={car.id}
+          carName={`${car.brand?.nameAr || ''} ${car.model?.nameAr || ''} ${car.year}`}
+          aggregate={car.rating ? { rating: car.rating, reviewCount: car.reviewCount || 0 } : undefined} />
+
         {/* Comments */}
         <section className="mt-12">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">التعليقات</h2>
@@ -775,6 +833,11 @@ export default function CarDetailPage() {
       <ReportModal carId={car.id}
         carTitle={`${car.brand?.nameAr || ''} ${car.model?.nameAr || ''} ${car.year}`}
         isOpen={reportOpen} onClose={() => setReportOpen(false)} />
+      <BookingModal carId={car.id}
+        carTitle={`${car.brand?.nameAr || ''} ${car.model?.nameAr || ''} ${car.year}`}
+        askingPrice={car.price}
+        dealerName={car.user?.dealerName || car.user?.name}
+        isOpen={bookingOpen} onClose={() => setBookingOpen(false)} />
       <RatingModal
         isOpen={ratingOpen}
         onClose={() => setRatingOpen(false)}
