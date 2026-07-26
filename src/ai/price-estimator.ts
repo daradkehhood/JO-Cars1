@@ -21,6 +21,7 @@
  */
 
 import { BaseAIModule, AIProviderType, AIResult, AIProgress } from './base';
+import { fetchOpenSooqListings, OpenSooqListing } from '@/lib/opensooq-scrape';
 
 export interface PriceInput {
   brand: string;
@@ -472,31 +473,72 @@ export class PriceEstimator extends BaseAIModule<PriceInput, PriceOutput> {
     let heuristicPrice = Math.round(basePrice * total);
     heuristicPrice = Math.max(500, heuristicPrice); // floor to a positive value
 
-    // Step 3 — fetch local DB listings as a market anchor
-    onProgress?.({ stage: 'db', progress: 75, message: 'مطابقة مع إعلانات JO Cars' });
-    const { prices: dbPrices, listings } = await getDbSimilarCars(input);
+    // Step 3 — fetch BOTH local DB listings AND live OpenSooq listings in parallel
+    onProgress?.({ stage: 'web', progress: 70, message: 'البحث في السوق المفتوح و JO Cars' });
+
+    const [dbResult, openSooqResult] = await Promise.all([
+      getDbSimilarCars(input),
+      fetchOpenSooqListings(input.brand, input.model, input.year).catch(() => null),
+    ]);
+
+    const dbPrices = dbResult.prices;
+    const dbListings = dbResult.listings;
     const dbAvg = average(dbPrices);
     const dbMedian = median(dbPrices);
 
-    // Step 4 — blend heuristic with DB evidence. More DB evidence ⇒ more weight.
+    // Extract OpenSooq stats + listings (null when blocked)
+    const osStats = openSooqResult?.stats || null;
+    const osListings: OpenSooqListing[] = openSooqResult?.listings || [];
+    const osPrices = osStats ? osListings.map((l) => l.price) : [];
+    const osMedian = osStats ? osStats.median : 0;
+    const osCount = osStats ? osStats.count : 0;
+
+    // Step 4 — blend heuristic + DB + OpenSooq, weighting by evidence strength
     let fairPrice = heuristicPrice;
     let confidence = 62;
     const sources: string[] = ['تحليل محلي ذكي'];
     const marketFactors: string[] = factors.map((f) => `${f.name}: ${f.description}`);
 
-    if (dbPrices.length >= 5) {
-      // Strong local evidence — weights DB more heavily and uses median (robust to outliers)
+    // ── Strongest case: all three signals agree ──
+    if (dbPrices.length >= 3 && osCount >= 3) {
+      // 30% heuristic / 35% DB median / 35% OpenSooq median — live market dominance
+      fairPrice = Math.round(heuristicPrice * 0.30 + dbMedian * 0.35 + osMedian * 0.35);
+      confidence = 90;
+      sources.push(`JO Cars (${dbPrices.length} إعلان)`);
+      sources.push(`السوق المفتوح (${osCount} إعلان حي)`);
+    } else if (osCount >= 3) {
+      // OpenSooq strong — 40% heuristic / 60% OpenSooq
+      fairPrice = Math.round(heuristicPrice * 0.40 + osMedian * 0.60);
+      confidence = 84;
+      sources.push(`السوق المفتوح (${osCount} إعلان حي)`);
+      if (dbPrices.length > 0) {
+        fairPrice = Math.round(fairPrice * 0.7 + dbMedian * 0.3);
+        sources.push(`JO Cars (${dbPrices.length} إعلان)`);
+      }
+    } else if (dbPrices.length >= 5) {
+      // Strong local evidence — weights DB median (robust to outliers)
       fairPrice = Math.round(heuristicPrice * 0.45 + dbMedian * 0.55);
       confidence = 86;
       sources.push(`JO Cars (${dbPrices.length} إعلان مشابه)`);
+      if (osCount > 0) sources.push(`السوق المفتوح (${osCount} إعلان)`);
     } else if (dbPrices.length >= 3) {
       fairPrice = Math.round(heuristicPrice * 0.55 + dbMedian * 0.45);
       confidence = 78;
       sources.push(`JO Cars (${dbPrices.length} إعلان مشابه)`);
+      if (osCount > 0) sources.push(`السوق المفتوح (${osCount} إعلان)`);
     } else if (dbPrices.length >= 1) {
       fairPrice = Math.round(heuristicPrice * 0.75 + dbAvg * 0.25);
       confidence = 70;
       sources.push(`JO Cars (${dbPrices.length} إعلان)`);
+      if (osCount > 0) {
+        fairPrice = Math.round(fairPrice * 0.85 + osMedian * 0.15);
+        sources.push(`السوق المفتوح (${osCount} إعلان)`);
+      }
+    } else if (osCount >= 1) {
+      // No DB signal but some OpenSooq anchor
+      fairPrice = Math.round(heuristicPrice * 0.65 + osMedian * 0.35);
+      confidence = 72;
+      sources.push(`السوق المفتوح (${osCount} إعلان حي)`);
     }
 
     // Step 5 — raise confidence when brand×model is well-known in our table
@@ -505,7 +547,7 @@ export class PriceEstimator extends BaseAIModule<PriceInput, PriceOutput> {
       confidence += 4;
       if (getModelAdjustment(input.brand, input.model) !== 0) confidence += 4;
     }
-    // Reward complet eness of input
+    // Reward completeness of input
     const completenessFields = [input.fuelType, input.transmission, input.bodyType, input.drivetrain, input.color, input.engineCapacity, input.trim];
     const filled = completenessFields.filter(Boolean).length;
     confidence += filled * 2;
@@ -516,16 +558,47 @@ export class PriceEstimator extends BaseAIModule<PriceInput, PriceOutput> {
     const minPrice = Math.round(fairPrice * 0.88);
     const maxPrice = Math.round(fairPrice * 1.12);
 
-    // Step 7 — human-readable Arabic reasoning
+    // Step 7 — joint listing catalog (OpenSooq live + JO Cars DB), deduplicated by URL
+    const similarListings: SimilarListing[] = [];
+    const seenUrls = new Set<string>();
+    for (const l of osListings) {
+      if (seenUrls.has(l.url)) continue;
+      seenUrls.add(l.url);
+      similarListings.push({
+        site: l.site,
+        url: l.url,
+        price: l.price,
+        year: l.year ?? input.year,
+        km: l.km ?? 0,
+        notes: `${l.title}${l.city ? ' — ' + l.city : ''}${l.postedAt ? ' (' + l.postedAt + ')' : ''}`,
+      });
+    }
+    for (const l of dbListings) {
+      if (seenUrls.has(l.url)) continue;
+      seenUrls.add(l.url);
+      similarListings.push(l);
+    }
+
+    // Step 8 — human-readable Arabic reasoning
     const topFactors = [...factors].sort((a, b) => Math.abs(b.impact - 1) - Math.abs(a.impact - 1)).slice(0, 4);
-    const reasoningParts = [
+    const reasoningParts: string[] = [
       `قيمة أساسية ${basePrice.toLocaleString()} د.أ (مبنية على جدول أسعار السوق الأردني لعلامة ${input.brand} موديل ${input.model} سنة ${input.year}).`,
       `بعد تطبيق ${factors.length} عامل (أبرزها: ${topFactors.map((f) => f.name).join('، ')}), السعر المُقدّر ${fairPrice.toLocaleString()} د.أ.`,
-      dbPrices.length > 0
-        ? `تمت مطابقة النتيجة مع ${dbPrices.length} إعلان محلي (متوسط ${dbAvg.toLocaleString()} د.أ, وسطي ${dbMedian.toLocaleString()} د.أ) من قاعدة بيانات JO Cars لزيادة الواقعية.`
-        : `لا تتوفر إعلانات محلية كافية للمقارنة — التقييم مبنى على نموذج السوق الأردني فقط.`,
-      `نطاق معقول للبيع/الشراء: ${minPrice.toLocaleString()} — ${maxPrice.toLocaleString()} د.أ.`,
     ];
+    if (osCount > 0) {
+      reasoningParts.push(
+        `تم جلب ${osCount} إعلان حيّ من السوق المفتوح (opensooq.com) لنفس العلامة/الموديل (متوسط ${osStats!.avg.toLocaleString()} د.أ, وسطي ${osMedian.toLocaleString()} د.أ).`
+      );
+    }
+    if (dbPrices.length > 0) {
+      reasoningParts.push(
+        `تمت مطابقة النتيجة مع ${dbPrices.length} إعلان محلي من JO Cars (متوسط ${dbAvg.toLocaleString()} د.أ, وسطي ${dbMedian.toLocaleString()} د.أ) لزيادة الواقعية.`
+      );
+    }
+    if (osCount === 0 && dbPrices.length === 0) {
+      reasoningParts.push('لا تتوفر إعلانات حية أو محلية كافية للمقارنة — التقييم مبنى على نموذج السوق الأردني فقط.');
+    }
+    reasoningParts.push(`نطاق معقول للبيع/الشراء: ${minPrice.toLocaleString()} — ${maxPrice.toLocaleString()} د.أ.`);
     const reasoning = reasoningParts.join(' ');
 
     onProgress?.({ stage: 'done', progress: 100, message: 'اكتمل التقييم' });
@@ -539,9 +612,9 @@ export class PriceEstimator extends BaseAIModule<PriceInput, PriceOutput> {
         confidence,
         reasoning,
         marketFactors,
-        similarListings: listings,
+        similarListings: similarListings.slice(0, 10),
         sources,
-        isRealWebSearch: false,
+        isRealWebSearch: osCount > 0,
       },
       confidence,
       processingTime: Date.now() - startTime,
