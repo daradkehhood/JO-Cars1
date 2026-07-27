@@ -59,37 +59,70 @@ const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h per brand to dodge anti-bot
 const cache = new Map<string, { ts: number; data: OpenSooqResult | null }>();
 
 const BRAND_ALIASES: Record<string, string> = {
-  تويوتا: 'toyota', تايوتا: 'toyota',
-  هوندا: 'honda', هوندي: 'honda',
-  هيونداي: 'hyundai', هيونداى: 'hyundai', حيوندي: 'hyundai',
-  نيسان: 'nissan', نسن: 'nissan',
+  تويوتا: 'toyota', تايوتا: 'toyota', توتا: 'toyota',
+  هوندا: 'honda', هوندي: 'honda', هونداي: 'honda',
+  هيونداي: 'hyundai', هيونداى: 'hyundai', حيوندي: 'hyundai', حيونداي: 'hyundai',
+  نيسان: 'nissan', نسن: 'nissan', نيسSEN: 'nissan',
   كيا: 'kia',
   مازدا: 'mazda',
-  فورد: 'ford',
-  شيفروليه: 'chevrolet', شفروليه: 'chevrolet', شفروليت: 'chevrolet',
-  مرسيدس: 'mercedes', بنز: 'mercedes',
-  'بي ام': 'bmw', 'بي إم': 'bmw', 'ب ام': 'bmw',
+  فورد: 'ford', فوررد: 'ford',
+  شيفروليه: 'chevrolet', شفروليه: 'chevrolet', شفروليت: 'chevrolet', شفرولت: 'chevrolet',
+  مرسيدس: 'mercedes', بنز: 'mercedes', 'مرسيدس بنز': 'mercedes',
+  'بي ام': 'bmw', 'بي إم': 'bmw', 'ب ام': 'bmw', 'بم': 'bmw',
   اودي: 'audi', 'أودي': 'audi',
-  لكزس: 'lexus',
-  سوزوكي: 'suzuki',
-  ميتسوبيشي: 'mitsubishi', ميتسبيشي: 'mitsubishi',
+  لكزس: 'lexus', لكتس: 'lexus',
+  سوزوكي: 'suzuki', سزوكي: 'suzuki', سوزوكى: 'suzuki',
+  ميتسوبيشي: 'mitsubishi', ميتسبيشي: 'mitsubishi', ميتسبيش: 'mitsubishi',
   جيب: 'jeep',
-  'ام جي': 'mg', 'إم جي': 'mg',
+  'ام جي': 'mg', 'إم جي': 'mg', 'إم. جي': 'mg',
   شيري: 'chery',
   جيلي: 'geely',
-  'بي واي دي': 'byd',
-  هافال: 'haval',
-  'دي اف اس كي': 'dfsk',
-  'لاند روفر': 'land rover',
-  بيجو: 'peugeot',
-  فولكسفاجن: 'volkswagen',
+  'بي واي دي': 'byd', 'باي دي': 'byd',
+  هافال: 'haval', هافل: 'haval',
+  'دي اف اس كي': 'dfsk', 'دي إف إس كي': 'dfsk',
+  'لاند روفر': 'land rover', 'لاند روفير': 'land rover',
+  بيجو: 'peugeot', بيجوت: 'peugeot',
+  فولكسفاجن: 'volkswagen', فولكس: 'volkswagen', فلكس: 'volkswagen',
+  سوبارو: 'subaru', سابارو: 'subaru',
+  اوبل: 'opel', 'أوبل': 'opel',
+  رينو: 'renault', رينولت: 'renault',
+  فيات: 'fiat',
+  دودج: 'dodge',
+  'جي ام سي': 'gmc', 'جي إم سي': 'gmc',
 };
 
 const MODEL_ALIASES: Record<string, string> = {
   'لاند كروزر': 'land cruiser',
   'لاند كروزر برادو': 'land cruiser prado',
   'راف فور': 'rav4', 'راف 4': 'rav4',
-  'اكس تريل': 'xtrail', 'اكس 5': 'x5', 'اكس 6': 'x6',
+  'اكس تريل': 'xtrail', 'اكس 5': 'x5', 'اكس 6': 'x6', 'اكس 7': 'x7',
+  'كراج': 'kicks',
+  'سنترا': 'sentra',
+  'تييدا': 'tiida',
+  'سني': 'sunny',
+  'باليسيد': 'palisade',
+  'سانتا في': 'santa fe',
+  'توسون': 'tucson',
+  'سوناتا': 'sonata',
+  'إيلنترا': 'elantra',
+  'اكرستنت': 'accent',
+  'سبورتاج': 'sportage',
+  'سورنتو': 'sorento',
+  'تيلورايد': 'telluride',
+  'سيلفرادو': 'silverado',
+  'تاهو': 'tahoe',
+  'ترافيرس': 'traverse',
+  'كولورادو': 'colorado',
+  'تريل بليزر': 'trailblazer',
+  'روفر': 'range rover',
+  'ديفندر': 'defender',
+  ' discovering': 'discovery',
+  'تواريج': 'touareg',
+  'تيغوان': 'tiguan',
+  'باجيرو': 'pajero',
+  'اوتلاندر': 'outlander',
+  'راكلاير': 'wrangler',
+  'غراند شيروكي': 'grand cherokee',
 };
 
 function normalizeBrand(brand: string): string {
@@ -210,16 +243,42 @@ function toListing(item: Record<string, unknown>): OpenSooqListing {
   };
 }
 
+/**
+ * Improved matching: check brand AND model separately, allow fuzzy model matching.
+ * Also supports Arabic brand/model names in the listing title.
+ */
 function listItemMatches(listing: OpenSooqListing, brand: string, model: string): boolean {
   const targetBrand = normalizeBrand(brand).toLowerCase();
   const targetModel = normalizeModel(model).toLowerCase();
-  // Brand must appear in title or be implied (cps often contains "[Brand] " tokens)
   const titleLower = listing.title.toLowerCase();
-  // Loose match: brand token anywhere in title
-  const brandOk = titleLower.includes(targetBrand) || targetBrand.length === 0;
-  // Model match: model substring within title OR exact cps match
-  const modelOk = targetModel.length === 0 || titleLower.includes(targetModel) || titleLower.includes(targetModel.replace(/\s/g, '')) || titleLower.includes(targetModel.replace(/\s/g, '-'));
-  return brandOk && modelOk;
+  
+  // Brand must appear in title — check both English and Arabic
+  const brandOk = titleLower.includes(targetBrand) || 
+    (targetBrand === 'toyota' && /تويوتا|تايوتا|توتا/.test(titleLower)) ||
+    (targetBrand === 'honda' && /هوندا|هوندي|هونداي/.test(titleLower)) ||
+    (targetBrand === 'hyundai' && /هيونداي|حيونداي/.test(titleLower)) ||
+    (targetBrand === 'nissan' && /نيسان|نيسن/.test(titleLower)) ||
+    (targetBrand === 'kia' && /كيا/.test(titleLower)) ||
+    (targetBrand === 'ford' && /فورد/.test(titleLower)) ||
+    (targetBrand === 'chevrolet' && /شفروليه|شفروليت/.test(titleLower)) ||
+    (targetBrand === 'mercedes' && /مرسيدس|بنز/.test(titleLower)) ||
+    (targetBrand === 'bmw' && /بي ام|ب ام/.test(titleLower)) ||
+    (targetBrand === 'lexus' && /لكزس/.test(titleLower)) ||
+    (targetBrand === 'jeep' && /جيب/.test(titleLower)) ||
+    (targetBrand === 'land rover' && /لاند روفر/.test(titleLower)) ||
+    (targetBrand === 'volkswagen' && /فولكسفاجن|فولكس/.test(titleLower)) ||
+    (targetBrand === 'renault' && /رينو/.test(titleLower)) ||
+    (targetBrand === 'peugeot' && /بيجو/.test(titleLower));
+  
+  if (!brandOk) return false;
+  
+  // Model match: model substring within title OR exact match
+  if (targetModel.length === 0) return true;
+  const modelOk = titleLower.includes(targetModel) || 
+    titleLower.includes(targetModel.replace(/\s/g, '')) ||
+    titleLower.includes(targetModel.replace(/\s/g, '-'));
+  
+  return modelOk;
 }
 
 /**

@@ -87,6 +87,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         hasWarranty: car.hasWarranty,
         hasServiceHistory: car.hasServiceHistory,
         isPaintOriginal: car.isPaintOriginal,
+        trim: car.trim || undefined,
+        listingPrice: car.price,
       });
       if (priceResult.success && priceResult.data) {
         fairPrice = priceResult.data.fairPrice;
@@ -158,6 +160,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         hasServiceHistory: car.hasServiceHistory,
         fuelType: car.fuelType ?? undefined,
         bodyType: car.bodyType ?? undefined,
+        engineCapacity: car.engineCapacity ?? undefined,
+        color: car.color ?? undefined,
+        city: car.city?.nameAr ?? undefined,
       });
       if (condResult.success && condResult.data) {
         conditionScore = condResult.data.score;
