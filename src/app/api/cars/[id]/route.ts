@@ -8,6 +8,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const user = await authenticateRequest(request).catch(() => null);
   try {
     const trackView = request.nextUrl.searchParams.get('trackView') === 'true';
+    // Initial load: only first 6 images to keep payload small on mobile.
+    // Client loads remaining images via /api/cars/[id]/images endpoint.
+    const imageLimit = parseInt(request.nextUrl.searchParams.get('imageLimit') || '6', 10);
+    const safeImageLimit = Math.min(Math.max(imageLimit, 1), 20);
 
     const car = await prisma.car.findFirst({
       where: { OR: [{ id: carId }, { slug: carId }] },
@@ -15,9 +19,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         brand: true,
         model: true,
         city: true,
-        // Cap images at 15 — most listings have ≤ 12, and downloading the full
-        // set on a slow mobile connection caused the "no internet" page.
-        images: { orderBy: { order: 'asc' }, take: 15 },
+        images: { orderBy: { order: 'asc' }, take: safeImageLimit },
         user: {
           select: {
             id: true, name: true, phone: true, whatsapp: true,
@@ -26,13 +28,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             ratingCount: true, createdAt: true, badges: true,
           },
         },
+        _count: { select: { images: true } },
       },
     });
 
     if (!car) return notFoundResponse('السيارة');
 
-    // Fire-and-forget view increment — doesn't block the response. On flaky
-    // mobile networks awaiting this serial write often stalled the whole page.
+    // Fire-and-forget view increment — doesn't block the response.
     if (trackView) {
       prisma.car
         .update({ where: { id: car.id }, data: { views: { increment: 1 } } })
@@ -49,7 +51,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       } catch { /* ignore */ }
     }
 
-    return successResponse({ ...car, views: trackView ? car.views + 1 : car.views, isFavorited });
+    const totalImageCount = car._count.images;
+    const hasMoreImages = totalImageCount > safeImageLimit;
+
+    return successResponse({
+      ...car,
+      views: trackView ? car.views + 1 : car.views,
+      isFavorited,
+      totalImageCount,
+      hasMoreImages,
+    });
   } catch (error) {
     console.error('Car fetch error:', error);
     return errorResponse('فشل تحميل السيارة', 500);

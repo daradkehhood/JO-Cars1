@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Providers } from '@/components/layout/Providers';
 import { LayoutWrapper } from '@/components/layout/LayoutWrapper';
+import { NetworkBanner } from '@/components/ui/NetworkBanner';
 import '@/styles/globals.css';
 
 export const metadata: Metadata = {
@@ -52,6 +53,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen antialiased">
         <Providers>
+          <NetworkBanner />
           <LayoutWrapper>
             {children}
           </LayoutWrapper>

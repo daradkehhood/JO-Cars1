@@ -55,17 +55,20 @@ export default function CarDetailPage() {
   const [carTags, setCarTags] = useState<{ id: string; nameAr: string; slug: string; icon: string; color: string }[]>([]);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [hasMoreImages, setHasMoreImages] = useState(false);
+  const [loadingMoreImages, setLoadingMoreImages] = useState(false);
 
   const loadCar = (carId: string, trackView: boolean) => {
     setLoading(true);
     setLoadError(false);
-    fetchWithRetry<{ success: boolean; data?: Car; error?: string }>(
+    fetchWithRetry<{ success: boolean; data?: any; error?: string }>(
       `/api/cars/${carId}${trackView ? '?trackView=true' : ''}`
     )
       .then((data) => {
         if (data?.success && data.data) {
           setCar(data.data);
           setIsSaved(data.data.isFavorited || false);
+          setHasMoreImages(data.data.hasMoreImages || false);
           document.title = `${data.data.brand?.nameAr || ''} ${data.data.model?.nameAr || ''} ${data.data.year} | JO Cars`;
         } else {
           toast.error(data?.error || 'السيارة غير موجودة');
@@ -74,11 +77,29 @@ export default function CarDetailPage() {
         setLoading(false);
       })
       .catch(() => {
-        // Show the in-page error fallback instead of a blank page — a single
-        // failed fetch on a slow mobile network shouldn't kill the screen.
         setLoading(false);
         setLoadError(true);
       });
+  };
+
+  const loadMoreImages = async () => {
+    if (!car || loadingMoreImages) return;
+    setLoadingMoreImages(true);
+    try {
+      const res = await fetchWithRetry<{ success: boolean; data?: { images: any[]; hasMore: boolean } }>(
+        `/api/cars/${car.id}/images?offset=${car.images?.length || 0}`
+      );
+      if (res?.success && res.data) {
+        setCar(prev => prev ? {
+          ...prev,
+          images: [...(prev.images || []), ...res.data!.images],
+        } : prev);
+        setHasMoreImages(res.data.hasMore);
+      }
+    } catch {
+      // Silently fail — images will remain at initial count
+    }
+    setLoadingMoreImages(false);
   };
 
   useEffect(() => {
@@ -160,11 +181,12 @@ export default function CarDetailPage() {
       <div className="max-w-md mx-auto mt-16 mb-24 p-6 text-center">
         <div className="text-6xl mb-4">🚗</div>
         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-          حدث خطأ في تحميل السيارة
+          تعذر تحميل الإعلان
         </h2>
         <p className="text-gray-500 dark:text-gray-400 mb-6 text-sm leading-relaxed">
-          قد تكون الشبكة بطيئة أو السيارة لم تعد متاحة. حاول مرة أخرى أو تصفّح
-          بقية السيارات.
+          {!navigator.onLine
+            ? 'يبدو أنك غير متصل بالإنترنت. تحقق من اتصالك بالشبكة وحاول مرة أخرى.'
+            : 'قد تكون الشبكة بطيئة أو السيارة غير متاحة حالياً. حاول مرة أخرى أو تصفّح بقية السيارات.'}
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button
@@ -247,6 +269,22 @@ export default function CarDetailPage() {
                   <span className="text-white/70 text-xs">+{allImages.length - 5}</span>
                 )}
               </div>
+
+              {/* Load more images button */}
+              {hasMoreImages && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); loadMoreImages(); }}
+                  disabled={loadingMoreImages}
+                  className="absolute bottom-4 left-4 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/50 backdrop-blur-sm text-white text-xs hover:bg-black/70 transition-colors disabled:opacity-50"
+                >
+                  {loadingMoreImages ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Eye className="w-3.5 h-3.5" />
+                  )}
+                  تحميل باقي الصور
+                </button>
+              )}
             </>
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center">
