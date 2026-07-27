@@ -46,7 +46,6 @@ export function Header() {
     setMobileMenuOpen(false);
   }, [pathname, setMobileMenuOpen]);
 
-  // Close menus ONLY when clicking outside BOTH the button and the dropdown panel
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Node;
@@ -59,7 +58,6 @@ export function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Position the dropdown panels when they open (portal-style fixed positioning)
   useEffect(() => {
     if (moreOpen && moreMenuRef.current && moreBtnRef.current) {
       const rect = moreBtnRef.current.getBoundingClientRect();
@@ -90,10 +88,11 @@ export function Header() {
   };
 
   const primaryLinks = [
+    { href: '/', label: 'الرئيسية', icon: Car },
     { href: '/cars', label: 'السيارات', icon: Car },
-    { href: '/parts', label: 'قطع الغيار', icon: Cpu },
-    { href: '/workshops', label: 'الورش', icon: Wrench },
-    { href: '/forum', label: 'المنتدى', icon: MessageCircle },
+    { href: '/parts', label: 'المتجر', icon: Store },
+    { href: '/news', label: 'المدونة', icon: Newspaper },
+    { href: '/workshops', label: 'عن المنصة', icon: Wrench },
   ];
 
   const secondaryLinks = [
@@ -106,7 +105,6 @@ export function Header() {
     { href: '/my-garage', label: 'مرآبي', icon: Wrench },
     { href: '/wanted', label: 'مطلوب', icon: Tag },
     { href: '/plates', label: 'لوحات', icon: BadgePercent },
-    { href: '/news', label: 'الأخبار', icon: Newspaper },
     ...(isAuthenticated ? [{ href: '/tickets', label: 'التذاكر', icon: Ticket }] : []),
   ];
 
@@ -126,8 +124,8 @@ export function Header() {
         className={cn(
           'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
           scrolled
-            ? 'bg-white/90 dark:bg-surface-950/90 backdrop-blur-xl border-b border-surface-200/60 dark:border-surface-800/60 shadow-soft'
-            : 'bg-white/70 dark:bg-surface-950/70 backdrop-blur-sm'
+            ? 'bg-surface-950/95 backdrop-blur-xl border-b border-blue-900/50 shadow-lg'
+            : 'bg-surface-950/95 backdrop-blur-xl'
         )}
       >
         <div className="container-custom">
@@ -136,11 +134,11 @@ export function Header() {
             <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
               <div className="relative w-9 h-9 rounded-xl bg-gradient-luxury flex items-center justify-center shadow-primary transition-transform duration-300 group-hover:scale-105">
                 <Car className="w-5 h-5 text-white" />
-                <div className="absolute -top-0.5 -left-0.5 w-2 h-2 rounded-full bg-gold-400 shadow-gold" />
+                <div className="absolute -top-0.5 -left-0.5 w-2 h-2 rounded-full bg-blue-500 shadow-gold" />
               </div>
-              <span className="text-lg font-bold text-surface-900 dark:text-white hidden sm:block tracking-tight">
+              <span className="text-lg font-bold text-white hidden sm:block tracking-tight">
                 <span className="gradient-text">JO</span>
-                <span className="text-gold-500 dark:text-gold-400">Cars</span>
+                <span className="text-blue-500">Cars</span>
               </span>
             </Link>
 
@@ -156,12 +154,15 @@ export function Header() {
                     className={cn(
                       'relative flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200',
                       active
-                        ? 'text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-500/10'
-                        : 'text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-white hover:bg-surface-100 dark:hover:bg-surface-800'
+                        ? 'text-blue-500 bg-blue-500/10'
+                        : 'text-surface-400 hover:text-white hover:bg-white/5'
                     )}
                   >
                     <Icon className="w-4 h-4" />
                     {link.label}
+                    {active && (
+                      <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-blue-500 rounded-full" />
+                    )}
                   </Link>
                 );
               })}
@@ -173,8 +174,8 @@ export function Header() {
                 className={cn(
                   'flex items-center gap-1 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200',
                   moreOpen
-                    ? 'text-surface-900 dark:text-white bg-surface-100 dark:bg-surface-800'
-                    : 'text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-white hover:bg-surface-100 dark:hover:bg-surface-800'
+                    ? 'text-white bg-white/10'
+                    : 'text-surface-400 hover:text-white hover:bg-white/5'
                 )}
               >
                 المزيد
@@ -182,44 +183,44 @@ export function Header() {
               </button>
             </nav>
 
-            {/* Search */}
-            <div className="hidden md:flex items-center flex-1 max-w-xs mx-6">
-              <form onSubmit={handleSearch} className="relative w-full group">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="ابحث عن سيارة..."
-                  className="w-full h-10 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 pl-10 pr-4 text-sm text-surface-900 dark:text-surface-100 placeholder-surface-400 transition-all duration-200 focus:border-primary-500 focus:bg-white dark:focus:bg-surface-700 focus:ring-2 focus:ring-primary-500/10 focus:shadow-soft outline-none"
-                />
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400 group-focus-within:text-primary-500 transition-colors" />
-              </form>
-            </div>
-
             {/* Right actions */}
             <div className="flex items-center gap-1">
               {/* Compare */}
               {compareCars.length > 0 && (
                 <Link
                   href="/cars/compare"
-                  className="relative p-2 rounded-xl text-surface-500 hover:text-primary-600 hover:bg-surface-100 dark:hover:bg-surface-800 transition-all duration-200"
+                  className="relative p-2 rounded-xl text-surface-400 hover:text-blue-400 hover:bg-white/5 transition-all duration-200"
                   title="مقارنة"
                 >
                   <GitCompare className="w-5 h-5" />
-                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full bg-gold-500 text-white text-[9px] font-bold flex items-center justify-center px-1">
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center px-1">
                     {compareCars.length}
                   </span>
                 </Link>
               )}
 
-              {/* Theme toggle */}
-              <button
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="hidden md:flex p-2 rounded-xl text-surface-500 hover:text-surface-700 dark:hover:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 transition-all duration-200"
-                aria-label="تبديل المظهر"
+              {/* Favorites */}
+              <Link
+                href="/favorites"
+                className="p-2 rounded-xl text-surface-400 hover:text-blue-400 hover:bg-white/5 transition-all duration-200"
+                aria-label="المفضلة"
               >
-                {mounted ? (theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />) : <div className="w-5 h-5" />}
-              </button>
+                <Heart className="w-5 h-5" />
+              </Link>
+
+              {/* Notifications */}
+              <Link
+                href="/notifications"
+                className="relative p-2 rounded-xl text-surface-400 hover:text-blue-400 hover:bg-white/5 transition-all duration-200"
+                aria-label="الإشعارات"
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center px-1">
+                    {unreadCount}
+                  </span>
+                )}
+              </Link>
 
               {/* User area */}
               {isAuthenticated ? (
@@ -228,9 +229,9 @@ export function Header() {
                   <button
                     ref={userBtnRef}
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
-                    className="hidden md:flex items-center gap-1.5 p-1.5 pr-2.5 rounded-xl hover:bg-surface-100 dark:hover:bg-surface-800 transition-all duration-200"
+                    className="hidden md:flex items-center gap-1.5 p-1.5 rounded-xl hover:bg-white/5 transition-all duration-200"
                   >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-xs font-semibold ring-2 ring-gold-400/30">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-xs font-semibold ring-2 ring-blue-400/30">
                       {user?.image ? (
                         <img src={user.image} alt="" className="w-8 h-8 rounded-full object-cover" />
                       ) : (
@@ -243,10 +244,10 @@ export function Header() {
                   {/* Mobile: user avatar */}
                   <button
                     onClick={openUserMenu}
-                    className="md:hidden p-1 rounded-xl hover:bg-surface-100 dark:hover:bg-surface-800 transition-all duration-200"
+                    className="md:hidden p-1 rounded-xl hover:bg-white/5 transition-all duration-200"
                     aria-label="حسابي"
                   >
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-sm font-bold ring-2 ring-gold-400/40">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-sm font-bold ring-2 ring-blue-400/40">
                       {user?.image ? (
                         <img src={user.image} alt="" className="w-9 h-9 rounded-full object-cover" />
                       ) : (
@@ -257,7 +258,7 @@ export function Header() {
                 </>
               ) : (
                 <div className="hidden sm:flex items-center gap-1.5">
-                  <Link href="/auth/login" className="px-3.5 py-1.5 rounded-xl text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-all duration-200">
+                  <Link href="/auth/login" className="px-3.5 py-1.5 rounded-xl text-sm font-medium text-surface-400 hover:text-white hover:bg-white/5 transition-all duration-200">
                     دخول
                   </Link>
                   <Link href="/auth/register" className="btn-primary text-sm px-3.5 py-1.5">
@@ -269,7 +270,7 @@ export function Header() {
               {/* Sell button */}
               <Link
                 href="/cars/add"
-                className="flex items-center gap-1.5 rounded-xl bg-gradient-gold text-primary-900 font-bold text-sm px-4 py-2 shadow-gold hover:shadow-gold-lg active:scale-[0.97] transition-all duration-200"
+                className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold text-sm px-4 py-2 hover:from-blue-500 hover:to-blue-600 active:scale-[0.97] transition-all duration-200 shadow-lg shadow-blue-500/25"
               >
                 <Plus className="w-4 h-4" strokeWidth={2.5} />
                 <span className="hidden sm:inline">بيع سيارتك</span>
@@ -279,13 +280,13 @@ export function Header() {
         </div>
       </header>
 
-      {/* ── "More" dropdown portal (renders OUTSIDE the header) ── */}
+      {/* "More" dropdown portal */}
       {moreOpen && (
         <div
           ref={moreMenuRef}
-          className="fixed z-[70] w-60 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 shadow-soft-xl overflow-hidden"
+          className="fixed z-[70] w-60 rounded-2xl border border-white/10 bg-surface-900 shadow-soft-xl overflow-hidden"
         >
-          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-gold opacity-80" />
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-600 to-blue-500 opacity-80" />
           <div className="p-1.5">
             {secondaryLinks.map((link) => {
               const Icon = link.icon;
@@ -298,8 +299,8 @@ export function Header() {
                   className={cn(
                     'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
                     active
-                      ? 'text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-500/10'
-                      : 'text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700'
+                      ? 'text-blue-500 bg-blue-500/10'
+                      : 'text-surface-400 hover:bg-white/5 hover:text-white'
                   )}
                 >
                   <Icon className="w-4 h-4" />
@@ -311,17 +312,17 @@ export function Header() {
         </div>
       )}
 
-      {/* ── User dropdown portal (renders OUTSIDE the header) ── */}
+      {/* User dropdown portal */}
       {userMenuOpen && isAuthenticated && (
         <div
           ref={userMenuRef}
-          className="fixed z-[70] w-64 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 shadow-soft-xl overflow-hidden"
+          className="fixed z-[70] w-64 rounded-2xl border border-white/10 bg-surface-900 shadow-soft-xl overflow-hidden"
         >
-            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-gold opacity-80" />
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-600 to-blue-500 opacity-80" />
             {/* User header */}
-            <div className="p-4 border-b border-surface-100 dark:border-surface-700 bg-gradient-to-br from-primary-50/50 to-transparent dark:from-primary-500/5">
+            <div className="p-4 border-b border-white/10 bg-gradient-to-br from-blue-500/5 to-transparent">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-sm font-bold ring-2 ring-gold-400/30">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-sm font-bold ring-2 ring-blue-400/30">
                   {user?.image ? (
                     <img src={user.image} alt="" className="w-10 h-10 rounded-full object-cover" />
                   ) : (
@@ -329,8 +330,8 @@ export function Header() {
                   )}
                 </div>
                 <div className="min-w-0">
-                  <p className="font-bold text-surface-900 dark:text-white text-sm truncate">{user?.name}</p>
-                  <p className="text-xs text-surface-500 truncate">{user?.email}</p>
+                  <p className="font-bold text-white text-sm truncate">{user?.name}</p>
+                  <p className="text-xs text-surface-400 truncate">{user?.email}</p>
                 </div>
               </div>
             </div>
@@ -342,14 +343,14 @@ export function Header() {
                     key={item.href}
                     href={item.href}
                     onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700 transition-all duration-200"
+                    className="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm text-surface-400 hover:bg-white/5 hover:text-white transition-all duration-200"
                   >
                     <span className="flex items-center gap-3">
                       <Icon className="w-4 h-4" />
                       {item.label}
                     </span>
                     {item.badge ? (
-                      <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-accent-500 text-white text-[10px] font-bold flex items-center justify-center">
+                      <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
                         {item.badge}
                       </span>
                     ) : null}
@@ -360,17 +361,17 @@ export function Header() {
                 <Link
                   href="/admin"
                   onClick={() => setUserMenuOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700 transition-all duration-200"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-surface-400 hover:bg-white/5 hover:text-white transition-all duration-200"
                 >
                   <ShieldCheck className="w-4 h-4" />
                   لوحة التحكم
                 </Link>
               )}
             </div>
-            <div className="p-1.5 border-t border-surface-100 dark:border-surface-700">
+            <div className="p-1.5 border-t border-white/10">
               <button
                 onClick={() => { logout(); setUserMenuOpen(false); }}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-accent-600 hover:bg-accent-50 dark:hover:bg-accent-500/10 w-full transition-all duration-200"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-500/10 w-full transition-all duration-200"
               >
                 <LogOut className="w-4 h-4" />
                 تسجيل خروج
