@@ -18,7 +18,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const allowedFields = [
       'name', 'phone', 'role', 'isActive', 'canPost', 'banStatus', 'banReason',
       'banUntil', 'badges', 'dealerName', 'dealerLogo', 'dealerDescription',
-      'dealerAddress', 'whatsappNotifications', 'forumBannedCommentUntil',
+      'dealerAddress', 'dealerVerified', 'whatsappNotifications', 'forumBannedCommentUntil',
       'forumBannedTopicUntil', 'carCommentBannedUntil',
     ];
     const safeData: Record<string, any> = {};
@@ -29,7 +29,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const updated = await prisma.user.update({
       where: { id },
       data: safeData,
-      select: { id: true, name: true, email: true, role: true, isActive: true, badges: true, banStatus: true, banReason: true, banUntil: true, canPost: true },
+      select: { id: true, name: true, email: true, role: true, isActive: true, canPost: true,
+        badges: true, banStatus: true, banReason: true, banUntil: true,
+        dealerVerified: true, dealerName: true },
     });
 
     if (body.banStatus || body.banStatus === null) {

@@ -135,7 +135,7 @@ export default function PublicProfilePage() {
                 </div>
               </div>
               <div className="flex items-center gap-3 pb-1">
-                {isOwnProfile && (profile.role === 'TRADER' || profile.role === 'DEALER') && (
+                {isOwnProfile && (profile.role === 'TRADER' || profile.role === 'DEALER' || profile.role === 'ADMIN') && (
                   <Link
                     href="/dashboard/bookings"
                     className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-medium transition-colors"

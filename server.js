@@ -42,9 +42,13 @@ try {
 
 app.prepare().then(() => {
   const httpServer = createServer((req, res) => {
-    req.setTimeout(60000, () => {
-      if (!res.headersSent) { res.writeHead(504); res.end('Gateway Timeout'); }
-    });
+    // لا نفرض مهلة 504 على طلبات المستند الأوّلي:
+    // عندما يفتح مستخدم موبايل إعلان سيارة /cars/[id] على شبكة خلوية بطيئة،
+    // كانـ req.setTimeout(60000) يُرجع 504 قبل أن تكتمل استجابة Next.js،
+    // فلا تصل الاستجابة للمتصفّح ويُظهر صفحة "لا يوجد اتصال بالإنترنت" الأصلية.
+    // بدون هذا الفرض، تُترك المهلة للسلوك الافتراضي لـ Node.js/Next.js
+    // (أطول بكثير وأكثر رحابة بالشبكات الخلوية).
+    // أنظر git log لمحاولات سابقة عكسية على نفس المشكلة.
 
     const parsedUrl = parse(req.url, true);
 
@@ -75,18 +79,22 @@ app.prepare().then(() => {
   });
 
   httpServer.on('connection', (socket) => {
-    socket.setTimeout(120000);
+    // مهلة 4 دقائق (240 ثانية) بدل 2 — شبكات الجوّال الخلوية البطيئة قد
+    // تستغرق وقتًا لإرسال مستند /cars/[id] وحزم JS. تدمير socket مبكّر
+    // أثناء نقل المستند يجعل المتصفّح يعرض صفحة "لا يوجد اتصال" الأصلية.
+    socket.setTimeout(240000);
     socket.setKeepAlive(true, 30000);
-    // Don't hard-destroy sockets that still have an in-flight response — the
-    // previous timeout handler killed slow mobile connections before their
-    // response could ship, which made browsers show the native offline page.
+    // لا تُدمّر socket نشطًا — الحارس below يحمي الاستجابة الجارية.
     socket.on('timeout', () => {
       if (!socket.writableEnded) socket.destroy();
     });
   });
 
-  httpServer.keepAliveTimeout = 65000;
-  httpServer.headersTimeout = 70000;
+  // keepAlive/headers فوق 75/85 ثانية ليصفح Connection: keep-alive يبقى
+  // حيًّا على الشبكة الخلوية، فلا يضطر المتصفّح لإعادة المصافحة TLS
+  // لكل طلب (إعادة المصافحة مكلفة جدًّا على 3G/4G ضعيف).
+  httpServer.keepAliveTimeout = 75000;
+  httpServer.headersTimeout = 85000;
 
   const io = new Server(httpServer, {
     cors: { 

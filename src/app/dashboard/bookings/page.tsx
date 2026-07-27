@@ -105,8 +105,11 @@ export default function TraderBookingsDashboard() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) { router.push('/auth/login'); return; }
-    if (user.role !== 'TRADER') { router.push('/'); return; }
-    if (!user.dealerVerified) { return; } // show not-approved state below
+    // المدير = تاجر + مدير: يدخل اللوحة ويرى حجوزاته الواردة كتاجر
+    // (لا يُطرد منها). التاجر العادي `dealerVerified=false` يرى رسالة
+    // "بانتظار الاعتماد"؛ المدير يتجاوزها (لأنه يملك صلاحية الإدارة).
+    if (user.role !== 'TRADER' && user.role !== 'ADMIN') { router.push('/'); return; }
+    if (user.role === 'TRADER' && !user.dealerVerified) { return; } // show not-approved state below
     load();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user, filter]);
@@ -181,7 +184,7 @@ export default function TraderBookingsDashboard() {
     );
   }
 
-  if (user.role !== 'TRADER' && user.role !== 'DEALER') {
+  if (user.role !== 'TRADER' && user.role !== 'DEALER' && user.role !== 'ADMIN') {
     return (
       <CenterMessage
         icon={<ShieldAlert className="w-12 h-12 text-red-400" />}

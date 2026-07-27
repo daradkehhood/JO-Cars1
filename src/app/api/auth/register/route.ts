@@ -46,21 +46,22 @@ export async function POST(request: NextRequest) {
     if (existing) return errorResponse('البريد الإلكتروني مستخدم بالفعل');
 
     const isTrader = role === 'TRADER';
-    // TRADER accounts start unverified — admin must approve the linked
-    // TraderVerification row before the dealer can act as a trader.
+    // حساب التاجر يُسجّل دخوله مباشرةً مع role='TRADER' و dealerVerified=false
+    // (الافتراضي). لم نعد نضع طلب اعتماد معلّق (TraderVerification PENDING):
+    // المستخدم طلب صراحةً أن يتم التسجيل "بشكل طبيعي عادي بدون موافقه".
+    // إن أرادت الإدارة تفعيل dealerVerified لاحقًا تتم عبر صفحة /admin/users
+    // (تُرقّي المستخدم وتضبط dealerVerified=true) أو تبقى تجارة معلّقة.
     const finalRole = isTrader ? 'TRADER' : (role || 'USER');
 
     const hashedPassword = await hashPassword(password);
 
-    // Use a transaction so a TRADER registration either creates BOTH the
-    // User and the verification request, or neither (no orphan accounts).
     const result = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
           name, email, password: hashedPassword, phone,
           role: finalRole, dealerName, lastLoginAt: new Date(), lastLoginIp: ip,
-          // Persist dealer profile fields up-front so the admin approval
-          // queue can preview them immediately.
+          // حفظ حقول ملف التاجر فورًا كي يُعرَض الاسم في صفحة الإدارة
+          // (dealerVerified يبقى false — يحتاج اعتمادًا اختياريًا).
           ...(isTrader ? {
             dealerDescription, dealerAddress, dealerLogo,
             dealerCommercialReg: commercialReg,
@@ -73,28 +74,16 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      if (isTrader) {
-        await tx.traderVerification.create({
-          data: {
-            userId: user.id,
-            status: 'PENDING',
-            dealerName: dealerName || name,
-            dealerDescription: dealerDescription || null,
-            dealerAddress: dealerAddress || null,
-            dealerLogo: dealerLogo || null,
-            commercialReg: commercialReg || null,
-          },
-        });
-      }
+      // لم نعد ننشئ صف TraderVerification PENDING هنا — راجع التعليق أعلاه.
 
       return user;
     });
 
     notifyAdmins(
       isTrader ? 'NEW_TRADER' : 'NEW_USER',
-      isTrader ? 'طلب اعتماد تاجر جديد' : 'مستخدم جديد',
+      isTrader ? 'تاجر جديد سجّل' : 'مستخدم جديد',
       isTrader
-        ? `تاجر جديد سجل وينتظر الاعتماد: ${result.name} (${result.email})`
+        ? `تاجر جديد سجّل بنفسه: ${result.name} (${result.email}) — يحتاج اعتماد الإدارة لتفعيل استقبال الحجوزات`
         : `مستخدم جديد سجل: ${result.name} (${result.email})`,
       getAdminNotifyLink(isTrader ? 'NEW_TRADER' : 'NEW_USER'),
     );

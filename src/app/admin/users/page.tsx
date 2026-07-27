@@ -114,6 +114,12 @@ export default function AdminUsersPage() {
     const data: Record<string, unknown> = { name: editName, email: editEmail, role: editRole };
     if (editPhone) data.phone = editPhone;
     data.dealerName = editDealerName || null;
+    // عند ترقية مستخدم إلى TRADER، يُفعّل dealerVerified=true فورًا
+    // ليحصل المستخدم على كل ميزات التاجر تلقائيًا (المستخدم يطلب:
+    // "ينعطى جميع ميزات تاجر للمستخدم بشكل طبيعي").
+    // وعند إرجاعه إلى USER، نُسحب التحقّق فلا يستقبل حجوزات على إعلاناته.
+    if (editRole === 'TRADER') data.dealerVerified = true;
+    else if (editRole === 'USER') data.dealerVerified = false;
     if (await updateUser(editModal.user.id, data)) {
       toast.success('تم تحديث البيانات');
       setEditModal({ ...editModal, open: false });
@@ -223,9 +229,10 @@ export default function AdminUsersPage() {
                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                           u.role === 'ADMIN' ? 'bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400' :
                           u.role === 'DEALER' ? 'bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400' :
+                          u.role === 'TRADER' ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
                           'bg-green-100 dark:bg-green-500/10 text-green-600 dark:text-green-400'
                         }`}>
-                          {u.role === 'ADMIN' ? 'مدير' : u.role === 'DEALER' ? 'تاجر' : 'مستخدم'}
+                          {u.role === 'ADMIN' ? 'مدير' : u.role === 'DEALER' ? 'تاجر مميّز' : u.role === 'TRADER' ? 'تاجر' : 'مستخدم'}
                         </span>
                         {u.dealerName && <p className="text-xs text-gray-400 mt-0.5">{u.dealerName}</p>}
                       </td>
@@ -379,19 +386,28 @@ export default function AdminUsersPage() {
                 <div><p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">اسم التاجر (اختياري)</p>
                   <input value={editDealerName} onChange={e => setEditDealerName(e.target.value)}
                     className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-3 py-2 text-sm outline-none focus:border-blue-500" /></div>
-                <div><p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">نوع الحساب</p>
-                  <div className="flex gap-2">
-                    {['USER', 'DEALER', 'ADMIN'].map(r => (
+                <div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">نوع الحساب</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {['USER', 'DEALER', 'TRADER', 'ADMIN'].map(r => (
                       <button key={r} onClick={() => setEditRole(r)}
-                        className={`flex-1 px-3 py-2 rounded-xl text-sm font-medium border transition-all ${editRole === r
+                        className={`flex-1 min-w-[5.5rem] px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
+                          editRole === r
                           ? r === 'ADMIN' ? 'border-red-500 bg-red-50 dark:bg-red-500/10 text-red-600'
+                          : r === 'TRADER' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                           : r === 'DEALER' ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10 text-blue-600'
                           : 'border-green-500 bg-green-50 dark:bg-green-500/10 text-green-600'
-                          : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'}`}>
-                        {r === 'ADMIN' ? 'مدير' : r === 'DEALER' ? 'تاجر' : 'مستخدم'}
+                          : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'
+                        }`}>
+                        {r === 'ADMIN' ? 'مدير' : r === 'TRADER' ? 'تاجر' : r === 'DEALER' ? 'تاجر مميّز' : 'مستخدم'}
                       </button>
                     ))}
                   </div>
+                  {editRole === 'TRADER' && (
+                    <p className="text-xs text-emerald-500 mt-2">
+                      عند الترقية إلى تاجر يُفعّل dealerVerified=true تلقائيًا — يحصل المستخدم على ميزات التاجر الكاملة فورًا.
+                    </p>
+                  )}
                 </div>
                 <button onClick={handleEdit} disabled={submitting}
                   className="w-full py-2.5 rounded-xl bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 disabled:opacity-50 transition-all flex items-center justify-center gap-2">
