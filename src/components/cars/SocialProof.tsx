@@ -15,22 +15,25 @@ export function SocialProof({ carId, totalViews, totalSaves }: SocialProofProps)
   const [total, setTotal] = useState({ views: totalViews, saves: totalSaves });
 
   useEffect(() => {
-    const sessionId = localStorage.getItem('sessionId') || crypto.randomUUID();
-    localStorage.setItem('sessionId', sessionId);
+    const t = setTimeout(() => {
+      const sessionId = localStorage.getItem('sessionId') || crypto.randomUUID();
+      localStorage.setItem('sessionId', sessionId);
 
-    fetch(`/api/cars/${carId}/viewers`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId }),
-    })
-      .then(r => r.json())
-      .then(d => {
-        if (d.success) {
-          setViewerCount(d.activeViewers);
-          setTotal({ views: d.totalViews, saves: d.totalSaves });
-        }
+      fetch(`/api/cars/${carId}/viewers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
       })
-      .catch(() => {});
+        .then(r => r.json())
+        .then(d => {
+          if (d.success) {
+            setViewerCount(d.activeViewers);
+            setTotal({ views: d.totalViews, saves: d.totalSaves });
+          }
+        })
+        .catch(() => {});
+    }, 3000);
+    return () => clearTimeout(t);
   }, [carId]);
 
   const items = [

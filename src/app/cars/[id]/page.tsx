@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -15,12 +15,9 @@ import {
   RotateCcw, Trash2, Crown, Send, Car as CarIcon, X, RefreshCw, CalendarCheck
 } from 'lucide-react';
 import { formatPrice, formatDistance, getFuelTypeLabel, getTransmissionLabel, getDrivetrainLabel, getConditionLabel, formatDate } from '@/lib/utils';
-import { AuctionSection } from '@/components/auctions/AuctionSection';
-import { CarHistorySection } from '@/components/cars/CarHistorySection';
 import { AiAnalysisContent } from '@/components/cars/AiAnalysisContent';
 import { CustomsCalculator } from '@/components/cars/CustomsCalculator';
 import { ConditionDetails } from '@/components/cars/ConditionDetails';
-import { EngineSoundSection } from '@/components/cars/EngineSoundSection';
 import { useAuth } from '@/hooks/useAuth';
 import { useCompareStore } from '@/store';
 import { ReportModal } from '@/components/cars/ReportModal';
@@ -31,11 +28,23 @@ import { SocialProof } from '@/components/cars/SocialProof';
 import { StarRating } from '@/components/ratings/StarRating';
 import { RatingModal } from '@/components/ratings/RatingModal';
 import type { Car } from '@/types';
-import { CarComments } from '@/components/cars/CarComments';
-import { CarReviews } from '@/components/cars/CarReviews';
 import { CarPriceAnalysis } from '@/components/cars/CarPriceAnalysis';
 import { fetchWithRetry } from '@/lib/fetch-retry';
 import toast from 'react-hot-toast';
+
+const AuctionSection = lazy(() => import('@/components/auctions/AuctionSection').then(m => ({ default: m.AuctionSection })));
+const CarHistorySection = lazy(() => import('@/components/cars/CarHistorySection').then(m => ({ default: m.CarHistorySection })));
+const EngineSoundSection = lazy(() => import('@/components/cars/EngineSoundSection').then(m => ({ default: m.EngineSoundSection })));
+const CarComments = lazy(() => import('@/components/cars/CarComments').then(m => ({ default: m.CarComments })));
+const CarReviews = lazy(() => import('@/components/cars/CarReviews').then(m => ({ default: m.CarReviews })));
+
+function SectionSpinner() {
+  return (
+    <div className="flex items-center justify-center py-8">
+      <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+    </div>
+  );
+}
 
 export default function CarDetailPage() {
   const params = useParams();
@@ -116,14 +125,18 @@ export default function CarDetailPage() {
 
   useEffect(() => {
     if (car) {
-      fetch(`/api/cars?brandId=${car.brandId}&limit=4&exclude=${car.id}`)
-        .then(r => r.json())
-        .then(data => setSimilarCars(data.data || []))
-        .catch(() => {});
-      fetch(`/api/car-tags?carId=${car.id}`)
-        .then(r => r.json())
-        .then(data => { if (data.success) setCarTags(data.data || []); })
-        .catch(() => {});
+      // Defer secondary fetches to avoid overwhelming slow mobile networks
+      const t = setTimeout(() => {
+        fetch(`/api/cars?brandId=${car.brandId}&limit=4&exclude=${car.id}`)
+          .then(r => r.json())
+          .then(data => setSimilarCars(data.data || []))
+          .catch(() => {});
+        fetch(`/api/car-tags?carId=${car.id}`)
+          .then(r => r.json())
+          .then(data => { if (data.success) setCarTags(data.data || []); })
+          .catch(() => {});
+      }, 2000);
+      return () => clearTimeout(t);
     }
   }, [car]);
 
@@ -534,12 +547,16 @@ export default function CarDetailPage() {
 
             {/* Car History (Carfax) */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <CarHistorySection vin={car.vin} carId={car.id} />
+              <Suspense fallback={<SectionSpinner />}>
+                <CarHistorySection vin={car.vin} carId={car.id} />
+              </Suspense>
             </motion.div>
 
             {/* Engine Sound Analysis */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <EngineSoundSection carId={car.id} carOwnerId={car.user.id} currentUserId={currentUser?.id} currentUserRole={currentUser?.role} />
+              <Suspense fallback={<SectionSpinner />}>
+                <EngineSoundSection carId={car.id} carOwnerId={car.user.id} currentUserId={currentUser?.id} currentUserRole={currentUser?.role} />
+              </Suspense>
             </motion.div>
 
             {/* Specs */}
@@ -743,7 +760,9 @@ export default function CarDetailPage() {
 
             {/* Auction for non-owner */}
             {car.status === 'ACTIVE' && (!currentUser || currentUser.id !== car.user.id) && (
-              <AuctionSection carId={car.id} carUserId={car.user.id} />
+              <Suspense fallback={<SectionSpinner />}>
+                <AuctionSection carId={car.id} carUserId={car.user.id} />
+              </Suspense>
             )}
 
             {/* Owner Controls */}
@@ -751,7 +770,9 @@ export default function CarDetailPage() {
               <div className="card p-6 space-y-3">
                 <h3 className="font-semibold text-gray-900 dark:text-white">التحكم بالإعلان</h3>
                 {/* Auction management */}
-                <AuctionSection carId={car.id} carUserId={car.user.id} isOwner />
+                <Suspense fallback={<SectionSpinner />}>
+                  <AuctionSection carId={car.id} carUserId={car.user.id} isOwner />
+                </Suspense>
                 <button onClick={async () => {
                   try {
                     const res = await fetch('/api/premium-requests', {
@@ -850,14 +871,18 @@ export default function CarDetailPage() {
         </div>
 
         {/* Reviews */}
-        <CarReviews carId={car.id}
-          carName={`${car.brand?.nameAr || ''} ${car.model?.nameAr || ''} ${car.year}`}
-          aggregate={car.rating ? { rating: car.rating, reviewCount: car.reviewCount || 0 } : undefined} />
+        <Suspense fallback={<SectionSpinner />}>
+          <CarReviews carId={car.id}
+            carName={`${car.brand?.nameAr || ''} ${car.model?.nameAr || ''} ${car.year}`}
+            aggregate={car.rating ? { rating: car.rating, reviewCount: car.reviewCount || 0 } : undefined} />
+        </Suspense>
 
         {/* Comments */}
         <section className="mt-12">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">التعليقات</h2>
-          <CarComments carId={car.id} currentUser={currentUser} />
+          <Suspense fallback={<SectionSpinner />}>
+            <CarComments carId={car.id} currentUser={currentUser} />
+          </Suspense>
         </section>
 
         {/* Similar Cars */}
