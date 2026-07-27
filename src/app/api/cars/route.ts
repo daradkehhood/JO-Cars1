@@ -278,28 +278,27 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Calculate and store fair price estimate
-    try {
-      const analysis = await analyzeCarPrice({
-        brand: car.brand?.nameAr || car.brand?.nameEn || '',
-        model: car.model?.nameAr || car.model?.nameEn || '',
-        year: car.year,
-        trim: car.trim || undefined,
-        kilometers: car.kilometers,
-        condition: car.condition,
-        fuelType: car.fuelType,
-        transmission: car.transmission,
-        bodyType: car.bodyType || undefined,
-        engineCapacity: car.engineCapacity?.toString() || undefined,
-        cylinders: car.cylinders?.toString() || undefined,
-        drivetrain: car.drivetrain,
-        color: car.color || undefined,
-        ownerCount: car.ownerCount || undefined,
-        isDamaged: car.isDamaged,
-        isPaintOriginal: car.isPaintOriginal,
-        hasWarranty: car.hasWarranty,
-        hasServiceHistory: car.hasServiceHistory,
-      });
+    // Calculate fair price estimate (non-blocking)
+    analyzeCarPrice({
+      brand: car.brand?.nameAr || car.brand?.nameEn || '',
+      model: car.model?.nameAr || car.model?.nameEn || '',
+      year: car.year,
+      trim: car.trim || undefined,
+      kilometers: car.kilometers,
+      condition: car.condition,
+      fuelType: car.fuelType,
+      transmission: car.transmission,
+      bodyType: car.bodyType || undefined,
+      engineCapacity: car.engineCapacity?.toString() || undefined,
+      cylinders: car.cylinders?.toString() || undefined,
+      drivetrain: car.drivetrain,
+      color: car.color || undefined,
+      ownerCount: car.ownerCount || undefined,
+      isDamaged: car.isDamaged,
+      isPaintOriginal: car.isPaintOriginal,
+      hasWarranty: car.hasWarranty,
+      hasServiceHistory: car.hasServiceHistory,
+    }).then(async analysis => {
       await prisma.car.update({
         where: { id: car.id },
         data: {
@@ -307,9 +306,7 @@ export async function POST(request: NextRequest) {
           aiScore: analysis.valuation.confidence,
         },
       });
-    } catch {
-      // Fair price calculation failed silently — non-critical
-    }
+    }).catch(() => {});
 
     invalidateCache('cars');
 

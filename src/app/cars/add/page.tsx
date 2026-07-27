@@ -510,10 +510,16 @@ export default function AddCarPage() {
                         <div className="text-center">
                           <Camera className="w-10 h-10 text-gray-400 mx-auto mb-2" />
                           <p className="text-sm text-gray-500">اضغط لاختيار صورة الغلاف</p>
+                          <p className="text-xs text-gray-400 mt-1">أو التقط صورة بالكاميرا</p>
                         </div>
                       )}
-                      <input id="coverInput" type="file" accept="image/*" className="absolute w-0 h-0 opacity-0 overflow-hidden"
-                        onChange={e => setCoverImage(e.target.files?.[0] || null)} />
+                      <input
+                        id="coverInput"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={e => setCoverImage(e.target.files?.[0] || null)}
+                        style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+                      />
                     </div>
                   </div>
 
@@ -521,11 +527,15 @@ export default function AddCarPage() {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       صور السيارة ({images.length}/20)
                     </label>
-                    <div {...getRootProps()} className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-8 text-center hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer">
+                    <div {...getRootProps()} className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-8 text-center hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer active:bg-gray-50 dark:active:bg-gray-800/50">
                       <input {...getInputProps()} />
                       <Upload className="w-10 h-10 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-500">اسحب وأفلت الصور هنا أو اضغط للاختيار</p>
+                      <p className="text-sm text-gray-500">اضغط هنا لاختيار الصور</p>
                       <p className="text-xs text-gray-400 mt-1">PNG, JPG, WEBP - حد أقصى 10MB لكل صورة</p>
+                      <p className="text-xs text-blue-500 mt-2 md:hidden">
+                        <Camera className="w-3 h-3 inline mr-1" />
+                        يمكنك التقط صور بالكاميرا مباشرة
+                      </p>
                     </div>
                     {imagePreviews.length > 0 && (
                       <div className="grid grid-cols-4 md:grid-cols-6 gap-3 mt-4">

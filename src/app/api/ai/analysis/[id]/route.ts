@@ -4,10 +4,29 @@ import { successResponse, errorResponse } from '@/lib/api';
 import { priceEstimator } from '@/ai/price-estimator';
 import { conditionScorer } from '@/ai/condition-scorer';
 
+/**
+ * AI Analysis API endpoint.
+ *
+ * CRITICAL: This endpoint must respond within 10 seconds or Chrome will show
+ * the "no internet" dinosaur page on mobile. The OpenSooq HTTP fetch can hang
+ * for 8+ seconds if the site blocks the server IP, so we wrap the entire
+ * analysis in a hard timeout and fall back to local-only estimation.
+ */
+
+const ENDPOINT_TIMEOUT_MS = 10000; // 10 seconds hard limit
+
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
+  ]);
+}
+
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
 
+    // ── 1) Fetch car (fast DB query, no external HTTP) ──
     const car = await prisma.car.findFirst({
       where: { OR: [{ id }, { slug: id }], deletedAt: null },
       include: {
@@ -15,18 +34,39 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         model: { select: { id: true, nameAr: true, nameEn: true } },
         city: { select: { id: true, nameAr: true, nameEn: true } },
         user: { select: { id: true, name: true, dealerName: true, rating: true, ratingCount: true, createdAt: true } },
-        images: { select: { id: true, url: true, isCover: true }, orderBy: { order: 'asc' } },
-        _count: { select: { carViews: true } },
+        images: { select: { id: true, url: true, isCover: true }, orderBy: { order: 'asc' }, take: 6 },
+        _count: { select: { carViews: true, images: true } },
       },
     });
 
     if (!car) return errorResponse('السيارة غير موجودة', 404);
 
-    const imageCount = car.images.length;
+    const imageCount = car._count.images;
     const totalViews = car.views + car._count.carViews;
     const imageUrls = car.images.map((img) => img.url).filter((u) => !!u);
 
-    // ── 1) PRICE ANALYSIS ── real AI web search
+    // ── 2) DB similar listings (fast, no external HTTP) ──
+    let similarCarsDb: any[] = [];
+    let dbPrices: number[] = [];
+    try {
+      similarCarsDb = await prisma.car.findMany({
+        where: {
+          brandId: car.brandId,
+          modelId: car.modelId,
+          year: { gte: car.year - 3, lte: car.year + 3 },
+          status: 'APPROVED',
+          deletedAt: null,
+          id: { not: car.id },
+        },
+        select: { id: true, slug: true, price: true, year: true, kilometers: true, condition: true, fuelType: true, transmission: true, engineCapacity: true, drivetrain: true, createdAt: true },
+        take: 20,
+      });
+      dbPrices = similarCarsDb.map((c) => c.price).filter((p) => p > 0);
+    } catch { /* ignore */ }
+
+    // ── 3) Price analysis with HARD TIMEOUT ──
+    // The price estimator calls OpenSooq (external HTTP). If it hangs,
+    // we must not block the entire response. Wrap in 6-second timeout.
     let fairPrice = car.fairPriceEstimate || 0;
     let minPrice = 0;
     let maxPrice = 0;
@@ -38,58 +78,33 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     let aiSources: string[] = [];
     let isRealWebSearch = false;
 
-    // DB similar listings (always computed as a fallback signal)
-    const similarCarsDb = await prisma.car.findMany({
-      where: {
-        brandId: car.brandId,
-        modelId: car.modelId,
-        year: { gte: car.year - 3, lte: car.year + 3 },
-        kilometers: { gte: Math.round(car.kilometers * 0.6), lte: Math.round(car.kilometers * 1.4) },
-        status: 'APPROVED',
-        deletedAt: null,
-        id: { not: car.id },
-      },
-      select: { id: true, slug: true, price: true, year: true, kilometers: true, condition: true, fuelType: true, transmission: true, engineCapacity: true, drivetrain: true, createdAt: true },
-    });
-    let dbPrices = similarCarsDb.map((c) => c.price);
+    const priceInput = {
+      brand: car.brand?.nameAr || '',
+      model: car.model?.nameAr || '',
+      year: car.year,
+      kilometers: car.kilometers,
+      condition: car.condition,
+      city: car.city?.nameAr || '',
+      fuelType: car.fuelType,
+      transmission: car.transmission,
+      engineCapacity: car.engineCapacity || undefined,
+      bodyType: car.bodyType || undefined,
+      color: car.color || undefined,
+      ownerCount: car.ownerCount || undefined,
+      isDamaged: car.isDamaged,
+      hasWarranty: car.hasWarranty,
+      hasServiceHistory: car.hasServiceHistory,
+      isPaintOriginal: car.isPaintOriginal,
+      trim: car.trim || undefined,
+      listingPrice: car.price,
+    };
 
-    if (dbPrices.length < 2) {
-      // Broaden search to brand only when too few same-model matches
-      const brandCars = await prisma.car.findMany({
-        where: {
-          brandId: car.brandId,
-          year: { gte: car.year - 5, lte: car.year + 5 },
-          status: 'APPROVED',
-          deletedAt: null,
-          id: { not: car.id },
-        },
-        select: { price: true, year: true, kilometers: true },
-      });
-      if (brandCars.length >= 2) dbPrices = brandCars.map((c) => c.price);
-    }
-
-    // Local AI engine — always available
     try {
-      const priceResult = await priceEstimator.process({
-        brand: car.brand?.nameAr || '',
-        model: car.model?.nameAr || '',
-        year: car.year,
-        kilometers: car.kilometers,
-        condition: car.condition,
-        city: car.city?.nameAr || '',
-        fuelType: car.fuelType,
-        transmission: car.transmission,
-        engineCapacity: car.engineCapacity || undefined,
-        bodyType: car.bodyType || undefined,
-        color: car.color || undefined,
-        ownerCount: car.ownerCount || undefined,
-        isDamaged: car.isDamaged,
-        hasWarranty: car.hasWarranty,
-        hasServiceHistory: car.hasServiceHistory,
-        isPaintOriginal: car.isPaintOriginal,
-        trim: car.trim || undefined,
-        listingPrice: car.price,
-      });
+      const priceResult = await withTimeout(
+        priceEstimator.process(priceInput),
+        6000, // 6-second hard timeout for price (including OpenSooq HTTP)
+        { success: false, error: 'timeout' }
+      );
       if (priceResult.success && priceResult.data) {
         fairPrice = priceResult.data.fairPrice;
         minPrice = priceResult.data.minPrice;
@@ -102,41 +117,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         isRealWebSearch = priceResult.data.isRealWebSearch;
       }
     } catch (e) {
-      console.error('[local price estimate]', e);
+      console.error('[price estimate timeout/error]', e);
     }
 
-    // Bound price by database if AI didn't produce sane numbers
-    if (fairPrice <= 0) {
-      if (dbPrices.length >= 2) {
-        avgPrice = Math.round(dbPrices.reduce((s, p) => s + p, 0) / dbPrices.length);
-        const sorted = [...dbPrices].sort((a, b) => a - b);
-        minPrice = sorted[0];
-        maxPrice = sorted[sorted.length - 1];
-        fairPrice = avgPrice;
-        priceConfidence = 70;
-      } else {
-        fairPrice = car.price;
-        minPrice = Math.round(car.price * 0.88);
-        maxPrice = Math.round(car.price * 1.12);
-        avgPrice = car.price;
-        priceConfidence = 40;
-      }
-    } else {
-      avgPrice = fairPrice;
-      if (dbPrices.length >= 2) {
-        const dbAvg = Math.round(dbPrices.reduce((s, p) => s + p, 0) / dbPrices.length);
-        // small DB sanity guard — if AI price is wildly off, blend with DB
-        if (dbAvg > 0 && Math.abs(fairPrice - dbAvg) / dbAvg > 0.6) {
-          fairPrice = Math.round(fairPrice * 0.7 + dbAvg * 0.3);
-        }
-      }
-    }
-
-    // Price position vs user price
-    const pricePosition = car.price > avgPrice ? 'above' : car.price < avgPrice ? 'below' : 'match';
-    const priceDiffPercent = avgPrice > 0 ? Math.round(Math.abs(car.price - avgPrice) / avgPrice * 100) : 0;
-
-    // ── 2) CONDITION + DAMAGE ANALYSIS ── local spec-based engine
+    // ── 4) Condition analysis (local only, no external HTTP, very fast) ──
     let conditionScore = 50;
     let conditionLabel = 'جيدة';
     let conditionFactors: any[] = [];
@@ -177,38 +161,52 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         visionConfidence = condResult.confidence || 0;
       }
     } catch (e) {
-      console.error('[local condition scoring]', e);
+      console.error('[condition scoring]', e);
     }
 
-    // Fall back to seller-stated condition + heuristic
-    if (!isRealVision) {
+    // Fall back to seller-stated condition
+    if (conditionScore === 50 && !isRealVision) {
       const condWeights: Record<string, number> = {
         EXCELLENT: 95, VERY_GOOD: 80, GOOD: 65, FAIR: 45, NEEDS_MAINTENANCE: 25, NEEDS_INSPECTION: 15,
       };
       conditionScore = condWeights[car.condition] || 50;
-      if (car.isNegotiable) conditionScore += 2;
       if (car.hasWarranty) conditionScore += 5;
       if (car.hasServiceHistory) conditionScore += 8;
       if (car.isDamaged) conditionScore -= 20;
       if (car.isPaintOriginal) conditionScore += 5;
-      if (car.ownerCount === 1) conditionScore += 5;
-      else if (car.ownerCount > 3) conditionScore -= 5;
       conditionScore = Math.max(0, Math.min(100, conditionScore));
-      conditionLabel = conditionScore >= 80 ? 'جيدة جداً' : conditionScore >= 60 ? 'جيدة' : conditionScore >= 40 ? 'مقبولة' : conditionScore >= 20 ? 'تحتاج صيانة' : 'سيئة';
-
-      if (car.isDamaged) damages.push({ part: 'عام', severity: 'moderate', description: 'مصدومة سابقاً (وفق تصريح البائع)' });
-      if (!car.isPaintOriginal) damages.push({ part: 'الطلاء', severity: 'minor', description: 'الدهان غير أصلي' });
-      conditionSummary = `${conditionLabel} (${conditionScore}/100) — تقييم تقديري بدون تحليل صور`;
+      conditionLabel = conditionScore >= 80 ? 'جيدة جداً' : conditionScore >= 60 ? 'جيدة' : conditionScore >= 40 ? 'مقبولة' : 'تحتاج صيانة';
     }
 
-    // Confidence: combine data completeness + AI confidence
+    // Fallback price from DB
+    if (fairPrice <= 0) {
+      if (dbPrices.length >= 2) {
+        avgPrice = Math.round(dbPrices.reduce((s, p) => s + p, 0) / dbPrices.length);
+        const sorted = [...dbPrices].sort((a, b) => a - b);
+        minPrice = sorted[0];
+        maxPrice = sorted[sorted.length - 1];
+        fairPrice = avgPrice;
+        priceConfidence = 70;
+      } else {
+        fairPrice = car.price;
+        minPrice = Math.round(car.price * 0.88);
+        maxPrice = Math.round(car.price * 1.12);
+        avgPrice = car.price;
+        priceConfidence = 40;
+      }
+    } else {
+      avgPrice = fairPrice;
+    }
+
+    const pricePosition = car.price > avgPrice ? 'above' : car.price < avgPrice ? 'below' : 'match';
+    const priceDiffPercent = avgPrice > 0 ? Math.round(Math.abs(car.price - avgPrice) / avgPrice * 100) : 0;
+
     const dataFields = [car.trim, car.engineCapacity, car.cylinders, car.drivetrain, car.bodyType, car.color, car.vin];
     const filledFields = dataFields.filter(Boolean).length;
     let confidence = Math.min(95, 40 + filledFields * 5 + (imageCount >= 5 ? 8 : 0) + (similarCarsDb.length >= 3 ? 8 : 0));
     if (isRealWebSearch) confidence = Math.min(95, Math.max(confidence, priceConfidence));
     if (isRealVision) confidence = Math.min(95, Math.max(confidence, visionConfidence));
 
-    // Overview stats
     const overview = {
       views: totalViews,
       saves: car.saves,
@@ -224,68 +222,33 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const analysis = {
       car: {
-        id: car.id,
-        slug: car.slug,
-        brand: car.brand?.nameAr,
-        model: car.model?.nameAr,
-        year: car.year,
-        price: car.price,
-        kilometers: car.kilometers,
-        condition: car.condition,
-        city: car.city?.nameAr,
-        fuelType: car.fuelType,
-        transmission: car.transmission,
-        engineCapacity: car.engineCapacity,
-        drivetrain: car.drivetrain,
-        color: car.color,
-        trim: car.trim,
-        ownerCount: car.ownerCount || 1,
-        isDamaged: car.isDamaged,
-        isPaintOriginal: car.isPaintOriginal,
-        hasServiceHistory: car.hasServiceHistory,
-        hasWarranty: car.hasWarranty,
-        isNegotiable: car.isNegotiable,
-        fairPriceEstimate: car.fairPriceEstimate,
-        description: car.description,
-        aiDescription: car.aiDescription,
+        id: car.id, slug: car.slug, brand: car.brand?.nameAr, model: car.model?.nameAr,
+        year: car.year, price: car.price, kilometers: car.kilometers, condition: car.condition,
+        city: car.city?.nameAr, fuelType: car.fuelType, transmission: car.transmission,
+        engineCapacity: car.engineCapacity, drivetrain: car.drivetrain, color: car.color,
+        trim: car.trim, ownerCount: car.ownerCount || 1, isDamaged: car.isDamaged,
+        isPaintOriginal: car.isPaintOriginal, hasServiceHistory: car.hasServiceHistory,
+        hasWarranty: car.hasWarranty, isNegotiable: car.isNegotiable,
+        fairPriceEstimate: car.fairPriceEstimate, description: car.description, aiDescription: car.aiDescription,
       },
       price: {
         estimate: fairPrice,
         range: { min: minPrice || Math.round(fairPrice * 0.88), max: maxPrice || Math.round(fairPrice * 1.12) },
-        avgPrice,
-        position: pricePosition,
-        diffPercent: priceDiffPercent,
+        avgPrice, position: pricePosition, diffPercent: priceDiffPercent,
         similarCount: similarCarsDb.length + (similarListings.length || 0),
-        similarCars: similarCarsDb.slice(0, 10),
-        confidence: priceConfidence,
-        reasoning: priceReasoning,
-        marketFactors,
-        sources: aiSources,
-        similarListings,
-        isRealWebSearch,
+        similarCars: similarCarsDb.slice(0, 10), confidence: priceConfidence,
+        reasoning: priceReasoning, marketFactors, sources: aiSources,
+        similarListings, isRealWebSearch,
       },
       condition: {
-        score: conditionScore,
-        label: conditionLabel,
-        confidence,
-        factors: conditionFactors,
-        exteriorScore,
-        interiorScore,
-        engineBayScore,
-        damages,
-        summary: conditionSummary,
-        isRealVision,
-        ownerCount: car.ownerCount || 1,
-        hasServiceHistory: car.hasServiceHistory,
-        hasWarranty: car.hasWarranty,
-        isOriginalPaint: car.isPaintOriginal,
-        isDamaged: car.isDamaged,
+        score: conditionScore, label: conditionLabel, confidence,
+        factors: conditionFactors, exteriorScore, interiorScore, engineBayScore,
+        damages, summary: conditionSummary, isRealVision,
+        ownerCount: car.ownerCount || 1, hasServiceHistory: car.hasServiceHistory,
+        hasWarranty: car.hasWarranty, isOriginalPaint: car.isPaintOriginal, isDamaged: car.isDamaged,
       },
-      images: {
-        count: imageCount,
-        analyzed: imageUrls.length,
-      },
-      damages: damages.length > 0 ? damages : [{ part: 'لا يوجد', severity: 'minor', description: 'لا توجد عيوب ظاهرة من تحليل الصور' }],
+      images: { count: imageCount, analyzed: imageUrls.length },
+      damages: damages.length > 0 ? damages : [{ part: 'لا يوجد', severity: 'minor', description: 'لا توجد عيوب ظاهرة' }],
       overview,
     };
 

@@ -190,7 +190,7 @@ async function fetchSerpHtml(brand: string, model: string, year?: number): Promi
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9',
         'Accept-Language': 'en-US,en;q=0.9,ar;q=0.8',
       },
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(5000),
       redirect: 'follow',
     });
     if (!res.ok) return null; // 410 anti-bot / 404 / anything → silent fallback
