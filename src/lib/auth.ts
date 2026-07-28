@@ -3,19 +3,23 @@ import bcrypt from 'bcryptjs';
 import { NextRequest } from 'next/server';
 import prisma from './prisma';
 
-const JWT_SECRET = process.env.JWT_SECRET as string;
 const TOKEN_EXPIRY = '30d';
 const ROTATION_THRESHOLD = 6 * 60 * 60 * 1000; // 6 hours
 
-if (!JWT_SECRET) {
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('CRITICAL: JWT_SECRET environment variable is required in production');
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('CRITICAL: JWT_SECRET environment variable is required in production');
+    }
+    console.warn(JSON.stringify({
+      level: 'SECURITY',
+      action: 'JWT_SECRET_MISSING',
+      message: 'JWT_SECRET env var is not set in dev — using placeholder (signing will work but tokens are insecure)',
+    }));
+    return 'dev-insecure-placeholder';
   }
-  console.warn(JSON.stringify({
-    level: 'SECURITY',
-    action: 'JWT_SECRET_MISSING',
-    message: 'JWT_SECRET env var is not set in dev — using placeholder (signing will work but tokens are insecure)',
-  }));
+  return secret;
 }
 
 export interface JWTPayload {
@@ -35,12 +39,12 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 export function signToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: TOKEN_EXPIRY });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: TOKEN_EXPIRY });
 }
 
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as JWTPayload;
+    return jwt.verify(token, getJwtSecret()) as JWTPayload;
   } catch {
     return null;
   }
