@@ -13,11 +13,11 @@ export const metadata: Metadata = {
   keywords: ['سيارات', 'بيع سيارات', 'شراء سيارات', 'الأردن', 'سوق السيارات', 'JO Cars'],
   icons: {
     icon: [
-      { url: '/logo.png', type: 'image/png' },
+      { url: '/favicon.png', type: 'image/png' },
       { url: '/favicon.svg', type: 'image/svg+xml' },
     ],
-    shortcut: '/logo.png',
-    apple: '/logo.png',
+    shortcut: '/favicon.png',
+    apple: '/favicon.png',
   },
   openGraph: {
     type: 'website',
