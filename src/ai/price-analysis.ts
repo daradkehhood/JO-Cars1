@@ -1,13 +1,15 @@
 /**
- * Price Analysis v4.0.0 — NVIDIA AI-powered price assessment for car detail pages.
+ * Price Analysis v5.0.0 — NVIDIA AI-powered price assessment for car detail pages.
  *
  * Architecture:
- *  1. PRIMARY: NVIDIA LLM analyzes price vs market value.
+ *  1. PRIMARY: NVIDIA LLM analyzes price vs market value using DB + OpenSooq data.
  *  2. FALLBACK: Local heuristic (original logic) if LLM fails.
+ *  3. External market data from OpenSooq for broader Jordanian market coverage.
  */
 
 import { chatCompletionJSON, type ChatMessage } from './nvidia-client';
 import { getSystemPrompt } from './site-knowledge';
+import { fetchOpenSooqListings, type OpenSooqListing } from '@/lib/opensooq-scrape';
 import {
   JORDAN_PRICES, MODEL_ADJUSTMENTS, CONDITION_FACTORS,
   normalizeBrand as normalizeBrandShared, calculateBasePrice as calculateBasePriceShared,
@@ -76,6 +78,7 @@ export interface PriceAnalysis {
   };
   factors: PriceFactor[];
   similarCars: SimilarCar[];
+  marketListings: SimilarCar[];
   summary: {
     headline: string;
     detail: string;
@@ -96,18 +99,24 @@ interface LLMAnalysisResult {
 async function analyzePriceWithLLM(
   car: CarData,
   similarCars: SimilarCar[],
-  dbAvg: number
+  marketListings: SimilarCar[],
+  dbAvg: number,
+  marketAvg: number
 ): Promise<LLMAnalysisResult | null> {
   try {
     const systemPrompt = getSystemPrompt('analysis');
 
     const similarData = similarCars.length > 0
       ? similarCars.slice(0, 5).map(c => `  - ${c.title}: ${c.price.toLocaleString()} د.أ (${c.year}, ${c.kilometers.toLocaleString()} كم, ${c.condition}) — ${c.source}`).join('\n')
-      : 'لا تتوفر إعلانات مشابهة.';
+      : 'لا تتوفر إعلانات مشابهة من JO Cars.';
 
-    const userMessage = `حلّل سعر هذه السيارة مقارنة بالسوق الأردني:
+    const marketData = marketListings.length > 0
+      ? marketListings.slice(0, 8).map(c => `  - ${c.title}: ${c.price.toLocaleString()} د.أ (${c.year}, ${c.kilometers.toLocaleString()} كم) — ${c.city || 'الأردن'} — ${c.source}`).join('\n')
+      : 'لا تتوفر بيانات من السوق الخارجي.';
 
-السيارة:
+    const userMessage = `حلّل سعر هذه السيارة مقارنة بالسوق الأردني الكامل (JO Cars + السوق الخارجي):
+
+السيارة المُقيّمة:
 - الماركة: ${car.brand}
 - الموديل: ${car.model}
 - السنة: ${car.year}
@@ -126,16 +135,26 @@ async function analyzePriceWithLLM(
 - السعر المعلن: ${car.price ? car.price.toLocaleString() + ' د.أ' : 'غير محدد'}
 - القابل للتفاوض: ${car.isNegotiable ? 'نعم' : 'لا'}
 
-الإعلانات المشابهة:
+إعلانات مشابهة من JO Cars (${similarCars.length} إعلان):
 ${similarData}
-${dbAvg > 0 ? `متوسط أسعار المشابه: ${dbAvg.toLocaleString()} د.أ` : ''}
+${dbAvg > 0 ? `متوسط أسعار JO Cars: ${dbAvg.toLocaleString()} د.أ` : ''}
+
+إعلانات مشابهة من السوق الخارجي - أونصوك (${marketListings.length} إعلان):
+${marketData}
+${marketAvg > 0 ? `متوسط أسعار السوق الخارجي: ${marketAvg.toLocaleString()} د.أ` : ''}
+
+المطلوب منك:
+1. قارن السعر المعلن مع متوسط الأسعار من كلاالمصدرين
+2. حدد السعر العادل بناءً على جميع البيانات
+3. أعطِ نسبة ثقة في التحليل بناءً على جودة البيانات وكميتها
+4. حدد إذا كان السعر أقل أو ضمن أو أعلى من السوق
 
 أجب بالـ JSON فقط:
 {
   "fairPrice": <رقم - السعر العادل بالدينار الأردني>,
-  "confidence": <رقم 0-100>,
+  "confidence": <رقم 0-100 - نسبة الثقة بناءً على جودة البيانات>,
   "position": "<below/within/above> - مقارنة بالسعر المعلن",
-  "explanation": "<تفسير عربي للنتيجة>",
+  "explanation": "<تفسير عربي للنتيجة مع ذكر مصادر البيانات>",
   "recommendation": "<توصية عملية>",
   "factors": [
     { "name": "<اسم العامل>", "impact": <-0.5 إلى 0.5>, "description": "<وصف>", "icon": "<calendar/gauge/shield/fuel/settings/car/alert/check/clipboard/users/palette>" }
@@ -282,15 +301,39 @@ export async function analyzeCarPrice(car: CarData): Promise<PriceAnalysis> {
   let minPrice = Math.round(fairPrice * 0.85);
   let maxPrice = Math.round(fairPrice * 1.15);
 
-  const similarCars = await getDbSimilarCars(car);
+  // Fetch DB similar cars + OpenSooq market listings in parallel
+  const [similarCars, openSooqResult] = await Promise.all([
+    getDbSimilarCars(car),
+    fetchOpenSooqListings(car.brand, car.model, car.year).catch(() => null),
+  ]);
+
   const dbPrices = similarCars.map(c => c.price).filter(p => p > 0);
   const dbAvg = dbPrices.length > 0 ? Math.round(dbPrices.reduce((a, b) => a + b, 0) / dbPrices.length) : 0;
+
+  // Convert OpenSooq listings to SimilarCar format
+  const osListings: OpenSooqListing[] = openSooqResult?.listings || [];
+  const osStats = openSooqResult?.stats || null;
+  const marketListings: SimilarCar[] = osListings.slice(0, 10).map(l => ({
+    id: l.url,
+    title: l.title,
+    price: l.price,
+    year: l.year || car.year,
+    kilometers: l.km || 0,
+    condition: 'غير محدد',
+    city: l.city || 'الأردن',
+    image: null,
+    similarity: calculateSimilarityScore(car, { brand: car.brand, model: car.model, year: l.year || car.year, kilometers: l.km || 0 }),
+    source: l.site || 'السوق الخارجي',
+  }));
+
+  const marketPrices = marketListings.map(c => c.price).filter(p => p > 0);
+  const marketAvg = osStats ? osStats.avg : (marketPrices.length > 0 ? Math.round(marketPrices.reduce((a, b) => a + b, 0) / marketPrices.length) : 0);
 
   let confidence = 60;
   const sources: string[] = ['تحليل ذكي'];
 
-  // Try LLM analysis
-  const llmResult = await analyzePriceWithLLM(car, similarCars, dbAvg);
+  // Try LLM analysis with both DB + OpenSooq data
+  const llmResult = await analyzePriceWithLLM(car, similarCars, marketListings, dbAvg, marketAvg);
 
   if (llmResult) {
     fairPrice = llmResult.fairPrice;
@@ -300,19 +343,39 @@ export async function analyzeCarPrice(car: CarData): Promise<PriceAnalysis> {
     sources.length = 0;
     sources.push('ذكاء اصطناعي (NVIDIA AI)');
 
-    if (dbPrices.length >= 3) {
-      fairPrice = Math.round(fairPrice * 0.7 + dbAvg * 0.3);
+    // Blend with DB data
+    if (dbPrices.length >= 3 && marketPrices.length >= 3) {
+      // Best case: both sources available
+      fairPrice = Math.round(fairPrice * 0.5 + dbAvg * 0.25 + marketAvg * 0.25);
+      confidence = Math.min(95, confidence + 10);
+      sources.push(`JO Cars (${dbPrices.length} إعلان مشابه)`);
+      sources.push(`السوق الخارجي (${marketPrices.length} إعلان)`);
+    } else if (dbPrices.length >= 3) {
+      fairPrice = Math.round(fairPrice * 0.65 + dbAvg * 0.35);
       confidence = Math.min(95, confidence + 5);
       sources.push(`JO Cars (${dbPrices.length} إعلان مشابه)`);
+    } else if (marketPrices.length >= 3) {
+      fairPrice = Math.round(fairPrice * 0.65 + marketAvg * 0.35);
+      confidence = Math.min(95, confidence + 5);
+      sources.push(`السوق الخارجي (${marketPrices.length} إعلان)`);
     }
   } else {
-    // Fallback
-    if (dbPrices.length >= 3) {
-      fairPrice = Math.round(fairPrice * 0.5 + dbAvg * 0.5);
-      confidence = 85;
+    // Fallback to local heuristic
+    if (dbPrices.length >= 3 && marketPrices.length >= 3) {
+      fairPrice = Math.round(fairPrice * 0.25 + dbAvg * 0.35 + marketAvg * 0.40);
+      confidence = 88;
+      sources.push(`JO Cars (${dbPrices.length} إعلان)`);
+      sources.push(`السوق الخارجي (${marketPrices.length} إعلان)`);
+    } else if (dbPrices.length >= 3) {
+      fairPrice = Math.round(fairPrice * 0.45 + dbAvg * 0.55);
+      confidence = 82;
       sources.push(`JO Cars (${dbPrices.length} إعلان مشابه)`);
+    } else if (marketPrices.length >= 3) {
+      fairPrice = Math.round(fairPrice * 0.45 + marketAvg * 0.55);
+      confidence = 80;
+      sources.push(`السوق الخارجي (${marketPrices.length} إعلان)`);
     } else if (dbPrices.length >= 1) {
-      fairPrice = Math.round(fairPrice * 0.7 + dbAvg * 0.3);
+      fairPrice = Math.round(fairPrice * 0.65 + dbAvg * 0.35);
       confidence = 72;
       sources.push(`JO Cars (${dbPrices.length} إعلان)`);
     }
@@ -321,7 +384,7 @@ export async function analyzeCarPrice(car: CarData): Promise<PriceAnalysis> {
   const assessment = generateAssessment(car.price || 0, fairPrice, llmResult?.factors || factors);
   const carName = `${car.brand} ${car.model} ${car.year}`;
   const headline = assessment.position === 'below' ? `${carName} — سعر أقل من السوق` : assessment.position === 'within' ? `${carName} — سعر عادل` : `${carName} — سعر أعلى من السوق`;
-  const detail = `بناءً على تحليل ${similarCars.length} إعلان مشابه وبيانات السوق الأردني، السعر العادل المقدر هو ${fairPrice.toLocaleString()} د.أ. ${assessment.explanation}`;
+  const detail = `بناءً على تحليل ${similarCars.length} إعلان من JO Cars + ${marketListings.length} إعلان من السوق الخارجي، السعر العادل المقدر هو ${fairPrice.toLocaleString()} د.أ. ${assessment.explanation}`;
   const recommendation = assessment.position === 'below' ? `يمكنك رفع السعر إلى ${fairPrice.toLocaleString()} د.أ` : assessment.position === 'within' ? 'سعرك مناسب ويمكنك المتابعة.' : `يُنصح بخفض السعر إلى ${fairPrice.toLocaleString()} د.أ`;
 
   return {
@@ -329,6 +392,7 @@ export async function analyzeCarPrice(car: CarData): Promise<PriceAnalysis> {
     assessment,
     factors: llmResult?.factors || factors,
     similarCars,
+    marketListings,
     summary: { headline, detail, recommendation },
   };
 }

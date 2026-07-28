@@ -49,6 +49,7 @@ interface AnalysisData {
   };
   factors: PriceFactor[];
   similarCars: SimilarCar[];
+  marketListings: SimilarCar[];
   summary: {
     headline: string;
     detail: string;
@@ -105,6 +106,7 @@ export function CarPriceAnalysis({
   const [expanded, setExpanded] = useState(!compact);
   const [showFactors, setShowFactors] = useState(false);
   const [showSimilar, setShowSimilar] = useState(false);
+  const [showMarket, setShowMarket] = useState(false);
 
   const analyze = async () => {
     if (!brand) {
@@ -339,7 +341,7 @@ export function CarPriceAnalysis({
                     <button type="button" onClick={() => setShowSimilar(!showSimilar)}
                       className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors">
                       <Car className="w-4 h-4" />
-                      سيارات مشابهة في السوق ({data.similarCars.length})
+                      سيارات مشابهة في JO Cars ({data.similarCars.length})
                       {showSimilar ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </button>
                     <AnimatePresence>
@@ -377,6 +379,50 @@ export function CarPriceAnalysis({
                                   <p className="text-sm font-bold text-gray-900 dark:text-white">{car.price.toLocaleString()}</p>
                                   <p className="text-[10px] text-gray-400">د.أ</p>
                                   <ExternalLink className="w-3 h-3 text-gray-300 mt-1" />
+                                </div>
+                              </a>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+
+                {/* Market Listings (OpenSooq) */}
+                {data.marketListings && data.marketListings.length > 0 && (
+                  <div>
+                    <button type="button" onClick={() => setShowMarket(!showMarket)}
+                      className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-orange-600 transition-colors">
+                      <ExternalLink className="w-4 h-4" />
+                      إعلانات من السوق الخارجي - أونصوك ({data.marketListings.length})
+                      {showMarket ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </button>
+                    <AnimatePresence>
+                      {showMarket && (
+                        <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
+                          className="overflow-hidden mt-3">
+                          <div className="space-y-2 max-h-72 overflow-y-auto">
+                            {data.marketListings.map((car) => (
+                              <a key={car.id} href={car.id} target="_blank" rel="noopener"
+                                className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border border-orange-100 dark:border-orange-900/30">
+                                <div className="w-14 h-14 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                                  <ExternalLink className="w-6 h-6 text-orange-400" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{car.title}</p>
+                                  <p className="text-xs text-gray-500">
+                                    {car.kilometers > 0 ? `${car.kilometers.toLocaleString()} كم` : ''} • {car.city}
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">
+                                      {car.source}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-sm font-bold text-gray-900 dark:text-white">{car.price.toLocaleString()}</p>
+                                  <p className="text-[10px] text-gray-400">د.أ</p>
                                 </div>
                               </a>
                             ))}

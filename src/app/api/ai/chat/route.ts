@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { errorResponse } from '@/lib/api';
 import { chatCompletion, type ChatMessage } from '@/ai/nvidia-client';
+import { fetchOpenSooqListings } from '@/lib/opensooq-scrape';
 import {
   getSystemPrompt, SITE_NAME, BRAND_PRICE_RANGES,
   INTENT_PATTERNS, CAR_SEARCH_KEYWORDS, DIALECT_MAP,
@@ -210,6 +211,30 @@ async function fetchParts(query: string) {
   return parts;
 }
 
+// ── Fetch OpenSooq market listings for price queries ──
+async function fetchMarketListings(query: string) {
+  try {
+    const brand = extractBrand(query);
+    // Try to extract model from query
+    const modelMatch = query.match(/(?:كوبرا|كامري|كورلا|سنترا|باترول|سوناتا|إلنترا|توسان|كيا|SPORTEGE|CERATO|RIO)/i);
+    const model = modelMatch ? modelMatch[0] : '';
+
+    // Try to extract year
+    const yearMatch = query.match(/(20\d{2})/);
+    const year = yearMatch ? parseInt(yearMatch[1]) : undefined;
+
+    const result = await fetchOpenSooqListings(
+      brand || query.split(' ')[0] || '',
+      model,
+      year
+    );
+
+    return result?.listings || [];
+  } catch {
+    return [];
+  }
+}
+
 // ── Generate suggestion chips based on context ──
 function generateSuggestions(intent: Intent, hasCars: boolean, hasWorkshops: boolean, hasParts: boolean): string[] {
   const suggestions: string[] = [];
@@ -279,7 +304,7 @@ export async function POST(request: NextRequest) {
     const conversationContext = conversation.slice(-6).map(m => `${m.role}: ${m.content}`).join('\n');
 
     // Parallel data fetch based on intent
-    const [cars, workshops, parts] = await Promise.all([
+    const [cars, workshops, parts, marketListings] = await Promise.all([
       intent === 'car_search' || intent === 'price_analysis' || intent === 'general' || intent === 'engine_sound'
         ? fetchCars(normalizedQuery)
         : Promise.resolve([]),
@@ -288,6 +313,9 @@ export async function POST(request: NextRequest) {
         : Promise.resolve([]),
       intent === 'parts' || intent === 'general'
         ? fetchParts(normalizedQuery)
+        : Promise.resolve([]),
+      intent === 'price_analysis' || intent === 'car_search'
+        ? fetchMarketListings(normalizedQuery)
         : Promise.resolve([]),
     ]);
 
@@ -316,6 +344,19 @@ export async function POST(request: NextRequest) {
       ).join('\n')
       : 'لا توجد قطع غيار مطابقة حالياً.';
 
+    // Build market listings context (OpenSooq)
+    const marketContext = marketListings.length > 0
+      ? marketListings.slice(0, 8).map((l: any, i: number) =>
+        `${i + 1}. ${l.title} — ${l.price?.toLocaleString() || 'غير محدد'} د.أ | ${l.year || ''} | ${l.km ? l.km.toLocaleString() + ' كم' : ''} | ${l.city || 'الأردن'} — ${l.site || 'السوق الخارجي'}`
+      ).join('\n')
+      : 'لا تتوفر بيانات من السوق الخارجي حالياً.';
+
+    // Calculate market stats
+    const marketPrices = marketListings.filter((l: any) => l.price > 0).map((l: any) => l.price);
+    const marketAvg = marketPrices.length > 0 ? Math.round(marketPrices.reduce((a: number, b: number) => a + b, 0) / marketPrices.length) : 0;
+    const marketMin = marketPrices.length > 0 ? Math.min(...marketPrices) : 0;
+    const marketMax = marketPrices.length > 0 ? Math.max(...marketPrices) : 0;
+
     // Build brand price summary
     const brandSummary = Object.entries(BRAND_PRICE_RANGES).slice(0, 15).map(
       ([, data]) => `${data.nameAr}: ${data.min.toLocaleString()}-${data.max.toLocaleString()} د.أ`
@@ -335,6 +376,15 @@ ${workshopContext}
 قطع الغيار المتاحة:
 ${partsContext}
 
+بيانات السوق الخارجي (أونصوك) - إعلانات مشابهة:
+${marketContext}
+${marketAvg > 0 ? `
+إحصائيات السوق الخارجي:
+- متوسط السعر: ${marketAvg.toLocaleString()} د.أ
+- أدنى سعر: ${marketMin.toLocaleString()} د.أ
+- أعلى سعر: ${marketMax.toLocaleString()} د.أ
+- عدد الإعلانات: ${marketListings.length}` : ''}
+
 نطاقات أسعار الماركات (ملخص): ${brandSummary}
 
 معلومات المستخدم:
@@ -349,10 +399,12 @@ ${conversationContext}
 ## قواعد مهمة جداً:
 1. **لا تخترع معلومات** — إذا لم تجد سيارة/ورشة/قطعة في البيانات أعلاه، قل: "لا أملك هذه المعلومة حالياً في موقعنا".
 2. **استخدم البيانات الحقيقية** — اذكر الأسعار والأرقام من البيانات أعلاه فقط.
-3. **قدم اقتراحات** — بعد كل إجابة، اقترح إجراءات تالية.
-4. **كن مختصراً** — لا تكتب فقرات طويلة.
-5. **افهم النية** — افهم ما يريده المستخدم فعلاً.
-6. **التقط الماركة والمدينة** — إذا ذكر المستخدم ماركة أو مدينة، ابحث بها.`;
+3. **استخدم بيانات السوق الخارجي** — عند التحدث عن الأسعار، استخدم إحصائيات السوق الخارجي (أونصوك) لتقديم تحليل شامل.
+4. **قدم اقتراحات** — بعد كل إجابة، اقترح إجراءات تالية.
+5. **كن مختصراً** — لا تكتب فقرات طويلة.
+6. **افهم النية** — افهم ما يريده المستخدم فعلاً.
+7. **التقط الماركة والمدينة** — إذا ذكر المستخدم ماركة أو مدينة، ابحث بها.
+8. **أظهر نسبة الثقة** — عند تقديم تحليل أسعار، أظهر نسبة الثقة في البيانات (مثلاً: "بناءً على 5 إعلانات من JO Cars + 8 إعلانات من السوق الخارجي، ثقة 85%").`;
 
     const chatMessages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
@@ -423,6 +475,13 @@ ${conversationContext}
         intent,
         suggestions,
         sessionId: sid,
+        marketStats: marketListings.length > 0 ? {
+          count: marketListings.length,
+          avg: marketAvg,
+          min: marketMin,
+          max: marketMax,
+          source: 'السوق الخارجي (أونصوك)',
+        } : null,
       },
     });
   } catch {
