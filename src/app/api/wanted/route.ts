@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticateRequest } from '@/lib/auth';
 import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api';
+import { sanitizePlainText, sanitizeHtml } from '@/lib/sanitize';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -50,12 +52,18 @@ export async function POST(request: NextRequest) {
   const user = await authenticateRequest(request);
   if (!user) return unauthorizedResponse();
 
+  const rateLimit = checkRateLimit(`wanted:${user.id}`, RATE_LIMITS.WANTED);
+  if (!rateLimit.allowed) return errorResponse('تم تجاوز الحد المسموح', 429);
+
   try {
     const body = await request.json();
+    if (!body.title || body.title.length > 200) return errorResponse('العنوان مطلوب وقصير من 200 حرف', 400);
+    if (body.description && body.description.length > 5000) return errorResponse('الوصف طويل جداً', 400);
+
     const ad = await prisma.wantedAd.create({
       data: {
-        title: body.title,
-        description: body.description || null,
+        title: sanitizePlainText(body.title),
+        description: body.description ? sanitizeHtml(body.description) : null,
         yearFrom: body.yearFrom ? parseInt(body.yearFrom) : null,
         yearTo: body.yearTo ? parseInt(body.yearTo) : null,
         maxPrice: body.maxPrice ? parseFloat(body.maxPrice) : null,
@@ -69,7 +77,7 @@ export async function POST(request: NextRequest) {
     });
     return successResponse(ad, 201);
   } catch (error) {
-    console.error(error);
+    console.error('Wanted ad creation error');
     return errorResponse('فشل إنشاء الإعلان', 500);
   }
 }

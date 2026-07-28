@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticateRequest } from '@/lib/auth';
+import { sanitizePlainText, sanitizeHtml } from '@/lib/sanitize';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -41,9 +43,15 @@ export async function POST(request: NextRequest) {
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
   if (user.forumBannedTopicUntil && new Date(user.forumBannedTopicUntil) > new Date()) return Response.json({ error: 'تم حظرك من إنشاء مواضيع في المنتدى' }, { status: 403 });
 
+  const rateLimit = checkRateLimit(`forum-topic:${user.id}`, RATE_LIMITS.FORUM);
+  if (!rateLimit.allowed) return Response.json({ error: 'تم تجاوز الحد المسموح' }, { status: 429 });
+
   const { title, content, categoryId } = await request.json();
   if (!title || !content || !categoryId) {
     return Response.json({ error: 'العنوان، المحتوى، والقسم مطلوب' }, { status: 400 });
+  }
+  if (title.length > 200 || content.length > 10000) {
+    return Response.json({ error: 'العنوان أو المحتوى طويل جداً' }, { status: 400 });
   }
 
   const category = await prisma.forumCategory.findUnique({ where: { id: categoryId } });
@@ -52,7 +60,7 @@ export async function POST(request: NextRequest) {
   const slug = `topic-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
   const topic = await prisma.forumTopic.create({
-    data: { title, content, slug, categoryId, userId: user.id },
+    data: { title: sanitizePlainText(title), content: sanitizeHtml(content), slug, categoryId, userId: user.id },
     include: {
       user: { select: { id: true, name: true, image: true, dealerName: true } },
       category: { select: { id: true, nameAr: true, slug: true } },

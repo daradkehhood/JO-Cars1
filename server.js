@@ -53,10 +53,22 @@ app.prepare().then(() => {
     const parsedUrl = parse(req.url, true);
 
     if (parsedUrl.pathname.startsWith('/uploads/')) {
-      const filePath = path.join(uploadsDir, path.basename(parsedUrl.pathname));
+      const safeName = path.basename(parsedUrl.pathname);
+      if (safeName.includes('..') || safeName.includes('\\') || safeName.includes('%')) {
+        res.writeHead(400); res.end(); return;
+      }
+      const filePath = path.join(uploadsDir, safeName);
+      const resolvedPath = path.resolve(filePath);
+      const uploadsDirResolved = path.resolve(uploadsDir);
+      if (!resolvedPath.startsWith(uploadsDirResolved)) {
+        res.writeHead(403); res.end(); return;
+      }
       try {
         if (fs.existsSync(filePath)) {
           const ext = path.extname(filePath).toLowerCase();
+          if (!mimeTypes[ext]) {
+            res.writeHead(403); res.end(); return;
+          }
           res.writeHead(200, {
             'Content-Type': mimeTypes[ext] || 'application/octet-stream',
             'Cache-Control': 'public, max-age=31536000',
@@ -110,36 +122,62 @@ app.prepare().then(() => {
   });
 
   const onlineUsers = new Map();
+  const jwt = require('jsonwebtoken');
+  const JWT_SECRET = process.env.JWT_SECRET;
+
+  io.use((socket, next) => {
+    const token = socket.handshake.auth?.token || socket.handshake.query?.token;
+    if (!token || !JWT_SECRET) {
+      return next(new Error('Authentication required'));
+    }
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      socket.userId = decoded.userId;
+      socket.userRole = decoded.role;
+      next();
+    } catch (err) {
+      return next(new Error('Invalid token'));
+    }
+  });
 
   io.on('connection', (socket) => {
-    let userId = null;
+    const userId = socket.userId;
+    onlineUsers.set(userId, { socketId: socket.id, joinedAt: Date.now() });
+    io.emit('user-online', { userId });
 
-    socket.on('register', (uid) => {
-      if (!uid) return;
-      userId = uid;
-      onlineUsers.set(uid, { socketId: socket.id, joinedAt: Date.now() });
-      io.emit('user-online', { userId: uid });
+    socket.on('join-conversation', (id) => {
+      if (id && typeof id === 'string' && id.length < 100) socket.join(`conversation:${id}`);
     });
-
-    socket.on('join-conversation', (id) => { if (id) socket.join(`conversation:${id}`); });
-    socket.on('leave-conversation', (id) => { if (id) socket.leave(`conversation:${id}`); });
+    socket.on('leave-conversation', (id) => {
+      if (id && typeof id === 'string' && id.length < 100) socket.leave(`conversation:${id}`);
+    });
     socket.on('new-message', (data) => {
-      if (data?.conversationId) socket.to(`conversation:${data.conversationId}`).emit('message-received', data);
+      if (data?.conversationId && typeof data.conversationId === 'string') {
+        socket.to(`conversation:${data.conversationId}`).emit('message-received', data);
+      }
     });
     socket.on('typing', (data) => {
-      if (data?.conversationId && data?.userId) socket.to(`conversation:${data.conversationId}`).emit('user-typing', { userId: data.userId });
+      if (data?.conversationId && data?.userId) {
+        socket.to(`conversation:${data.conversationId}`).emit('user-typing', { userId: data.userId });
+      }
     });
     socket.on('stop-typing', (data) => {
-      if (data?.conversationId) socket.to(`conversation:${data.conversationId}`).emit('user-stop-typing', {});
+      if (data?.conversationId) {
+        socket.to(`conversation:${data.conversationId}`).emit('user-stop-typing', {});
+      }
     });
     socket.on('check-online', (targetUserId) => {
-      if (targetUserId) socket.emit('user-status', { userId: targetUserId, online: onlineUsers.has(targetUserId) });
+      if (targetUserId && typeof targetUserId === 'string') {
+        socket.emit('user-status', { userId: targetUserId, online: onlineUsers.has(targetUserId) });
+      }
     });
     socket.on('disconnect', () => {
-      if (userId) { onlineUsers.delete(userId); io.emit('user-offline', { userId }); }
+      onlineUsers.delete(userId);
+      io.emit('user-offline', { userId });
     });
     socket.on('error', () => {
-      if (userId) { onlineUsers.delete(userId); io.emit('user-offline', { userId }); }
+      onlineUsers.delete(userId);
+      io.emit('user-offline', { userId });
     });
   });
 

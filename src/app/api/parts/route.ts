@@ -4,6 +4,9 @@ import { authenticateRequest } from '@/lib/auth';
 import { generateSlug } from '@/lib/utils';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
+import { sanitizePlainText, sanitizeHtml } from '@/lib/sanitize';
+
+const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'];
 
 const PART_TYPES = ['engine', 'transmission', 'body', 'electrical', 'suspension', 'brake', 'cooling', 'exhaust', 'interior', 'wheel', 'turbo', 'ac', 'other'];
 const PART_TYPES_AR = ['محرك', 'جير', 'هيكل', 'كهرباء', 'تعليق', 'فرامل', 'تبريد', 'عادم', 'داخلي', 'جنط', 'توربو', 'مكيف', 'أخرى'];
@@ -91,7 +94,9 @@ export async function POST(request: NextRequest) {
       const bytes = await file.arrayBuffer();
       if (!bytes || bytes.byteLength === 0) return null;
       const buffer = Buffer.from(bytes);
-      const ext = file.name.split('.').pop() || 'jpg';
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      if (!ALLOWED_EXTENSIONS.includes(ext)) return null;
+      if (buffer.length > 10 * 1024 * 1024) return null;
       const filename = `part-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const dir = path.join(process.cwd(), 'public', 'uploads');
       await mkdir(dir, { recursive: true });
@@ -109,9 +114,9 @@ export async function POST(request: NextRequest) {
 
     const part = await prisma.usedPart.create({
       data: {
-        title: data.title as string,
+        title: sanitizePlainText(data.title as string),
         slug,
-        description: (data.description as string) || null,
+        description: data.description ? sanitizeHtml(data.description as string) : null,
         partType: data.partType as string,
         brandId: (data.brandId as string) || null,
         partNumber: (data.partNumber as string) || null,

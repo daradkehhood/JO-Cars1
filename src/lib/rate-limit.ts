@@ -53,5 +53,10 @@ export const RATE_LIMITS = {
   UPLOAD: { windowMs: 60 * 1000, maxRequests: 20 },
   AI: { windowMs: 60 * 1000, maxRequests: 10 },
   MESSAGE: { windowMs: 60 * 1000, maxRequests: 30 },
+  FORUM: { windowMs: 60 * 1000, maxRequests: 10 },
+  CONTACT: { windowMs: 60 * 1000, maxRequests: 5 },
+  RATING: { windowMs: 60 * 1000, maxRequests: 10 },
+  WANTED: { windowMs: 60 * 1000, maxRequests: 10 },
+  CAR_CREATE: { windowMs: 60 * 1000, maxRequests: 5 },
   GENERAL: { windowMs: 60 * 1000, maxRequests: 100 },
 } as const;

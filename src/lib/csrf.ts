@@ -1,6 +1,9 @@
 import { createHash, randomBytes, timingSafeEqual } from 'crypto';
 
-const CSRF_SECRET = process.env.CSRF_SECRET || process.env.JWT_SECRET || 'csrf-fallback-secret';
+const CSRF_SECRET = process.env.CSRF_SECRET || process.env.JWT_SECRET;
+if (!CSRF_SECRET) {
+  throw new Error('CSRF_SECRET or JWT_SECRET environment variable is required');
+}
 
 export function generateCSRFToken(): string {
   const token = randomBytes(32).toString('hex');

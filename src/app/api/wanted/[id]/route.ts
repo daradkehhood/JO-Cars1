@@ -47,7 +47,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         brandId: body.brandId || null,
         modelId: body.modelId || null,
         cityId: body.cityId || null,
-        status: body.status || 'ACTIVE',
       },
     });
     return successResponse(updated);

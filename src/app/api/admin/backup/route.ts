@@ -93,28 +93,25 @@ export async function POST(request: NextRequest) {
       const { data } = body;
       if (!data || !data.tables) return errorResponse('بيانات غير صالحة');
 
+      const ALLOWED_IMPORT_MODELS = MODELS;
       let imported = 0;
       const errors: string[] = [];
 
       for (const [modelName, records] of Object.entries(data.tables)) {
+        if (!ALLOWED_IMPORT_MODELS.includes(modelName)) {
+          errors.push(modelName);
+          continue;
+        }
         try {
           const model = (prisma as any)[modelName];
           if (model && Array.isArray(records) && records.length > 0) {
             for (const record of records) {
               try {
-                await model.upsert({
-                  where: { id: record.id || 'non-existent' },
-                  update: record,
-                  create: record,
-                });
+                const { id, createdAt, updatedAt, ...safeRecord } = record;
+                await model.create({ data: safeRecord });
                 imported++;
               } catch {
-                try {
-                  await model.create({ data: record });
-                  imported++;
-                } catch {
-                  errors.push(modelName);
-                }
+                errors.push(modelName);
               }
             }
           }
@@ -132,6 +129,7 @@ export async function POST(request: NextRequest) {
 
     return errorResponse('إجراء غير معروف');
   } catch (error) {
-    return errorResponse('فشل تنفيذ العملية: ' + (error as Error).message, 500);
+    console.error('Backup operation error:', error);
+    return errorResponse('فشل تنفيذ العملية', 500);
   }
 }

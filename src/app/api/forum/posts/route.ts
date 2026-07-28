@@ -1,15 +1,23 @@
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticateRequest } from '@/lib/auth';
+import { sanitizeHtml } from '@/lib/sanitize';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   const user = await authenticateRequest(request);
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
   if (user.forumBannedCommentUntil && new Date(user.forumBannedCommentUntil) > new Date()) return Response.json({ error: 'تم حظرك من التعليق في المنتدى' }, { status: 403 });
 
+  const rateLimit = checkRateLimit(`forum-post:${user.id}`, RATE_LIMITS.FORUM);
+  if (!rateLimit.allowed) return Response.json({ error: 'تم تجاوز الحد المسموح' }, { status: 429 });
+
   const { content, topicId } = await request.json();
   if (!content || !topicId) {
     return Response.json({ error: 'المحتوى والموضوع مطلوب' }, { status: 400 });
+  }
+  if (content.length > 10000) {
+    return Response.json({ error: 'المحتوى طويل جداً' }, { status: 400 });
   }
 
   const topic = await prisma.forumTopic.findUnique({ where: { id: topicId } });
@@ -17,7 +25,7 @@ export async function POST(request: NextRequest) {
   if (topic.isLocked) return Response.json({ error: 'الموضوع مغلق' }, { status: 400 });
 
   const post = await prisma.forumPost.create({
-    data: { content, topicId, userId: user.id },
+    data: { content: sanitizeHtml(content), topicId, userId: user.id },
     include: {
       user: { select: { id: true, name: true, image: true, dealerName: true, rating: true, ratingCount: true, role: true, badges: true } },
     },

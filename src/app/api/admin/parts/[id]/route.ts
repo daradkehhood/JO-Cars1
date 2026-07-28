@@ -10,7 +10,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
   try {
     const body = await request.json();
-    const updated = await prisma.usedPart.update({ where: { id }, data: body });
+    const allowedFields = ['title', 'description', 'price', 'brand', 'model', 'year', 'condition', 'phone', 'whatsapp', 'images', 'status'];
+    const safeData: Record<string, unknown> = {};
+    for (const key of allowedFields) {
+      if (body[key] !== undefined) safeData[key] = body[key];
+    }
+    const updated = await prisma.usedPart.update({ where: { id }, data: safeData });
     return successResponse(updated);
   } catch {
     return errorResponse('فشل تحديث القطعة', 500);
