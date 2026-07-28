@@ -48,7 +48,7 @@ const initialForm: CarFormData = {
 
 export default function AddCarPage() {
   const router = useRouter();
-  const { isAuthenticated, _hydrated } = useAuth();
+  const { isAuthenticated, _hydrated, token } = useAuth();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -160,6 +160,8 @@ export default function AddCarPage() {
 
       const res = await fetch('/api/cars', {
         method: 'POST',
+        credentials: 'include',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         body: formData,
       });
       const data = await res.json();
