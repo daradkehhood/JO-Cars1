@@ -1,8 +1,12 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, X, Send, Sparkles, Car, HelpCircle, Search, TrendingUp, MessageCircle, ShoppingBag, Fuel, Shield, DollarSign, BarChart3, ChevronDown, Zap } from 'lucide-react';
+import {
+  Bot, X, Send, Sparkles, Car, HelpCircle, Search, TrendingUp, MessageCircle,
+  ShoppingBag, Fuel, Shield, DollarSign, BarChart3, ChevronDown, Zap, ThumbsUp,
+  ThumbsDown, Wrench, Settings, RotateCcw,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface CarSuggestion {
@@ -27,7 +31,9 @@ interface MarketPriceResult {
 
 interface Message {
   id: string; type: 'user' | 'bot'; content: string;
-  cars?: CarSuggestion[]; marketPriceResult?: MarketPriceResult; personalityResult?: any; timestamp: Date;
+  cars?: CarSuggestion[]; marketPriceResult?: MarketPriceResult; personalityResult?: any;
+  suggestions?: string[]; intent?: string; feedback?: 'up' | 'down' | null;
+  timestamp: Date;
 }
 
 type MpStep = 'brand' | 'model' | 'year' | 'kilometers' | 'condition';
@@ -47,9 +53,9 @@ const quickActions = [
   { label: 'اقترح سيارة', icon: Car, action: 'أقترح علي سيارة مناسبة لميزانية 15000 دينار' },
   { label: 'تسعير السوق', icon: BarChart3, action: '__market_price__' },
   { label: 'SUV للعائلة', icon: Shield, action: 'أفضل سيارات SUV عائلية في الأردن' },
-  { label: 'مقارنة', icon: Search, action: 'كيف أقارن بين سيارتين في الموقع؟' },
+  { label: 'ورشة', icon: Wrench, action: 'أبحث عن ورشة ميكانيكية في عمان' },
   { label: 'اقتصادية', icon: Fuel, action: 'أفضل السيارات الاقتصادية في استهلاك البنزين؟' },
-  { label: 'مستعملة', icon: TrendingUp, action: 'نصائح عند شراء سيارة مستعملة' },
+  { label: 'نصائح', icon: HelpCircle, action: 'نصائح عند شراء سيارة مستعملة' },
 ];
 
 const mpQuestions: Record<MpStep, string> = {
@@ -60,13 +66,17 @@ const mpQuestions: Record<MpStep, string> = {
   condition: 'ما هي **حالة السيارة**؟\n\nممتازة | جيدة جداً | جيدة | مقبولة',
 };
 
+function generateSessionId(): string {
+  return `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
 export function AIAssistant() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome', type: 'bot',
-      content: 'مرحباً! 🤖 أنا المساعد الذكي JO Cars. أخبرني بميزانيتك واحتياجاتك عشان ألاقي لك السيارة المناسبة من قاعدة بياناتنا!',
+      content: 'مرحباً! 🤖 أنا المساعد الذكي JO Cars.\n\nأخبرني بميزانيتك واحتياجاتك عشان ألاقي لك السيارة المناسبة، أو اسأل عن أي شيء متعلق بالسيارات!',
       timestamp: new Date(),
     },
   ]);
@@ -77,6 +87,8 @@ export function AIAssistant() {
   const [personalityStep, setPersonalityStep] = useState<number | null>(null);
   const [personalityAnswers, setPersonalityAnswers] = useState<string[]>([]);
   const [personalityResult, setPersonalityResult] = useState<any>(null);
+  const [sessionId] = useState(() => generateSessionId());
+  const [lastSuggestions, setLastSuggestions] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -88,14 +100,29 @@ export function AIAssistant() {
     if (isOpen) inputRef.current?.focus();
   }, [isOpen]);
 
-  const botReply = (content: string, options?: { cars?: CarSuggestion[]; marketPriceResult?: MarketPriceResult; personalityResult?: any }) => {
+  const botReply = useCallback((content: string, options?: {
+    cars?: CarSuggestion[]; marketPriceResult?: MarketPriceResult;
+    personalityResult?: any; suggestions?: string[]; intent?: string;
+  }) => {
     setMessages(prev => [...prev, {
       id: (Date.now() + 1).toString(), type: 'bot', content,
-      cars: options?.cars, marketPriceResult: options?.marketPriceResult, personalityResult: options?.personalityResult, timestamp: new Date(),
+      cars: options?.cars, marketPriceResult: options?.marketPriceResult,
+      personalityResult: options?.personalityResult, suggestions: options?.suggestions,
+      intent: options?.intent, timestamp: new Date(),
     }]);
-  };
+    if (options?.suggestions) setLastSuggestions(options.suggestions);
+  }, []);
 
-  const advanceMp = (step: MpStep, value: string) => {
+  const handleFeedback = useCallback((messageId: string, feedback: 'up' | 'down') => {
+    setMessages(prev => prev.map(m => m.id === messageId ? { ...m, feedback } : m));
+    // Could send feedback to API for analytics
+  }, []);
+
+  const handleSuggestionClick = useCallback((suggestion: string) => {
+    handleSend(suggestion);
+  }, []);
+
+  const advanceMp = useCallback((step: MpStep, value: string) => {
     const updated = { ...mpData };
     if (step === 'brand') updated.brand = value;
     else if (step === 'model') updated.model = value;
@@ -116,9 +143,9 @@ export function AIAssistant() {
       setMpStep(null);
       fetchMarketPrice(updated);
     }
-  };
+  }, [mpData, botReply]);
 
-  const fetchMarketPrice = async (data: typeof mpData) => {
+  const fetchMarketPrice = useCallback(async (data: typeof mpData) => {
     setIsTyping(true);
     try {
       const res = await fetch('/api/ai/market-price', {
@@ -162,7 +189,10 @@ export function AIAssistant() {
           msg += '🔄 **سيارات مشابهة في السوق:**';
         }
 
-        botReply(msg, { marketPriceResult: d, cars: d.similarCars });
+        botReply(msg, {
+          marketPriceResult: d, cars: d.similarCars,
+          suggestions: ['مقارنة الأسعار', 'تقييم الحالة', 'بحث عن سيارة مشابهة'],
+        });
       } else {
         botReply('عذراً، ما لقيت بيانات كافية لتحليل السوق لهذه السيارة. جرب ماركة أو سنة ثانية.');
       }
@@ -170,9 +200,9 @@ export function AIAssistant() {
       botReply('حدث خطأ أثناء تحليل السوق. حاول مرة أخرى.');
     }
     setIsTyping(false);
-  };
+  }, [botReply]);
 
-  const fetchPersonalityMatch = async (answers: string[]) => {
+  const fetchPersonalityMatch = useCallback(async (answers: string[]) => {
     setIsTyping(true);
     try {
       const res = await fetch('/api/ai/personality-match', {
@@ -211,7 +241,10 @@ export function AIAssistant() {
           msg += '\n💡 **ملاحظة:** ما لقينا سيارات مطابقة في قاعدة بياناتنا حالياً، لكن السيارات اللي فوق متاحة بالسوق الأردني وتقدر تدور عليها!';
         }
 
-        botReply(msg, { cars: d.cars, personalityResult: d.personality });
+        botReply(msg, {
+          cars: d.cars, personalityResult: d.personality,
+          suggestions: ['مقارنة الأسعار', 'بحث عن سيارة', 'تقييم الحالة'],
+        });
       } else {
         botReply('عذراً، ما قدرت أحلل شخصيتك. حاول مرة أخرى.');
       }
@@ -219,9 +252,9 @@ export function AIAssistant() {
       botReply('حدث خطأ أثناء تحليل الشخصية. حاول مرة أخرى.');
     }
     setIsTyping(false);
-  };
+  }, [botReply]);
 
-  const handleSend = async (content: string) => {
+  const handleSend = useCallback(async (content: string) => {
     if (!content.trim() || isTyping) return;
 
     const userMessage: Message = {
@@ -286,7 +319,10 @@ export function AIAssistant() {
       const res = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [{ role: 'user', content: content.trim() }] }),
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: content.trim() }],
+          sessionId,
+        }),
       });
       const data = await res.json();
       if (data.success && data.data) {
@@ -294,8 +330,11 @@ export function AIAssistant() {
           id: (Date.now() + 1).toString(), type: 'bot',
           content: data.data.message,
           cars: data.data.cars?.length > 0 ? data.data.cars : undefined,
+          suggestions: data.data.suggestions,
+          intent: data.data.intent,
           timestamp: new Date(),
         }]);
+        if (data.data.suggestions) setLastSuggestions(data.data.suggestions);
       }
     } catch {
       setMessages(prev => [...prev, {
@@ -306,20 +345,30 @@ export function AIAssistant() {
     } finally {
       setIsTyping(false);
     }
-  };
+  }, [isTyping, mpStep, personalityStep, personalityAnswers, sessionId, botReply, advanceMp, fetchPersonalityMatch]);
 
-  const goToCar = (slug: string) => {
+  const goToCar = useCallback((slug: string) => {
     router.push(`/cars/${slug}`);
     setIsOpen(false);
-  };
+  }, [router]);
 
-  const resetMp = () => {
+  const resetMp = useCallback(() => {
     setMpStep(null);
     setMpData({ brand: '', model: '', year: '', kilometers: '', condition: '' });
     setPersonalityStep(null);
     setPersonalityAnswers([]);
     setPersonalityResult(null);
-  };
+  }, []);
+
+  const handleClearChat = useCallback(() => {
+    setMessages([{
+      id: 'welcome', type: 'bot',
+      content: 'مرحباً! 🤖 أنا المساعد الذكي JO Cars.\n\nأخبرني بميزانيتك واحتياجاتك عشان ألاقي لك السيارة المناسبة، أو اسأل عن أي شيء متعلق بالسيارات!',
+      timestamp: new Date(),
+    }]);
+    setLastSuggestions([]);
+    resetMp();
+  }, [resetMp]);
 
   return (
     <>
@@ -332,6 +381,7 @@ export function AIAssistant() {
             className="fixed bottom-36 lg:bottom-24 right-6 z-50 w-[420px] max-w-[calc(100vw-48px)]"
           >
             <div className="rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl shadow-black/10">
+              {/* Header */}
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-blue-600 to-blue-500">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
@@ -339,14 +389,23 @@ export function AIAssistant() {
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-white">المساعد الذكي</p>
-                    <p className="text-[10px] text-white/70">JO Cars AI</p>
+                    <p className="text-[10px] text-white/70">JO Cars AI — متصل</p>
                   </div>
                 </div>
-                <button onClick={() => { setIsOpen(false); resetMp(); }} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white">
-                  <X className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button onClick={handleClearChat}
+                    className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white"
+                    title="محادثة جديدة">
+                    <RotateCcw className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => { setIsOpen(false); resetMp(); }}
+                    className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
+              {/* Messages */}
               <div className="h-[450px] overflow-y-auto p-4 space-y-3 scrollbar-hide">
                 {messages.map((msg) => (
                   <div key={msg.id}>
@@ -360,12 +419,16 @@ export function AIAssistant() {
                           <div className="flex items-center gap-1.5 mb-1">
                             <Sparkles className="w-3 h-3 text-blue-500" />
                             <span className="text-[10px] text-blue-500 font-medium">JO Cars AI</span>
+                            {msg.intent && (
+                              <span className="text-[9px] text-gray-400 mr-1">({msg.intent})</span>
+                            )}
                           </div>
                         )}
                         {msg.content}
                       </div>
                     </div>
 
+                    {/* Market Price Result */}
                     {msg.marketPriceResult && (
                       <div className="mt-2 mx-1 p-3 rounded-xl bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-200 dark:border-purple-800/30">
                         <p className="text-xs font-semibold text-gray-900 dark:text-white mb-2">تقييم السعر:</p>
@@ -394,6 +457,7 @@ export function AIAssistant() {
                       </div>
                     )}
 
+                    {/* Personality Result */}
                     {msg.personalityResult && (
                       <div className="mt-2 mx-1 p-3 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800/30">
                         <div className="flex items-center gap-2 mb-2">
@@ -422,6 +486,7 @@ export function AIAssistant() {
                       </div>
                     )}
 
+                    {/* Car Cards */}
                     {msg.cars && msg.cars.length > 0 && (
                       <div className="mt-2 space-y-2 pr-4">
                         {msg.cars.map((car) => (
@@ -449,21 +514,56 @@ export function AIAssistant() {
                         ))}
                       </div>
                     )}
+
+                    {/* Feedback Buttons */}
+                    {msg.type === 'bot' && msg.id !== 'welcome' && (
+                      <div className="flex items-center gap-2 mt-1.5 mr-1">
+                        <button onClick={() => handleFeedback(msg.id, 'up')}
+                          className={`p-1 rounded-md transition-colors ${
+                            msg.feedback === 'up' ? 'bg-green-100 text-green-600 dark:bg-green-900/30' : 'text-gray-400 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20'
+                          }`}>
+                          <ThumbsUp className="w-3 h-3" />
+                        </button>
+                        <button onClick={() => handleFeedback(msg.id, 'down')}
+                          className={`p-1 rounded-md transition-colors ${
+                            msg.feedback === 'down' ? 'bg-red-100 text-red-600 dark:bg-red-900/30' : 'text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
+                          }`}>
+                          <ThumbsDown className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
 
+                {/* Suggestion Chips */}
+                {lastSuggestions.length > 0 && !isTyping && !mpStep && personalityStep === null && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {lastSuggestions.map((suggestion, i) => (
+                      <button key={i} onClick={() => handleSuggestionClick(suggestion)}
+                        className="px-3 py-1.5 rounded-full text-[11px] font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/30 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Typing Indicator */}
                 {isTyping && (
                   <div className="flex justify-end">
                     <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-4 py-3">
-                      <div className="flex gap-1">
-                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1">
+                          <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </div>
+                        <span className="text-[10px] text-gray-400">يبحث...</span>
                       </div>
                     </div>
                   </div>
                 )}
 
+                {/* Quick Actions (initial) */}
                 {messages.length === 1 && !mpStep && (
                   <div className="mt-4">
                     <p className="text-[11px] text-gray-400 mb-2 text-center">اقتراحات سريعة:</p>
@@ -482,6 +582,7 @@ export function AIAssistant() {
                   </div>
                 )}
 
+                {/* Market Price Wizard Progress */}
                 {mpStep && (
                   <div className="mt-3 p-2.5 rounded-xl bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800/30">
                     <p className="text-[11px] text-purple-600 dark:text-purple-400 font-medium text-center">
@@ -500,6 +601,7 @@ export function AIAssistant() {
                   </div>
                 )}
 
+                {/* Personality Quiz Progress */}
                 {personalityStep !== null && (
                   <div className="mt-3">
                     <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 mb-2">
@@ -530,13 +632,14 @@ export function AIAssistant() {
                 <div ref={messagesEndRef} />
               </div>
 
+              {/* Input */}
               <div className="p-3 border-t border-gray-100 dark:border-gray-800">
                 <form onSubmit={(e) => { e.preventDefault(); handleSend(input); }}
                   className="flex items-center gap-2">
                   <input ref={inputRef} type="text" value={input}
                     onChange={(e) => setInput(e.target.value)}
                     disabled={isTyping}
-                    placeholder={mpStep ? 'أكتب إجابتك...' : 'اكتب سؤالك...'}
+                    placeholder={mpStep ? 'أكتب إجابتك...' : 'اكتب سؤالك... (بدي، شو، وين...)'}
                     className="flex-1 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-blue-500 transition-colors disabled:opacity-50" />
                   <button type="submit" disabled={!input.trim() || isTyping}
                     className="p-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white disabled:opacity-50 transition-all hover:shadow-lg hover:shadow-blue-500/25">

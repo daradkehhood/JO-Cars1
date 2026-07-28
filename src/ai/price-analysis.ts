@@ -8,6 +8,10 @@
 
 import { chatCompletionJSON, type ChatMessage } from './nvidia-client';
 import { getSystemPrompt } from './site-knowledge';
+import {
+  JORDAN_PRICES, MODEL_ADJUSTMENTS, CONDITION_FACTORS,
+  normalizeBrand as normalizeBrandShared, calculateBasePrice as calculateBasePriceShared,
+} from './brand-prices';
 
 export interface CarData {
   brand: string;
@@ -163,80 +167,6 @@ ${dbAvg > 0 ? `متوسط أسعار المشابه: ${dbAvg.toLocaleString()} �
 }
 
 // ── Local heuristic fallback ──
-const JORDAN_PRICES: Record<string, Record<number, number>> = {
-  toyota: { 2026: 24000, 2025: 22000, 2024: 20000, 2023: 18000, 2022: 16500, 2021: 15000, 2020: 13500, 2019: 12000, 2018: 10500, 2017: 9500, 2016: 8500, 2015: 7500, 2014: 6500, 2013: 5500 },
-  honda: { 2026: 22000, 2025: 20000, 2024: 18000, 2023: 16000, 2022: 14500, 2021: 13000, 2020: 11500, 2019: 10000, 2018: 9000, 2017: 8000, 2016: 7000, 2015: 6000, 2014: 5500, 2013: 5000 },
-  hyundai: { 2026: 20000, 2025: 18000, 2024: 16000, 2023: 14000, 2022: 12500, 2021: 11000, 2020: 9500, 2019: 8500, 2018: 7500, 2017: 6500, 2016: 5500, 2015: 5000, 2014: 4500, 2013: 4000 },
-  nissan: { 2026: 21000, 2025: 19000, 2024: 17000, 2023: 15000, 2022: 13500, 2021: 12000, 2020: 10500, 2019: 9000, 2018: 8000, 2017: 7000, 2016: 6000, 2015: 5500, 2014: 5000, 2013: 4500 },
-  kia: { 2026: 19000, 2025: 17000, 2024: 15000, 2023: 13000, 2022: 11500, 2021: 10000, 2020: 8500, 2019: 7500, 2018: 6500, 2017: 5500, 2016: 5000, 2015: 4500, 2014: 4000, 2013: 3500 },
-  mazda: { 2026: 23000, 2025: 21000, 2024: 19000, 2023: 17000, 2022: 15000, 2021: 13500, 2020: 12000, 2019: 10500, 2018: 9500, 2017: 8500, 2016: 7500, 2015: 6500, 2014: 5500, 2013: 5000 },
-  bmw: { 2026: 42000, 2025: 38000, 2024: 34000, 2023: 30000, 2022: 26000, 2021: 23000, 2020: 20000, 2019: 17000, 2018: 15000, 2017: 13000, 2016: 11000, 2015: 9500, 2014: 8000, 2013: 7000 },
-  mercedes: { 2026: 45000, 2025: 40000, 2024: 36000, 2023: 32000, 2022: 28000, 2021: 25000, 2020: 22000, 2019: 19000, 2018: 16000, 2017: 14000, 2016: 12000, 2015: 10000, 2014: 8500, 2013: 7500 },
-  audi: { 2026: 40000, 2025: 35000, 2024: 31000, 2023: 27000, 2022: 24000, 2021: 21000, 2020: 18000, 2019: 15500, 2018: 13500, 2017: 11500, 2016: 10000, 2015: 8500, 2014: 7500, 2013: 6500 },
-  lexus: { 2026: 48000, 2025: 42000, 2024: 38000, 2023: 34000, 2022: 30000, 2021: 26000, 2020: 23000, 2019: 20000, 2018: 17000, 2017: 15000, 2016: 13000, 2015: 11000, 2014: 9500, 2013: 8000 },
-  suzuki: { 2026: 14000, 2025: 12000, 2024: 10500, 2023: 9000, 2022: 8000, 2021: 7000, 2020: 6000, 2019: 5500, 2018: 5000, 2017: 4500, 2016: 4000, 2015: 3500, 2014: 3000, 2013: 2800 },
-};
-
-const MODEL_ADJUSTMENTS: Record<string, Record<string, number>> = {
-  toyota: { 'corolla': 0, 'camry': 0.15, 'rav4': 0.25, 'land cruiser': 0.80, 'prado': 0.50, 'hilux': 0.30, 'yaris': -0.15, 'fortuner': 0.35 },
-  honda: { 'civic': 0, 'accord': 0.10, 'crv': 0.20, 'hrv': 0.05, 'pilot': 0.35, 'city': -0.10 },
-  hyundai: { 'accent': -0.10, 'elantra': 0, 'sonata': 0.15, 'tucson': 0.20, 'santa fe': 0.35, 'palisade': 0.50 },
-  nissan: { 'sunny': -0.10, 'sentra': 0, 'altima': 0.15, 'xtrail': 0.20, 'patrol': 0.80, 'kicks': 0.05 },
-  kia: { 'rio': -0.10, 'cerato': 0, 'optima': 0.10, 'sportage': 0.20, 'sorento': 0.35, 'picanto': -0.20 },
-  mazda: { '2': -0.15, '3': 0, '6': 0.10, 'cx5': 0.20, 'cx9': 0.40, 'cx30': 0.10 },
-  bmw: { '1 series': -0.15, '3 series': 0, '5 series': 0.20, '7 series': 0.50, 'x1': 0.10, 'x3': 0.25, 'x5': 0.45, 'x7': 0.70 },
-  mercedes: { 'a class': -0.10, 'c class': 0, 'e class': 0.20, 's class': 0.50, 'gla': 0.10, 'glc': 0.25, 'gle': 0.40, 'gls': 0.60 },
-};
-
-const CONDITION_FACTORS: Record<string, number> = {
-  'ممتازة': 0.15, 'EXCELLENT': 0.15, 'جيدة جداً': 0.05, 'VERY_GOOD': 0.05,
-  'جيدة': -0.05, 'GOOD': -0.05, 'مقبولة': -0.15, 'FAIR': -0.15,
-};
-
-function normalizeBrand(brand: string): string {
-  const lower = brand.toLowerCase().trim();
-  const aliases: Record<string, string> = {
-    'toyota': 'toyota', 'تويوتا': 'toyota', 'honda': 'honda', 'هوندا': 'honda',
-    'hyundai': 'hyundai', 'هيونداي': 'hyundai', 'nissan': 'nissan', 'نيسان': 'nissan',
-    'kia': 'kia', 'كيا': 'kia', 'mazda': 'mazda', 'مازدا': 'mazda',
-    'bmw': 'bmw', 'بي ام': 'bmw', 'mercedes': 'mercedes', 'مرسيدس': 'mercedes',
-    'audi': 'audi', 'اودي': 'audi', 'lexus': 'lexus', 'لكزس': 'lexus',
-    'suzuki': 'suzuki', 'سوزوكي': 'suzuki', 'mg': 'mg', 'ام جي': 'mg',
-    'chery': 'chery', 'شيري': 'chery', 'geely': 'geely', 'جيلي': 'geely',
-    'byd': 'byd', 'haval': 'haval', 'هافال': 'haval',
-  };
-  return aliases[lower] || lower;
-}
-
-function calculateBasePrice(brand: string, model: string, year: number): number {
-  const normalized = normalizeBrand(brand);
-  const brandPrices = JORDAN_PRICES[normalized];
-  if (!brandPrices) return 15000;
-  const years = Object.keys(brandPrices).map(Number).sort((a, b) => b - a);
-  let base = 0;
-  if (year >= years[0]) base = brandPrices[years[0]] * 1.05;
-  else if (year <= years[years.length - 1]) base = brandPrices[years[years.length - 1]] * 0.7;
-  else {
-    for (let i = 0; i < years.length - 1; i++) {
-      if (year <= years[i] && year >= years[i + 1]) {
-        const ratio = (years[i] - year) / (years[i] - years[i + 1]);
-        base = brandPrices[years[i]] + ratio * (brandPrices[years[i + 1]] - brandPrices[years[i]]);
-        break;
-      }
-    }
-  }
-  if (base === 0) base = brandPrices[years[0]] || 15000;
-  const normalized2 = normalizeBrand(brand);
-  const modelLower = model.toLowerCase().trim();
-  const brandModels = MODEL_ADJUSTMENTS[normalized2];
-  if (brandModels) {
-    for (const [key, adj] of Object.entries(brandModels)) {
-      if (modelLower.includes(key)) { base *= (1 + adj); break; }
-    }
-  }
-  return Math.round(base);
-}
-
 function analyzeFactors(car: CarData): PriceFactor[] {
   const factors: PriceFactor[] = [];
   const age = new Date().getFullYear() - car.year;
@@ -270,7 +200,7 @@ function analyzeFactors(car: CarData): PriceFactor[] {
 
 function calculateSimilarityScore(car: CarData, candidate: { brand?: string; model?: string; year: number; kilometers: number }): number {
   let score = 0;
-  if (candidate.brand && normalizeBrand(candidate.brand) === normalizeBrand(car.brand)) score += 25;
+  if (candidate.brand && normalizeBrandShared(candidate.brand) === normalizeBrandShared(car.brand)) score += 25;
   if (candidate.model && car.model) {
     const candModel = candidate.model.toLowerCase();
     const carModel = car.model.toLowerCase();
@@ -342,7 +272,7 @@ function generateAssessment(userPrice: number, fairPrice: number, factors: Price
 }
 
 export async function analyzeCarPrice(car: CarData): Promise<PriceAnalysis> {
-  const basePrice = calculateBasePrice(car.brand, car.model, car.year);
+  const basePrice = calculateBasePriceShared(car.brand, car.model, car.year);
   const factors = analyzeFactors(car);
 
   let totalImpact = 0;
