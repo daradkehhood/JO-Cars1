@@ -56,16 +56,6 @@ export function HeroSection() {
 
   return (
     <section className="relative min-h-[92vh] lg:min-h-[94vh] flex items-center justify-center overflow-hidden pt-20 pb-10 lg:pt-24">
-      {/* Background logo watermark */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-        <img
-          src="/logo.png"
-          alt=""
-          className="w-[500px] h-[500px] object-contain opacity-[0.04] dark:opacity-[0.06]"
-          aria-hidden="true"
-        />
-      </div>
-
       {/* Background orbs */}
       <div className="hero-orb hero-orb-1" />
       <div className="hero-orb hero-orb-2" />
