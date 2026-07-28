@@ -36,6 +36,7 @@ export interface ChatOptions {
 /**
  * Send a chat completion request to NVIDIA API.
  * Returns the full response text as a string.
+ * Includes a 25-second timeout to prevent hanging.
  */
 export async function chatCompletion(
   messages: ChatMessage[],
@@ -44,20 +45,32 @@ export async function chatCompletion(
   const openai = getClient();
   const { temperature = 0.7, maxTokens = 4096, topP = 1 } = options;
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25000);
+
   try {
-    const completion = await openai.chat.completions.create({
-      model: NVIDIA_MODEL,
-      messages,
-      temperature,
-      top_p: topP,
-      max_tokens: maxTokens,
-      stream: false,
-    });
+    const completion = await openai.chat.completions.create(
+      {
+        model: NVIDIA_MODEL,
+        messages,
+        temperature,
+        top_p: topP,
+        max_tokens: maxTokens,
+        stream: false,
+      },
+      { signal: controller.signal as any }
+    );
 
     return completion.choices[0]?.message?.content || '';
-  } catch (error) {
-    console.error('[NVIDIA AI] Chat completion error:', error);
+  } catch (error: any) {
+    if (error?.name === 'AbortError' || error?.message?.includes('abort')) {
+      console.error('[NVIDIA AI] Request timed out after 25s');
+    } else {
+      console.error('[NVIDIA AI] Chat completion error:', error);
+    }
     throw error;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
