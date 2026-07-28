@@ -134,9 +134,8 @@ export function Header() {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
-              <div className="relative w-9 h-9 rounded-xl bg-gradient-luxury flex items-center justify-center shadow-primary transition-transform duration-300 group-hover:scale-105">
-                <Car className="w-5 h-5 text-white" />
-                <div className="absolute -top-0.5 -left-0.5 w-2 h-2 rounded-full bg-gold-400 shadow-gold" />
+              <div className="relative h-9 w-auto flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+                <img src="/logo.png" alt="JO Cars" className="h-9 w-auto object-contain" />
               </div>
               <span className="text-lg font-bold text-surface-900 dark:text-white hidden sm:block tracking-tight">
                 <span className="gradient-text">JO</span>
