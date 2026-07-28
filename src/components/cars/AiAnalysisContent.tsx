@@ -222,17 +222,15 @@ export function AiAnalysisContent({ carId }: AiAnalysisProps) {
         <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-800">
           <span className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-200">
             <Sparkles className="w-3.5 h-3.5" />
-            تحليل ذكاء اصطناعي محلي
+            تحليل بالذكاء الاصطناعي Z.ai
           </span>
           {price.confidence !== undefined && (
-            <span className="px-3 py-1 rounded-full text-xs bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200">
-              ثقة {price.confidence}%
-            </span>
-          )}
-          {!price.isRealWebSearch && (
-            <span className="px-3 py-1 rounded-full text-xs bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200">
-              <AlertCircle className="w-3 h-3 inline mr-1" />
-              تحليل على المواصفات (لا يوجد scraping مفعّل)
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+              price.confidence >= 80 ? 'bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border-green-200' :
+              price.confidence >= 60 ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200' :
+              'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200'
+            }`}>
+              نسبة الثقة {price.confidence}%
             </span>
           )}
           {(price.sources || []).map((src, i) => (
@@ -248,21 +246,21 @@ export function AiAnalysisContent({ carId }: AiAnalysisProps) {
             <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
               <DollarSign className="w-4 h-4 text-white" />
             </div>
-            <h3 className="font-bold text-gray-900 dark:text-white">تحليل السعر الذكي</h3>
+            <h3 className="font-bold text-gray-900 dark:text-white">تحليل السعر بالذكاء الاصطناعي</h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div className="p-3 rounded-xl bg-white dark:bg-gray-800/50">
-              <p className="text-xs text-gray-500">السعر العادل المقدر</p>
-              <p className="font-bold text-lg text-gray-900 dark:text-white">{formatPrice(price.estimate)} د.أ</p>
+              <p className="text-xs text-gray-500">السعر المتوقع للسيارة</p>
+              <p className="font-bold text-lg text-emerald-600">{formatPrice(price.estimate)} د.أ</p>
             </div>
             <div className="p-3 rounded-xl bg-white dark:bg-gray-800/50">
-              <p className="text-xs text-gray-500">نطاق السوق</p>
+              <p className="text-xs text-gray-500">متوسط سعر السيارات المشابهة</p>
+              <p className="font-bold text-lg text-gray-900 dark:text-white">{formatPrice(price.avgPrice)} د.أ</p>
+            </div>
+            <div className="p-3 rounded-xl bg-white dark:bg-gray-800/50">
+              <p className="text-xs text-gray-500">نطاق الأسعار في السوق</p>
               <p className="font-bold text-gray-900 dark:text-white">{formatPrice(price.range.min)} - {formatPrice(price.range.max)} د.أ</p>
-            </div>
-            <div className="p-3 rounded-xl bg-white dark:bg-gray-800/50">
-              <p className="text-xs text-gray-500">سعر الإعلان</p>
-              <p className="font-bold text-lg text-gray-900 dark:text-white">{formatPrice(car.price)} د.أ</p>
             </div>
           </div>
 
@@ -273,7 +271,7 @@ export function AiAnalysisContent({ carId }: AiAnalysisProps) {
               {price.diffPercent > 0 && <span className="ml-1">({price.diffPercent}%)</span>}
             </span>
             <span className="px-3 py-1 rounded-full text-xs text-gray-500 bg-gray-50 dark:bg-gray-800 border border-gray-200">
-              <BarChart3 className="w-3 h-3 inline mr-1" /> {price.similarCount} سيارة مشابهة
+              <BarChart3 className="w-3 h-3 inline mr-1" /> {price.similarCount} سيارة مشابهة في السوق
             </span>
           </div>
 

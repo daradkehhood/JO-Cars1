@@ -16,6 +16,7 @@ import {
 import { PriceEvaluation } from '@/components/cars/PriceEvaluation';
 import { MapPicker } from '@/components/cars/MapPicker';
 import { CarPriceAnalysis } from '@/components/cars/CarPriceAnalysis';
+import { AIPriceEstimator } from '@/components/cars/AIPriceEstimator';
 import toast from 'react-hot-toast';
 
 interface Brand { id: string; nameAr: string; nameEn: string; slug: string; }
@@ -324,42 +325,27 @@ export default function AddCarPage() {
                     <Input label="السعر (دينار)" type="number" value={form.price} onChange={e => updateForm('price', parseFloat(e.target.value))} error={fieldError('price')} />
                   </div>
 
-                  <PriceEvaluation
+                  <AIPriceEstimator
                     brandId={form.brandId}
                     modelId={form.modelId}
                     year={form.year}
+                    trim={form.trim}
                     kilometers={form.kilometers}
                     condition={form.condition}
                     cityId={form.cityId}
+                    fuelType={form.fuelType}
+                    transmission={form.transmission}
+                    engineCapacity={form.engineCapacity}
+                    bodyType={form.bodyType}
+                    color={form.color}
+                    ownerCount={form.ownerCount}
+                    isDamaged={form.isDamaged}
+                    hasWarranty={form.hasWarranty}
+                    hasServiceHistory={form.hasServiceHistory}
+                    isPaintOriginal={form.isPaintOriginal}
                     currentPrice={form.price}
                     onPriceSelect={(price) => updateForm('price', price)}
                   />
-
-                  {form.brandId && (
-                    <CarPriceAnalysis
-                      brand={form.brandId}
-                      model={form.modelId}
-                      year={form.year}
-                      trim={form.trim}
-                      kilometers={form.kilometers}
-                      condition={form.condition}
-                      fuelType={form.fuelType}
-                      transmission={form.transmission}
-                      bodyType={form.bodyType}
-                      engineCapacity={form.engineCapacity}
-                      cylinders={form.cylinders}
-                      drivetrain={form.drivetrain}
-                      color={form.color}
-                      ownerCount={form.ownerCount}
-                      isDamaged={form.isDamaged}
-                      isPaintOriginal={form.isPaintOriginal}
-                      hasWarranty={form.hasWarranty}
-                      hasServiceHistory={form.hasServiceHistory}
-                      currentPrice={form.price}
-                      onPriceSelect={(price) => updateForm('price', price)}
-                      compact
-                    />
-                  )}
 
                   <div className="flex justify-between pt-4">
                     <div />

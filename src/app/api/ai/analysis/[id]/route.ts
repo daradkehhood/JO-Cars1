@@ -195,7 +195,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         priceConfidence = 40;
       }
     } else {
-      avgPrice = fairPrice;
+      // Calculate avgPrice from DB similar cars (not from LLM)
+      if (dbPrices.length >= 2) {
+        avgPrice = Math.round(dbPrices.reduce((s, p) => s + p, 0) / dbPrices.length);
+      } else {
+        avgPrice = fairPrice;
+      }
     }
 
     const pricePosition = car.price > avgPrice ? 'above' : car.price < avgPrice ? 'below' : 'match';
