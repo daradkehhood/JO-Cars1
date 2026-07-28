@@ -4,7 +4,7 @@ import { NextRequest } from 'next/server';
 import prisma from './prisma';
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
-const TOKEN_EXPIRY = '24h';
+const TOKEN_EXPIRY = '30d';
 const ROTATION_THRESHOLD = 6 * 60 * 60 * 1000; // 6 hours
 
 if (!JWT_SECRET && process.env.NODE_ENV === 'production') {

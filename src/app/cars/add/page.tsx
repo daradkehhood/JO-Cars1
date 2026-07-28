@@ -169,16 +169,16 @@ export default function AddCarPage() {
       if (data.success) {
         toast.success('تم إضافة السيارة بنجاح! في انتظار المراجعة.');
         router.push(`/cars/${data.data.slug || data.data.id}`);
-      } else {
-        const errMap: Record<string, string> = {};
-        if (data.details && Array.isArray(data.details)) {
-          data.details.forEach((d: { field: string; message: string }) => { errMap[d.field] = d.message; });
-          setErrors(errMap);
-          toast.error('يوجد أخطاء في البيانات، الحقول الخطأ محددة بالأحمر', { duration: 5000 });
         } else {
-          toast.error(data.error || 'فشل إضافة السيارة');
+          const errMap: Record<string, string> = {};
+          if (data.details && Array.isArray(data.details)) {
+            data.details.forEach((d: { field: string; message: string }) => { errMap[d.field] = d.message; });
+            setErrors(errMap);
+            toast.error('يوجد أخطاء في البيانات، الحقول الخطأ محددة بالأحمر', { duration: 5000 });
+          } else {
+            toast.error(data.error || 'فشل إضافة السيارة', { duration: 5000 });
+          }
         }
-      }
     } catch { toast.error('حدث خطأ'); }
     finally { setLoading(false); }
   };

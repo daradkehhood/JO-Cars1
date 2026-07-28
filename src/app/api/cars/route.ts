@@ -169,7 +169,13 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const user = await authenticateRequest(request);
+  let user;
+  try {
+    user = await authenticateRequest(request);
+  } catch (authErr) {
+    console.error('Auth error during car create:', authErr);
+    return unauthorizedResponse();
+  }
   if (!user) return unauthorizedResponse();
   if (user.canPost === false) return errorResponse('تم إيقاف النشر لحسابك', 403);
   if (user.banStatus) return errorResponse('حسابك محظور', 403);
@@ -323,6 +329,7 @@ export async function POST(request: NextRequest) {
     return successResponse(car, 201);
   } catch (error) {
     console.error('Car create error:', error);
-    return errorResponse('فشل إضافة السيارة', 500);
+    const msg = error instanceof Error ? error.message : 'فشل إضافة السيارة';
+    return errorResponse(msg, 500);
   }
 }

@@ -82,7 +82,13 @@ export default function CreateWorkshopPage() {
 
   useEffect(() => {
     if (_hydrated && !isAuthenticated) {
-      router.push('/auth/login?redirect=/workshops/create');
+      const timer = setTimeout(() => {
+        const auth = useAuth.getState();
+        if (auth._hydrated && !auth.isAuthenticated) {
+          router.push('/auth/login?redirect=/workshops/create');
+        }
+      }, 1500);
+      return () => clearTimeout(timer);
     }
   }, [_hydrated, isAuthenticated, router]);
 

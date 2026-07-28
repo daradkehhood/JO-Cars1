@@ -1,8 +1,9 @@
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
-import { searchCars } from '@/lib/ai/search-cars';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { errorResponse } from '@/lib/api';
+import { chatCompletion, type ChatMessage } from '@/ai/nvidia-client';
+import { getSystemPrompt, SITE_NAME, BRAND_PRICE_RANGES } from '@/ai/site-knowledge';
 
 const familyCars = ['SUV', 'CROSSOVER', 'VAN', 'MINIVAN', 'WAGON'];
 const economyTypes = ['PETROL', 'HYBRID'];
@@ -23,15 +24,9 @@ function queryToFilters(query: string): Record<string, unknown> {
   const filters: Record<string, unknown> = { status: 'APPROVED' };
   const budget = parseBudget(query);
   if (budget) filters.price = { lte: budget + (budget > 5000 ? 3000 : 1000) };
-  if (/عائل|عائلي|كبير|عائلة|أطفال|طفال|van|suv/i.test(q)) {
-    filters.bodyType = { in: familyCars };
-  }
-  if (/دفع رباعي|suv|تطعيس|بر|طرق وعرة/i.test(q)) {
-    filters.bodyType = { in: ['SUV', 'CROSSOVER'] };
-  }
-  if (/اقتصاد|موفر|بنزين|مصروف|موفرة|اقتصادية/i.test(q)) {
-    filters.fuelType = { in: economyTypes };
-  }
+  if (/عائل|عائلي|كبير|عائلة|أطفال|طفال|van|suv/i.test(q)) filters.bodyType = { in: familyCars };
+  if (/دفع رباعي|suv|تطعيس|بر|طرق وعرة/i.test(q)) filters.bodyType = { in: ['SUV', 'CROSSOVER'] };
+  if (/اقتصاد|موفر|بنزين|مصروف|موفرة|اقتصادية/i.test(q)) filters.fuelType = { in: economyTypes };
   if (/(بي ام|bmw)/i.test(q)) filters.brand = { nameEn: { contains: 'bmw' } };
   if (/(مرسيدس|mercedes)/i.test(q)) filters.brand = { nameAr: { contains: 'مرسيدس' } };
   if (/(تويوتا|toyota)/i.test(q)) filters.brand = { nameAr: { contains: 'تويوتا' } };
@@ -42,30 +37,50 @@ function queryToFilters(query: string): Record<string, unknown> {
   return filters;
 }
 
-function formatResponse(query: string, cars: any[], budget: number | null): { message: string; cars: any[] } {
+async function fetchCars(query: string) {
+  const budget = parseBudget(query);
+  const filters = queryToFilters(query);
+
+  let cars = await prisma.car.findMany({
+    where: filters as any,
+    take: 15,
+    orderBy: [{ featured: 'desc' }, { createdAt: 'desc' }],
+    include: {
+      brand: { select: { nameAr: true, nameEn: true } },
+      model: { select: { nameAr: true, nameEn: true } },
+      city: { select: { nameAr: true } },
+      images: { take: 1, orderBy: { order: 'asc' }, select: { url: true } },
+    },
+  });
+
+  if (cars.length === 0 && budget) {
+    delete filters.bodyType;
+    delete (filters as any).fuelType;
+    (filters as any).price = { gte: budget - 2000, lte: budget + 5000 };
+    cars = await prisma.car.findMany({
+      where: filters as any, take: 10, orderBy: { createdAt: 'desc' },
+      include: {
+        brand: { select: { nameAr: true, nameEn: true } },
+        model: { select: { nameAr: true, nameEn: true } },
+        city: { select: { nameAr: true } },
+        images: { take: 1, orderBy: { order: 'asc' }, select: { url: true } },
+      },
+    });
+  }
+
   if (cars.length === 0) {
-    return {
-      message: '🚗 عذراً، ما لقيت سيارات متطابقة مع طلبك. جرب تغيير الميزانية أو نوع السيارة.',
-      cars: [],
-    };
+    cars = await prisma.car.findMany({
+      where: { status: 'APPROVED' }, take: 6, orderBy: { createdAt: 'desc' },
+      include: {
+        brand: { select: { nameAr: true, nameEn: true } },
+        model: { select: { nameAr: true, nameEn: true } },
+        city: { select: { nameAr: true } },
+        images: { take: 1, orderBy: { order: 'asc' }, select: { url: true } },
+      },
+    });
   }
 
-  let intro = '';
-  if (budget) {
-    intro = `💰 ضمن ميزانية ${budget.toLocaleString()} دينار، وجدت ${cars.length} سيارة مناسبة:\n\n`;
-  } else {
-    intro = `🎯 وجدت ${cars.length} سيارة مناسبة لك:\n\n`;
-  }
-
-  const refCodeSuggest = 'انسخ **رقم المرجع (refCode)** من أي سيارة وضعه في البحث للوصول السريع';
-
-  return {
-    message: intro + cars.slice(0, 6).map((car: any, i: number) =>
-      `${i + 1}. **${car.brand?.nameAr || ''} ${car.model?.nameAr || ''} ${car.year}**\n` +
-      `   💵 ${car.price.toLocaleString()} د.أ | 📍 ${car.city?.nameAr || ''} | 🏷️ ${car.refCode || ''}`
-    ).join('\n') + `\n\n${refCodeSuggest}`,
-    cars: cars.slice(0, 6),
-  };
+  return cars;
 }
 
 export async function POST(request: NextRequest) {
@@ -80,50 +95,62 @@ export async function POST(request: NextRequest) {
       return Response.json({ success: false, error: 'الرجاء إرسال رسالة' }, { status: 400 });
     }
 
+    // Fetch relevant cars from DB
+    const cars = await fetchCars(query);
     const budget = parseBudget(query);
-    const filters = queryToFilters(query);
 
-    let cars = await prisma.car.findMany({
-      where: filters as any,
-      take: 15,
-      orderBy: [{ featured: 'desc' }, { createdAt: 'desc' }],
-      include: {
-        brand: { select: { nameAr: true, nameEn: true } },
-        model: { select: { nameAr: true, nameEn: true } },
-        city: { select: { nameAr: true } },
-        images: { take: 1, orderBy: { order: 'asc' }, select: { url: true } },
-      },
-    });
+    // Build car context for LLM
+    const carContext = cars.length > 0
+      ? cars.slice(0, 10).map((car: any, i: number) =>
+        `${i + 1}. ${car.brand?.nameAr || ''} ${car.model?.nameAr || ''} ${car.year} — ${car.price.toLocaleString()} د.أ | ${car.city?.nameAr || ''} | ${car.condition || ''} | ${car.kilometers.toLocaleString()} كم | refCode: ${car.refCode || 'N/A'}`
+      ).join('\n')
+      : 'لا توجد سيارات متاحة حالياً.';
 
-    if (cars.length === 0 && budget) {
-      delete filters.bodyType;
-      delete (filters as any).fuelType;
-      (filters as any).price = { gte: budget - 2000, lte: budget + 5000 };
-      cars = await prisma.car.findMany({
-        where: filters as any,
-        take: 10,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          brand: { select: { nameAr: true, nameEn: true } },
-          model: { select: { nameAr: true, nameEn: true } },
-          city: { select: { nameAr: true } },
-          images: { take: 1, orderBy: { order: 'asc' }, select: { url: true } },
-        },
+    // Build brand price summary
+    const brandSummary = Object.entries(BRAND_PRICE_RANGES).slice(0, 15).map(
+      ([, data]) => `${data.nameAr}: ${data.min.toLocaleString()}-${data.max.toLocaleString()} د.أ`
+    ).join('، ');
+
+    const systemPrompt = `${getSystemPrompt('chat')}
+
+السيارات المتاحة حالياً في الموقع:
+${carContext}
+
+نطاقات أسعار الماركات (ملخص): ${brandSummary}
+
+${budget ? `الميزانية المطلوبة: ${budget.toLocaleString()} د.أ` : ''}
+
+مهمتك:
+1. إذا سأل المستخدم عن سيارة أو بحث، قدم له منتجات من DB أعلاه مع الأسعار.
+2. إذا سأل عن ميزانية معينة، أعطه خيارات مناسبة.
+3. إذا سأل عن ميزات الموقع أو أي سؤال عام، أجب بشكل منطقي ومفيد.
+4. استخدم refCode للوصول السريع إذا توفر.
+5. الإجابة يجب أن تكون بالعربية و منطقية ومفيدة.
+6. لا تخترع معلومات — إذا لم تجد سيارة مناسبة، قل ذلك بوضوح.`;
+
+    const chatMessages: ChatMessage[] = [
+      { role: 'system', content: systemPrompt },
+      ...messages.map((m: any) => ({ role: m.role || 'user', content: m.content })),
+    ];
+
+    let aiResponse = '';
+    try {
+      aiResponse = await chatCompletion(chatMessages, {
+        temperature: 0.7,
+        maxTokens: 2048,
       });
-    }
-
-    if (cars.length === 0) {
-      cars = await prisma.car.findMany({
-        where: { status: 'APPROVED' },
-        take: 6,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          brand: { select: { nameAr: true, nameEn: true } },
-          model: { select: { nameAr: true, nameEn: true } },
-          city: { select: { nameAr: true } },
-          images: { take: 1, orderBy: { order: 'asc' }, select: { url: true } },
-        },
-      });
+    } catch (llmError) {
+      console.error('[AI Chat] LLM error, using fallback:', llmError);
+      // Fallback to simple response
+      if (cars.length > 0) {
+        aiResponse = `وجدت ${cars.length} سيارة مناسبة لك:\n\n` +
+          cars.slice(0, 6).map((car: any, i: number) =>
+            `${i + 1}. **${car.brand?.nameAr || ''} ${car.model?.nameAr || ''} ${car.year}**\n   💵 ${car.price.toLocaleString()} د.أ | 📍 ${car.city?.nameAr || ''} | 🏷️ ${car.refCode || ''}`
+          ).join('\n\n') +
+          `\n\nانسخ **رقم المرجع (refCode)** من أي سيارة وضعه في البحث للوصول السريع.`;
+      } else {
+        aiResponse = 'عذراً، ما لقيت سيارات متطابقة مع طلبك. جرب تغيير الميزانية أو نوع السيارة.';
+      }
     }
 
     const mappedCars = cars.map((car: any) => ({
@@ -143,8 +170,7 @@ export async function POST(request: NextRequest) {
       model: car.model,
     }));
 
-    const result = formatResponse(query, cars, budget);
-    return Response.json({ success: true, data: { ...result, cars: mappedCars } });
+    return Response.json({ success: true, data: { message: aiResponse, cars: mappedCars } });
   } catch {
     return Response.json({
       success: true,
