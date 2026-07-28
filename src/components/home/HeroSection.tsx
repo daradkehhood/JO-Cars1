@@ -56,6 +56,22 @@ export function HeroSection() {
 
   return (
     <section className="relative min-h-[92vh] lg:min-h-[94vh] flex items-center justify-center overflow-hidden pt-20 pb-10 lg:pt-24">
+      {/* Video background */}
+      <div className="absolute inset-0 z-0">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+          poster="/hero-poster.jpg"
+        >
+          <source src="/hero-bg.mp4" type="video/mp4" />
+        </video>
+        {/* Dark overlay for readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-surface-950/70 via-surface-950/60 to-surface-950/90" />
+      </div>
+
       {/* Background orbs */}
       <div className="hero-orb hero-orb-1" />
       <div className="hero-orb hero-orb-2" />
