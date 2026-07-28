@@ -134,9 +134,10 @@ export function Header() {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
-              <div className="relative w-9 h-9 rounded-xl bg-gradient-luxury flex items-center justify-center shadow-primary transition-transform duration-300 group-hover:scale-105">
-                <Car className="w-5 h-5 text-white" />
-                <div className="absolute -top-0.5 -left-0.5 w-2 h-2 rounded-full bg-gold-400 shadow-gold" />
+              <div className="relative transition-transform duration-300 group-hover:scale-105">
+                <img src="/shield-logo-sm.png" alt="JO Cars" className="h-10 w-10 rounded-lg object-cover" />
+                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-gradient-to-r from-transparent via-gold-400 to-transparent opacity-60 blur-[2px]" />
+                <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-gold-400 opacity-40 blur-[1px]" />
               </div>
               <span className="text-lg font-bold text-surface-900 dark:text-white hidden sm:block tracking-tight">
                 <span className="gradient-text">JO</span>
