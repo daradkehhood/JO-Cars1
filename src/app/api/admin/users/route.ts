@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
     const users = await prisma.user.findMany({
       where: where as any,
       orderBy: { createdAt: 'desc' },
+      take: 100,
       select: {
         id: true, name: true, email: true, role: true, phone: true,
         isActive: true, canPost: true, banStatus: true, banReason: true,

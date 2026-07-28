@@ -84,6 +84,7 @@ export async function GET(request: NextRequest) {
     }
 
     const bans = await prisma.soundBan.findMany({
+      take: 100,
       include: {
         user: {
           select: { id: true, name: true, email: true }

@@ -5,7 +5,7 @@ import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api'
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     let settings = await prisma.siteSettings.findUnique({ where: { id: 'default' } });
     if (!settings) {
@@ -23,6 +23,32 @@ export async function GET() {
         },
       });
     }
+
+    const user = await authenticateRequest(request);
+    if (!user || user.role !== 'ADMIN') {
+      const publicFields = {
+        siteName: settings.siteName,
+        siteNameAr: settings.siteNameAr,
+        logo: settings.logo,
+        logoDark: settings.logoDark,
+        favicon: settings.favicon,
+        primaryColor: settings.primaryColor,
+        secondaryColor: settings.secondaryColor,
+        accentColor: settings.accentColor,
+        currency: settings.currency,
+        currencyAr: settings.currencyAr,
+        maintenance: settings.maintenance,
+        maintenanceMessage: settings.maintenanceMessage,
+        homeHeroTitle: settings.homeHeroTitle,
+        homeHeroSubtitle: settings.homeHeroSubtitle,
+        homeShowFeatured: settings.homeShowFeatured,
+        homeShowCities: settings.homeShowCities,
+        homeShowBrands: settings.homeShowBrands,
+        homeShowStats: settings.homeShowStats,
+      };
+      return successResponse(publicFields);
+    }
+
     return successResponse(settings);
   } catch {
     return errorResponse('فشل تحميل الإعدادات', 500);

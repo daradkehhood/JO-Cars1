@@ -261,13 +261,13 @@ model MaintenanceService {
   updatedAt   DateTime @updatedAt
 
   provinceId String
-  province   Province @relation(fields: [provinceId], references: [id])
+  province   Province @relation(fields: [provinceId], references: [id], onDelete: Restrict)
 
   cityId String?
   city   City?   @relation(fields: [cityId], references: [id], onDelete: SetNull)
 
   userId String
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([provinceId])
   @@index([cityId])
@@ -339,10 +339,10 @@ model Car {
   deletedAt         DateTime?
   deletedBy         String?
 
-  brand  Brand    @relation(fields: [brandId], references: [id])
-  model  CarModel @relation(fields: [modelId], references: [id])
-  city   City     @relation(fields: [cityId], references: [id])
-  user   User     @relation(fields: [userId], references: [id])
+  brand  Brand    @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  model  CarModel @relation(fields: [modelId], references: [id], onDelete: Restrict)
+  city   City     @relation(fields: [cityId], references: [id], onDelete: Restrict)
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
   images          CarImage[]
@@ -388,6 +388,7 @@ model Car {
   @@index([brandId, modelId])
   @@index([status, featured])
   @@index([status, createdAt])
+  @@index([deletedAt])
   @@map("cars")
 }
 
@@ -497,11 +498,11 @@ model Favorite {
 model Conversation {
   id        String      @id @default(cuid())
   carId     String
-  car       Car         @relation(fields: [carId], references: [id])
+  car       Car         @relation(fields: [carId], references: [id], onDelete: Cascade)
   buyerId   String
-  buyer     User        @relation("BuyerConversations", fields: [buyerId], references: [id])
+  buyer     User        @relation("BuyerConversations", fields: [buyerId], references: [id], onDelete: Cascade)
   sellerId  String
-  seller    User        @relation("SellerConversations", fields: [sellerId], references: [id])
+  seller    User        @relation("SellerConversations", fields: [sellerId], references: [id], onDelete: Cascade)
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
   messages  Message[]
@@ -521,13 +522,13 @@ model Message {
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  sender         User          @relation("SentMessages", fields: [senderId], references: [id])
+  sender         User          @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
   senderId       String
-  receiver       User          @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  receiver       User          @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
   receiverId     String
-  car            Car?          @relation(fields: [carId], references: [id])
+  car            Car?          @relation(fields: [carId], references: [id], onDelete: SetNull)
   carId          String?
-  conversation   Conversation? @relation(fields: [conversationId], references: [id])
+  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
   conversationId String?
 
   @@index([senderId])
@@ -545,9 +546,9 @@ model Report {
   createdAt   DateTime  @default(now())
   resolvedAt  DateTime?
 
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
-  car    Car    @relation(fields: [carId], references: [id])
+  car    Car    @relation(fields: [carId], references: [id], onDelete: Cascade)
   carId  String
 
   @@index([status])
@@ -564,7 +565,7 @@ model Notification {
   link      String?
   createdAt DateTime @default(now())
 
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
   @@index([userId, read])
@@ -581,13 +582,13 @@ model Auction {
   status          String   @default("ACTIVE")
   createdAt       DateTime @default(now())
 
-  car   Car    @relation(fields: [carId], references: [id])
+  car   Car    @relation(fields: [carId], references: [id], onDelete: Cascade)
   carId String @unique
 
-  seller   User   @relation("AuctionSeller", fields: [sellerId], references: [id])
+  seller   User   @relation("AuctionSeller", fields: [sellerId], references: [id], onDelete: Cascade)
   sellerId String
 
-  winner   User?   @relation("AuctionWinner", fields: [winnerId], references: [id])
+  winner   User?   @relation("AuctionWinner", fields: [winnerId], references: [id], onDelete: SetNull)
   winnerId String?
 
   bids Bid[]
@@ -603,10 +604,10 @@ model Bid {
   amount    Float
   createdAt DateTime @default(now())
 
-  auction   Auction @relation(fields: [auctionId], references: [id])
+  auction   Auction @relation(fields: [auctionId], references: [id], onDelete: Cascade)
   auctionId String
 
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
   @@index([auctionId])
@@ -623,7 +624,7 @@ model Subscription {
   autoRenew Boolean  @default(true)
   price     Float
   userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("subscriptions")
 }
@@ -662,7 +663,7 @@ model CarView {
 
   car    Car     @relation(fields: [carId], references: [id], onDelete: Cascade)
   carId  String
-  user   User?   @relation(fields: [userId], references: [id])
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
   userId String?
 
   @@index([carId])
@@ -687,8 +688,8 @@ model CarLog {
   action    String
   createdAt DateTime @default(now())
 
-  car  Car  @relation(fields: [carId], references: [id])
-  user User @relation(fields: [userId], references: [id])
+  car  Car  @relation(fields: [carId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([carId])
   @@index([userId])
@@ -707,7 +708,7 @@ model AuditLog {
   ip          String?
   createdAt   DateTime @default(now())
 
-  actor   User   @relation(fields: [actorId], references: [id])
+  actor   User   @relation(fields: [actorId], references: [id], onDelete: Cascade)
   actorId String
 
   @@index([action])
@@ -728,9 +729,9 @@ model Ticket {
   updatedAt DateTime  @updatedAt
   closedAt  DateTime?
 
-  user       User    @relation(fields: [userId], references: [id])
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId     String
-  assignee   User?   @relation("AssignedTickets", fields: [assigneeId], references: [id])
+  assignee   User?   @relation("AssignedTickets", fields: [assigneeId], references: [id], onDelete: SetNull)
   assigneeId String?
 
   messages TicketMessage[]
@@ -786,9 +787,9 @@ model UsedPart {
   deletedBy    String?
 
   userId String
-  user   User   @relation(fields: [userId], references: [id])
-  brand  Brand? @relation(fields: [brandId], references: [id])
-  city   City?  @relation(fields: [cityId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brand  Brand? @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  city   City?  @relation(fields: [cityId], references: [id], onDelete: SetNull)
 
   @@index([partType])
   @@index([brandId])
@@ -797,6 +798,7 @@ model UsedPart {
   @@index([status])
   @@index([price])
   @@index([createdAt])
+  @@index([deletedAt])
   @@map("used_parts")
 }
 
@@ -832,11 +834,11 @@ model UserRating {
   createdAt DateTime @default(now())
 
   raterId      String
-  rater        User   @relation("GivenRatings", fields: [raterId], references: [id])
+  rater        User   @relation("GivenRatings", fields: [raterId], references: [id], onDelete: Cascade)
   targetUserId String
-  targetUser   User   @relation("ReceivedRatings", fields: [targetUserId], references: [id])
+  targetUser   User   @relation("ReceivedRatings", fields: [targetUserId], references: [id], onDelete: Cascade)
   carId        String
-  car          Car    @relation(fields: [carId], references: [id])
+  car          Car    @relation(fields: [carId], references: [id], onDelete: Cascade)
 
   @@unique([raterId, targetUserId, carId])
   @@index([targetUserId])
@@ -877,7 +879,7 @@ model ForumTopic {
   category   ForumCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   userId String
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   posts ForumPost[]
 
@@ -898,7 +900,7 @@ model ForumPost {
   topic   ForumTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
 
   userId String
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   reports ForumPostReport[]
 
@@ -922,10 +924,10 @@ model ForumPostReport {
   post   ForumPost? @relation(fields: [postId], references: [id], onDelete: SetNull)
 
   reporterId String
-  reporter   User   @relation("ReportedBy", fields: [reporterId], references: [id])
+  reporter   User   @relation("ReportedBy", fields: [reporterId], references: [id], onDelete: Cascade)
 
   reportedUserId String
-  reportedUser   User   @relation("ReportedUser", fields: [reportedUserId], references: [id])
+  reportedUser   User   @relation("ReportedUser", fields: [reportedUserId], references: [id], onDelete: Cascade)
 
   @@index([status])
   @@index([postId])
@@ -959,7 +961,7 @@ model WantedAd {
   provinceId String?
   province   Province? @relation(fields: [provinceId], references: [id], onDelete: SetNull)
   userId     String
-  user       User      @relation(fields: [userId], references: [id])
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   offers WantedOffer[]
 
@@ -998,7 +1000,7 @@ model CarComment {
 
   car    Car    @relation(fields: [carId], references: [id], onDelete: Cascade)
   carId  String
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
   reports CarCommentReport[]
@@ -1022,10 +1024,10 @@ model CarCommentReport {
   comment   CarComment? @relation(fields: [commentId], references: [id], onDelete: SetNull)
 
   reporterId String
-  reporter   User   @relation("CommentReporters", fields: [reporterId], references: [id])
+  reporter   User   @relation("CommentReporters", fields: [reporterId], references: [id], onDelete: Cascade)
 
   reportedUserId String
-  reportedUser   User   @relation("ReportedComments", fields: [reportedUserId], references: [id])
+  reportedUser   User   @relation("ReportedComments", fields: [reportedUserId], references: [id], onDelete: Cascade)
 
   @@index([status])
   @@index([commentId])
@@ -1169,8 +1171,8 @@ model CarExpense {
   shopName    String?
   createdAt   DateTime @default(now())
 
-  garage UserGarage @relation(fields: [garageId], references: [id])
-  user   User       @relation(fields: [userId], references: [id])
+  garage UserGarage @relation(fields: [garageId], references: [id], onDelete: Cascade)
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([garageId])
   @@index([userId])
@@ -1186,7 +1188,7 @@ model GarageImage {
   order     Int      @default(0)
   createdAt DateTime @default(now())
 
-  garage UserGarage @relation(fields: [garageId], references: [id])
+  garage UserGarage @relation(fields: [garageId], references: [id], onDelete: Cascade)
 
   @@index([garageId])
   @@map("garage_images")
@@ -1207,7 +1209,7 @@ model CarSoundRecording {
   updatedAt DateTime @updatedAt
 
   car      Car            @relation(fields: [carId], references: [id], onDelete: Cascade)
-  user     User           @relation(fields: [userId], references: [id])
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   analysis SoundAnalysis?
   reports  SoundReport[]
 
@@ -1280,7 +1282,7 @@ model SoundReport {
 
   recording CarSoundRecording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
   car       Car               @relation(fields: [carId], references: [id], onDelete: Cascade)
-  reporter  User              @relation(fields: [reporterId], references: [id])
+  reporter  User              @relation(fields: [reporterId], references: [id], onDelete: Cascade)
   reviewer  User?             @relation("SoundReportReviewer", fields: [reviewedBy], references: [id])
 
   @@index([recordingId])
@@ -1303,8 +1305,8 @@ model SoundBan {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  user   User @relation(fields: [userId], references: [id])
-  banner User @relation("SoundBanBanner", fields: [bannedBy], references: [id])
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  banner User @relation("SoundBanBanner", fields: [bannedBy], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([isActive])
@@ -1535,7 +1537,7 @@ model WorkshopAdReport {
   createdAt   DateTime  @default(now())
 
   ad       WorkshopAd @relation(fields: [adId], references: [id], onDelete: Cascade)
-  user     User       @relation(fields: [userId], references: [id])
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   reviewer User?      @relation("WorkshopAdReportReviewer", fields: [reviewedBy], references: [id])
 
   @@index([adId])
@@ -1558,7 +1560,7 @@ model WorkshopReport {
   createdAt   DateTime  @default(now())
 
   workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
-  user     User     @relation(fields: [userId], references: [id])
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   reviewer User?    @relation("WorkshopReportReviewer", fields: [reviewedBy], references: [id])
 
   @@index([workshopId])
@@ -1583,7 +1585,7 @@ model CostRecord {
   createdAt   DateTime @default(now())
 
   workshop Workshop? @relation(fields: [workshopId], references: [id])
-  user     User      @relation(fields: [userId], references: [id])
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([carMake])
   @@index([carModel])
@@ -1668,7 +1670,7 @@ model CarBooking {
   updatedAt        DateTime  @updatedAt
 
   car          Car           @relation(fields: [carId], references: [id], onDelete: Cascade)
-  dealer       User          @relation("BookingDealer", fields: [dealerId], references: [id])
+  dealer       User          @relation("BookingDealer", fields: [dealerId], references: [id], onDelete: Cascade)
   buyer        User          @relation("BookingBuyer", fields: [buyerId], references: [id], onDelete: Cascade)
   conversation Conversation? @relation("BookingConversation")
   reviews      CarReview[]

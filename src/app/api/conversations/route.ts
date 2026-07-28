@@ -16,24 +16,19 @@ export async function GET(request: NextRequest) {
         buyer: { select: { id: true, name: true, image: true } },
         seller: { select: { id: true, name: true, image: true } },
         messages: { orderBy: { createdAt: 'desc' }, take: 1 },
+        _count: {
+          select: {
+            messages: { where: { read: false, receiverId: user.id } },
+          },
+        },
       },
       orderBy: { updatedAt: 'desc' },
     });
 
-    const result = conversations.map((c) => {
+    const enriched = conversations.map((c) => {
       const lastMsg = c.messages[0] || null;
-      const unreadCount = 0;
-      return { ...c, lastMessage: lastMsg, unreadCount };
+      return { ...c, lastMessage: lastMsg, unreadCount: c._count.messages };
     });
-
-    const enriched = await Promise.all(
-      result.map(async (c) => {
-        const count = await prisma.message.count({
-          where: { conversationId: c.id, read: false, receiverId: user.id },
-        });
-        return { ...c, unreadCount: count };
-      })
-    );
 
     return successResponse(enriched);
   } catch (error) {

@@ -62,13 +62,21 @@ export async function POST(request: NextRequest) {
         tables: {},
       };
 
+      const SENSITIVE_FIELDS = ['password', 'lastLoginIp', 'failedLoginAttempts', 'lockedUntil'];
+
       for (const modelName of MODELS) {
         try {
           const model = (prisma as any)[modelName];
           if (model && typeof model.findMany === 'function') {
             const records = await model.findMany({ take: 10000 });
             if (records.length > 0) {
-              exportData.tables[modelName] = records;
+              exportData.tables[modelName] = records.map((r: Record<string, unknown>) => {
+                const clean: Record<string, unknown> = {};
+                for (const [k, v] of Object.entries(r)) {
+                  if (!SENSITIVE_FIELDS.includes(k)) clean[k] = v;
+                }
+                return clean;
+              });
             }
           }
         } catch {}

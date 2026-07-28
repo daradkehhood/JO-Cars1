@@ -70,6 +70,7 @@ export async function GET(request: NextRequest) {
 
     const reports = await prisma.soundReport.findMany({
       where: { status },
+      take: 50,
       include: {
         recording: true,
         car: {
