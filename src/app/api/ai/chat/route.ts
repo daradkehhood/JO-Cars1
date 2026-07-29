@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { errorResponse } from '@/lib/api';
-import { chatCompletion, type ChatMessage } from '@/ai/nvidia-client';
+import { chatCompletion, type ChatMessage, type AIModelId, DEFAULT_MODEL } from '@/ai/nvidia-client';
 import { fetchOpenSooqListings } from '@/lib/opensooq-scrape';
 import { getCachedResponse, setCachedResponse } from '@/ai/chat-cache';
 import {
@@ -445,7 +445,9 @@ export async function POST(request: NextRequest) {
       }, { status: 429 });
     }
 
-    const { messages, sessionId } = await request.json();
+    const { messages, sessionId, model: requestedModel } = await request.json();
+    const modelId: AIModelId = (requestedModel && ['glm', 'minimax', 'mistral', 'gpt-oss'].includes(requestedModel))
+      ? requestedModel : DEFAULT_MODEL;
     const query = messages?.[messages.length - 1]?.content || '';
     if (!query.trim()) {
       return Response.json({ success: false, error: 'الرجاء إرسال رسالة' }, { status: 400 });
@@ -640,6 +642,7 @@ ${conversationContext}
           maxTokens: 2048,
           timeoutMs: 20000,
           retries: 2,
+          modelId,
         });
         setCachedResponse(normalizedQuery, intent, aiResponse);
       } catch (llmError) {

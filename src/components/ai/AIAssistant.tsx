@@ -13,6 +13,16 @@ import { useRouter } from 'next/navigation';
 const CONVERSATION_STORAGE_KEY = 'jo-cars-ai-conversation';
 const CONVERSATION_META_KEY = 'jo-cars-ai-meta';
 
+// ── AI Model Selector ──
+type AIModelId = 'glm' | 'minimax' | 'mistral' | 'gpt-oss';
+interface AIModelOption { id: AIModelId; nameAr: string; nameEn: string; description: string; icon: string; }
+const AI_MODELS_LIST: AIModelOption[] = [
+  { id: 'glm', nameAr: 'GLM 5.2', nameEn: 'GLM 5.2', description: 'سريع ومتوازن — الأفضل للمحادثات', icon: '⚡' },
+  { id: 'minimax', nameAr: 'MiniMax M3', nameEn: 'MiniMax M3', description: 'قوي للنصوص الطويلة — التحليل المعمّق', icon: '🧠' },
+  { id: 'mistral', nameAr: 'Mistral Medium', nameEn: 'Mistral 3.5', description: 'ذكي مع reasoning — الأسئلة المعقدة', icon: '🔮' },
+  { id: 'gpt-oss', nameAr: 'GPT OSS 120B', nameEn: 'GPT OSS', description: 'OpenAI مفتوح — الإجابات الدقيقة', icon: '✨' },
+];
+
 function loadConversation(): { messages: Message[]; sessionId: string } | null {
   try {
     const stored = localStorage.getItem(CONVERSATION_STORAGE_KEY);
@@ -122,6 +132,8 @@ export function AIAssistant() {
   const [showConversationHistory, setShowConversationHistory] = useState(false);
   const [isRecordingSound, setIsRecordingSound] = useState(false);
   const [soundAnalysisResult, setSoundAnalysisResult] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState<AIModelId>('glm');
+  const [showModelSelector, setShowModelSelector] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -381,6 +393,7 @@ export function AIAssistant() {
         body: JSON.stringify({
           messages: [{ role: 'user', content: content.trim() }],
           sessionId,
+          model: selectedModel,
         }),
       });
 
@@ -457,6 +470,7 @@ export function AIAssistant() {
           body: JSON.stringify({
             messages: [{ role: 'user', content: content.trim() }],
             sessionId,
+            model: selectedModel,
           }),
         });
         const data = await res.json();
@@ -708,6 +722,39 @@ export function AIAssistant() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
+                  {/* Model Selector */}
+                  <div className="relative">
+                    <button onClick={() => setShowModelSelector(!showModelSelector)}
+                      className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-white/10 transition-colors text-white text-[10px] font-medium"
+                      title="اختر نموذج الذكاء الاصطناعي">
+                      <span>{AI_MODELS_LIST.find(m => m.id === selectedModel)?.icon || '⚡'}</span>
+                      <span className="hidden sm:inline">{AI_MODELS_LIST.find(m => m.id === selectedModel)?.nameAr || 'GLM'}</span>
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
+                    {showModelSelector && (
+                      <div className="absolute left-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-2 w-64 z-50">
+                        <p className="text-[10px] text-gray-400 px-2 mb-1">اختر نموذج الذكاء الاصطناعي:</p>
+                        {AI_MODELS_LIST.map((m) => (
+                          <button key={m.id}
+                            onClick={() => { setSelectedModel(m.id); setShowModelSelector(false); }}
+                            className={`w-full flex items-start gap-2 p-2 rounded-lg text-right transition-colors ${
+                              selectedModel === m.id
+                                ? 'bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-800/30'
+                                : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                            }`}>
+                            <span className="text-lg mt-0.5">{m.icon}</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-semibold text-gray-900 dark:text-white">{m.nameAr}</span>
+                                {selectedModel === m.id && <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
+                              </div>
+                              <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight">{m.description}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <button onClick={handleClearChat}
                     className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white"
                     title="محادثة جديدة">
@@ -721,7 +768,7 @@ export function AIAssistant() {
               </div>
 
               {/* Messages */}
-              <div className="h-[450px] overflow-y-auto p-4 space-y-3 scrollbar-hide">
+              <div className="h-[450px] overflow-y-auto p-4 space-y-3 scrollbar-hide" onClick={() => showModelSelector && setShowModelSelector(false)}>
                 {messages.map((msg) => (
                   <div key={msg.id}>
                     <div className={`flex ${msg.type === 'user' ? 'justify-start' : 'justify-end'}`}>
