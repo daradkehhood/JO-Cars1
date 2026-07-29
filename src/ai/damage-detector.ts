@@ -5,7 +5,11 @@
  * ConditionScorer output and surfaces a concise damage list. Only declared
  * damages are reported — we never invent damages a seller didn't disclose.
  */
+import OpenAI from 'openai';
 
+const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY || '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';
+const NVIDIA_BASE_URL = 'https://integrate.api.nvidia.com/v1';
+const NVIDIA_MODEL = 'z-ai/glm-5.2';
 import { BaseAIModule, AIProviderType, AIResult } from './base';
 import { conditionScorer, ConditionOutput } from './condition-scorer';
 

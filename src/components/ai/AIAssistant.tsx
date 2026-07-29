@@ -5,9 +5,45 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bot, X, Send, Sparkles, Car, HelpCircle, Search, TrendingUp, MessageCircle,
   ShoppingBag, Fuel, Shield, DollarSign, BarChart3, ChevronDown, Zap, ThumbsUp,
-  ThumbsDown, Wrench, Settings, RotateCcw,
+  ThumbsDown, Wrench, Settings, RotateCcw, Mic, Volume2, MessageSquare, Clock,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+
+// ── Conversation Persistence ──
+const CONVERSATION_STORAGE_KEY = 'jo-cars-ai-conversation';
+const CONVERSATION_META_KEY = 'jo-cars-ai-meta';
+
+function loadConversation(): { messages: Message[]; sessionId: string } | null {
+  try {
+    const stored = localStorage.getItem(CONVERSATION_STORAGE_KEY);
+    const meta = localStorage.getItem(CONVERSATION_META_KEY);
+    if (stored && meta) {
+      const messages = JSON.parse(stored).map((m: any) => ({
+        ...m,
+        timestamp: new Date(m.timestamp),
+      }));
+      const { sessionId } = JSON.parse(meta);
+      return { messages, sessionId };
+    }
+  } catch {}
+  return null;
+}
+
+function saveConversation(messages: Message[], sessionId: string) {
+  try {
+    // Only save last 50 messages to avoid localStorage limits
+    const toSave = messages.slice(-50);
+    localStorage.setItem(CONVERSATION_STORAGE_KEY, JSON.stringify(toSave));
+    localStorage.setItem(CONVERSATION_META_KEY, JSON.stringify({ sessionId, savedAt: Date.now() }));
+  } catch {}
+}
+
+function clearConversationStorage() {
+  try {
+    localStorage.removeItem(CONVERSATION_STORAGE_KEY);
+    localStorage.removeItem(CONVERSATION_META_KEY);
+  } catch {}
+}
 
 interface CarSuggestion {
   id: string; slug: string; refCode?: string | null;
@@ -73,13 +109,7 @@ function generateSessionId(): string {
 export function AIAssistant() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'welcome', type: 'bot',
-      content: 'مرحباً! 🤖 أنا المساعد الذكي JO Cars.\n\nأخبرني بميزانيتك واحتياجاتك عشان ألاقي لك السيارة المناسبة، أو اسأل عن أي شيء متعلق بالسيارات!',
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [mpStep, setMpStep] = useState<MpStepOrNull>(null);
@@ -87,10 +117,30 @@ export function AIAssistant() {
   const [personalityStep, setPersonalityStep] = useState<number | null>(null);
   const [personalityAnswers, setPersonalityAnswers] = useState<string[]>([]);
   const [personalityResult, setPersonalityResult] = useState<any>(null);
-  const [sessionId] = useState(() => generateSessionId());
+  const [sessionId, setSessionId] = useState(() => generateSessionId());
   const [lastSuggestions, setLastSuggestions] = useState<string[]>([]);
+  const [showConversationHistory, setShowConversationHistory] = useState(false);
+  const [isRecordingSound, setIsRecordingSound] = useState(false);
+  const [soundAnalysisResult, setSoundAnalysisResult] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
+  // Load saved conversation on mount
+  useEffect(() => {
+    const saved = loadConversation();
+    if (saved && saved.messages.length > 0) {
+      setMessages(saved.messages);
+      setSessionId(saved.sessionId);
+    } else {
+      setMessages([{
+        id: 'welcome', type: 'bot',
+        content: 'مرحباً! 🤖 أنا المساعد الذكي JO Cars.\n\nأخبرني بميزانيتك واحتياجاتك عشان ألاقي لك السيارة المناسبة، أو اسأل عن أي شيء متعلق بالسيارات!\n\n💡 يمكنك أيضًا تحليل صوت المحرك بالضغط على أيقونة الميكروفون 👇',
+        timestamp: new Date(),
+      }]);
+    }
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -436,6 +486,11 @@ export function AIAssistant() {
       }
     } finally {
       setIsTyping(false);
+      // Save conversation to localStorage
+      setMessages(prev => {
+        saveConversation(prev, sessionId);
+        return prev;
+      });
     }
   }, [isTyping, mpStep, personalityStep, personalityAnswers, sessionId, botReply, advanceMp, fetchPersonalityMatch]);
 
@@ -455,12 +510,180 @@ export function AIAssistant() {
   const handleClearChat = useCallback(() => {
     setMessages([{
       id: 'welcome', type: 'bot',
-      content: 'مرحباً! 🤖 أنا المساعد الذكي JO Cars.\n\nأخبرني بميزانيتك واحتياجاتك عشان ألاقي لك السيارة المناسبة، أو اسأل عن أي شيء متعلق بالسيارات!',
+      content: 'مرحباً! 🤖 أنا المساعد الذكي JO Cars.\n\nأخبرني بميزانيتك واحتياجاتك عشان ألاقي لك السيارة المناسبة، أو اسأل عن أي شيء متعلق بالسيارات!\n\n💡 يمكنك أيضًا تحليل صوت المحرك بالضغط على أيقونة الميكروفون 👇',
       timestamp: new Date(),
     }]);
     setLastSuggestions([]);
+    clearConversationStorage();
     resetMp();
   }, [resetMp]);
+
+  // ── Engine Sound Recording ──
+  const startSoundRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        if (audioChunksRef.current.length === 0) return;
+
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const arrayBuffer = await audioBlob.arrayBuffer();
+        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+        // Extract audio features
+        const channelData = audioBuffer.getChannelData(0);
+        const sampleRate = audioBuffer.sampleRate;
+        const duration = audioBuffer.duration;
+        let sumSquares = 0;
+        let zeroCrossings = 0;
+        const frequencies: number[] = [];
+
+        for (let i = 0; i < channelData.length; i++) {
+          sumSquares += channelData[i] * channelData[i];
+          if (i > 0 && ((channelData[i] >= 0 && channelData[i-1] < 0) || (channelData[i] < 0 && channelData[i-1] >= 0))) {
+            zeroCrossings++;
+          }
+        }
+
+        const rms = Math.sqrt(sumSquares / channelData.length);
+        const zeroCrossingRate = zeroCrossings / channelData.length;
+
+        // Simple FFT for dominant frequency estimation
+        const fftSize = 2048;
+        const numFrames = Math.floor(channelData.length / fftSize);
+        let dominantFreqTotal = 0;
+        let peakAmplitude = 0;
+        let peakFreqTotal = 0;
+
+        for (let f = 0; f < Math.min(numFrames, 10); f++) {
+          const frame = channelData.slice(f * fftSize, (f + 1) * fftSize);
+          let maxVal = 0;
+          let maxIdx = 0;
+          for (let i = 0; i < fftSize / 2; i++) {
+            let real = 0, imag = 0;
+            for (let j = 0; j < fftSize; j++) {
+              const angle = (2 * Math.PI * i * j) / fftSize;
+              real += frame[j] * Math.cos(angle);
+              imag -= frame[j] * Math.sin(angle);
+            }
+            const magnitude = Math.sqrt(real * real + imag * imag);
+            if (magnitude > maxVal) { maxVal = magnitude; maxIdx = i; }
+          }
+          dominantFreqTotal += (maxIdx * sampleRate) / fftSize;
+          if (maxVal > peakAmplitude) { peakAmplitude = maxVal; peakFreqTotal = (maxIdx * sampleRate) / fftSize; }
+        }
+
+        audioCtx.close();
+
+        const features = {
+          rms,
+          dominantFrequency: numFrames > 0 ? dominantFreqTotal / numFrames : 0,
+          peakFrequency: peakFreqTotal,
+          spectralCentroid: zeroCrossingRate * sampleRate / 2,
+          zeroCrossingRate,
+          duration,
+          sampleRate,
+        };
+
+        // Send to API
+        setIsTyping(true);
+        setSoundAnalysisResult(null);
+
+        // Add user message
+        const userMsg: Message = {
+          id: Date.now().toString(), type: 'user',
+          content: '🔊 تحليل صوت المحرك',
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, userMsg]);
+
+        try {
+          const res = await fetch('/api/ai/sound', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ audioFeatures: features, sessionId }),
+          });
+          const data = await res.json();
+
+          if (data.success && data.data) {
+            const d = data.data;
+            let msg = `📊 **نتيجة تحليل صوت المحرك**\n\n`;
+            msg += `🔍 **النمط المكتشف:** ${d.pattern.nameAr} (${d.pattern.nameEn})\n`;
+            msg += `📈 **الثقة:** ${Math.round(d.confidence * 100)}%\n`;
+            msg += `⚡ **مستوى الخطورة:** ${d.pattern.urgency === 'high' ? '⚠️ مرتفع' : d.pattern.urgency === 'medium' ? '⚡ متوسط' : '✅ منخفض'}\n\n`;
+            msg += `**التشخيص:**\n${d.report}\n\n`;
+
+            if (d.recommendations.length > 0) {
+              msg += `**التوصيات:**\n`;
+              d.recommendations.forEach((r: string) => { msg += `• ${r}\n`; });
+            }
+
+            if (d.possibleCauses.length > 0) {
+              msg += `\n**الأسباب المحتملة:** ${d.possibleCauses.join(', ')}`;
+            }
+
+            if (d.costEstimate) {
+              msg += `\n💰 **تقدير التكلفة:** ${d.costEstimate.min.toLocaleString()} - ${d.costEstimate.max.toLocaleString()} د.أ`;
+            }
+
+            const botMsg: Message = {
+              id: (Date.now() + 1).toString(), type: 'bot', content: msg,
+              suggestions: ['ورشة صيانة قريبة', 'تحليل صوت آخر', 'نصائح الصيانة'],
+              timestamp: new Date(),
+            };
+            setMessages(prev => [...prev, botMsg]);
+            setSoundAnalysisResult(msg);
+          } else {
+            setMessages(prev => [...prev, {
+              id: (Date.now() + 1).toString(), type: 'bot',
+              content: 'عذراً، ما قدرت أحلل الصوت. تأكد إن التسجيل واضح ومافيه ضوضاء.',
+              timestamp: new Date(),
+            }]);
+          }
+        } catch {
+          setMessages(prev => [...prev, {
+            id: (Date.now() + 1).toString(), type: 'bot',
+            content: 'حدث خطأ أثناء تحليل الصوت. حاول مرة أخرى.',
+            timestamp: new Date(),
+          }]);
+        }
+        setIsTyping(false);
+      };
+
+      mediaRecorder.start();
+      setIsRecordingSound(true);
+
+      // Auto-stop after 5 seconds
+      setTimeout(() => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+          mediaRecorderRef.current.stop();
+          setIsRecordingSound(false);
+        }
+      }, 5000);
+    } catch {
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(), type: 'bot',
+        content: '⚠️ ما قدرت أفتح الميكروفون. تأكد إنك أعطيت الإذن للميكروفون.',
+        timestamp: new Date(),
+      }]);
+    }
+  }, [sessionId]);
+
+  const stopSoundRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+      setIsRecordingSound(false);
+    }
+  }, []);
 
   return (
     <>
@@ -734,10 +957,21 @@ export function AIAssistant() {
               <div className="p-3 border-t border-gray-100 dark:border-gray-800">
                 <form onSubmit={(e) => { e.preventDefault(); handleSend(input); }}
                   className="flex items-center gap-2">
+                  {/* Mic button for engine sound analysis */}
+                  <button type="button"
+                    onClick={isRecordingSound ? stopSoundRecording : startSoundRecording}
+                    className={`p-2.5 rounded-xl transition-all flex-shrink-0 ${
+                      isRecordingSound
+                        ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/30'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-blue-500'
+                    }`}
+                    title={isRecordingSound ? 'إيقاف التسجيل' : 'تحليل صوت المحرك'}>
+                    {isRecordingSound ? <Volume2 className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                  </button>
                   <input ref={inputRef} type="text" value={input}
                     onChange={(e) => setInput(e.target.value)}
                     disabled={isTyping}
-                    placeholder={mpStep ? 'أكتب إجابتك...' : 'اكتب سؤالك... (بدي، شو، وين...)'}
+                    placeholder={mpStep ? 'أكتب إجابتك...' : isRecordingSound ? 'جاري التسجيل...' : 'اكتب سؤالك... (بدي، شو، وين...)'}
                     className="flex-1 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-blue-500 transition-colors disabled:opacity-50" />
                   <button type="submit" disabled={!input.trim() || isTyping}
                     className="p-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white disabled:opacity-50 transition-all hover:shadow-lg hover:shadow-blue-500/25">

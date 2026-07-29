@@ -671,23 +671,17 @@ ${conversationContext}
     if (conversation.length > MAX_CONVERSATION_LENGTH) conversation.shift();
     conversationStore.set(sid, conversation);
 
-    // Map cars for response
-    const mappedCars = cars.map((car: any) => ({
-      id: car.id,
-      slug: car.slug,
-      refCode: car.refCode,
-      title: `${car.brand?.nameAr || ''} ${car.model?.nameAr || ''} ${car.year}`,
-      price: car.price,
-      year: car.year,
-      kilometers: car.kilometers,
-      fuelType: car.fuelType,
-      transmission: car.transmission,
-      condition: car.condition,
-      image: car.images?.[0]?.url || null,
-      city: car.city?.nameAr || '',
-      brand: car.brand,
-      model: car.model,
-    }));
+    // Map cars for response — only send when user explicitly asks for car search
+    const mappedCars = (intent === 'car_search' || intent === 'ref_code' || intent === 'price_analysis')
+      ? cars.map((car: any) => ({
+          id: car.id, slug: car.slug, refCode: car.refCode,
+          title: `${car.brand?.nameAr || ''} ${car.model?.nameAr || ''} ${car.year}`,
+          price: car.price, year: car.year, kilometers: car.kilometers,
+          fuelType: car.fuelType, transmission: car.transmission, condition: car.condition,
+          image: car.images?.[0]?.url || null, city: car.city?.nameAr || '',
+          brand: car.brand, model: car.model,
+        }))
+      : [];
 
     // Generate suggestion chips
     const suggestions = generateSuggestions(intent, cars.length > 0, workshops.length > 0, parts.length > 0);

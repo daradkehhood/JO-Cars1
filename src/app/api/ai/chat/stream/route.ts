@@ -28,7 +28,7 @@ setInterval(() => {
 }, 5 * 60 * 1000);
 
 // ── Intent Detection ──
-type Intent = 'car_search' | 'workshop' | 'parts' | 'price_analysis' | 'engine_sound' | 'selling' | 'site_info' | 'ref_code' | 'general';
+type Intent = 'car_search' | 'workshop' | 'parts' | 'price_analysis' | 'engine_sound' | 'selling' | 'workshop_add' | 'negotiation' | 'ticket' | 'site_info' | 'ref_code' | 'general';
 
 function detectIntent(query: string): Intent {
   const q = query.toLowerCase();
@@ -261,14 +261,18 @@ ${similarCars.length > 0 ? `\n🔄 **سيارات مشابهة:**\n${similarCars
 // ── Generate Suggestions ──
 function generateSuggestions(intent: Intent, hasCars: boolean, hasWorkshops: boolean, hasParts: boolean): string[] {
   const suggestions: string[] = [];
-  if (intent === 'ref_code') return ['مقارنة السعر بالسوق', 'البحث عن ورشة فحص', 'قطع غيار للسيارة', 'مشابهات أخرى'];
-  if (intent === 'site_info') return ['كيف أضيف إعلان؟', 'تقييم سعر سيارة', 'بحث عن سيارة', 'دليل الورش'];
-  if (intent === 'car_search' && hasCars) { suggestions.push('مقارنة الأسعار'); suggestions.push('تقييم حالة السيارة'); suggestions.push('البحث عن قطع غيار'); }
+  if (intent === 'ref_code') return ['مقارنة السعر بالسوق', 'البحث عن ورشة فحص', 'نصائح التفاوض', 'قطع غيار للسيارة'];
+  if (intent === 'site_info') return ['كيف أضيف إعلان سيارة؟', 'كيف أضيف ورشة؟', 'تقييم سعر سيارة', 'دليل المنتدى'];
+  if (intent === 'car_search' && hasCars) { suggestions.push('مقارنة الأسعار'); suggestions.push('تقييم حالة السيارة'); suggestions.push('نصائح التفاوض'); }
   if (intent === 'workshop' || hasWorkshops) { suggestions.push('حجز موعد'); suggestions.push('تقييمات الورش'); }
   if (intent === 'parts' || hasParts) { suggestions.push('قطع غيار أخرى'); suggestions.push('ورشة لتركيبها'); }
-  if (intent === 'price_analysis') { suggestions.push('مقارنة مع سيارات مشابهة'); suggestions.push('تقييم الحالة'); }
+  if (intent === 'price_analysis') { suggestions.push('مقارنة مع سيارات مشابهة'); suggestions.push('تقييم الحالة'); suggestions.push('نصائح التفاوض'); }
   if (intent === 'engine_sound') { suggestions.push('تحليل صوت المحرك'); suggestions.push('ورشة صيانة'); }
   if (intent === 'selling') { suggestions.push('كيفية التسعير'); suggestions.push('نصائح للبيع'); suggestions.push('أضف إعلان مجاني'); }
+  if (intent === 'workshop_add') { suggestions.push('خطوات إضافة الورشة'); suggestions.push('المستندات المطلوبة'); }
+  if (intent === 'negotiation') { suggestions.push('تحليل سعر السيارة'); suggestions.push('نقاط الضعف في السيارة'); suggestions.push('مقارنة الأسعار'); }
+  if (intent === 'ticket') { suggestions.push('إنشاء تذكرة دعم'); suggestions.push('مشكلة تقنية'); suggestions.push('شكوى عن إعلان'); }
+  if (intent === 'car_search' && !hasCars) { suggestions.push('تغيير المعايير'); suggestions.push('بحث عن سيارة أخرى'); }
   if (suggestions.length === 0) { suggestions.push('بحث عن سيارة'); suggestions.push('مساعد الشراء'); suggestions.push('تقييم السعر'); suggestions.push('دليل الورش'); }
   return suggestions.slice(0, 4);
 }
@@ -512,13 +516,16 @@ export async function POST(request: NextRequest) {
         // Send metadata first
         sendSSE('meta', {
           intent,
-          cars: cars.slice(0, 10).map((car: any) => ({
-            id: car.id, slug: car.slug, refCode: car.refCode,
-            title: `${car.brand?.nameAr || ''} ${car.model?.nameAr || ''} ${car.year}`,
-            price: car.price, year: car.year, kilometers: car.kilometers,
-            fuelType: car.fuelType, transmission: car.transmission, condition: car.condition,
-            image: car.images?.[0]?.url || null, city: car.city?.nameAr || '',
-          })),
+          // Only send cars to frontend when user explicitly asks for car search
+          cars: (intent === 'car_search' || intent === 'ref_code' || intent === 'price_analysis')
+            ? cars.slice(0, 10).map((car: any) => ({
+                id: car.id, slug: car.slug, refCode: car.refCode,
+                title: `${car.brand?.nameAr || ''} ${car.model?.nameAr || ''} ${car.year}`,
+                price: car.price, year: car.year, kilometers: car.kilometers,
+                fuelType: car.fuelType, transmission: car.transmission, condition: car.condition,
+                image: car.images?.[0]?.url || null, city: car.city?.nameAr || '',
+              }))
+            : [],
           suggestions: generateSuggestions(intent, cars.length > 0, workshops.length > 0, parts.length > 0),
           searchUrl: isNlSearch ? searchUrl : null,
           nlParsed: isNlSearch ? {

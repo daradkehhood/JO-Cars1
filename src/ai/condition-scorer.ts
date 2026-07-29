@@ -5,7 +5,11 @@
  *  1. PRIMARY: NVIDIA LLM analyzes car condition from specs + description.
  *  2. FALLBACK: Local heuristic engine (original v3.1.0 logic) if LLM fails.
  */
+import OpenAI from 'openai';
 
+const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY || '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';
+const NVIDIA_BASE_URL = 'https://integrate.api.nvidia.com/v1';
+const NVIDIA_MODEL = 'z-ai/glm-5.2';
 import { BaseAIModule, AIProviderType, AIResult } from './base';
 import { chatCompletionJSON, type ChatMessage } from './nvidia-client';
 import { getSystemPrompt } from './site-knowledge';
