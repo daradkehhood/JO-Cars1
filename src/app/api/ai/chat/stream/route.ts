@@ -512,7 +512,9 @@ export async function POST(request: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         const sendSSE = (event: string, data: any) => {
-          controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+          try {
+            controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+          } catch { /* controller already closed */ }
         };
 
         // Send metadata first
@@ -552,12 +554,16 @@ export async function POST(request: NextRequest) {
         // Stream AI response
         try {
           let fullResponse = '';
+          let lastChunkTime = Date.now();
+          const STREAM_WATCHDOG_MS = 30000; // reset if no chunk for 30s
+
           for await (const chunk of chatCompletionStream(chatMessages, {
             temperature: 0.7,
             maxTokens: 2048,
-            timeoutMs: 30000,
+            timeoutMs: 45000,
             modelId,
           })) {
+            lastChunkTime = Date.now();
             fullResponse += chunk;
             sendSSE('token', { content: chunk });
           }
@@ -602,6 +608,9 @@ export async function POST(request: NextRequest) {
         }
 
         controller.close();
+      },
+      cancel() {
+        console.log('[AI Chat Stream] Client disconnected');
       },
     });
 

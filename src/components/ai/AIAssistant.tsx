@@ -138,6 +138,7 @@ export function AIAssistant() {
   const inputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load saved conversation on mount
   useEffect(() => {
@@ -161,6 +162,24 @@ export function AIAssistant() {
   useEffect(() => {
     if (isOpen) inputRef.current?.focus();
   }, [isOpen]);
+
+  // Safety: auto-reset isTyping if stuck for > 90 seconds
+  useEffect(() => {
+    if (isTyping) {
+      typingTimeoutRef.current = setTimeout(() => {
+        console.warn('[AI Assistant] isTyping stuck — auto-resetting after 90s');
+        setIsTyping(false);
+      }, 90000);
+    } else {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+    }
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    };
+  }, [isTyping]);
 
   const botReply = useCallback((content: string, options?: {
     cars?: CarSuggestion[]; marketPriceResult?: MarketPriceResult;
@@ -386,6 +405,10 @@ export function AIAssistant() {
     let streamSearchUrl: string | null = null;
     let streamNlParsed: any = null;
 
+    // Client-side timeout: abort fetch after 60s
+    const abortController = new AbortController();
+    const fetchTimeout = setTimeout(() => abortController.abort(), 60000);
+
     try {
       const res = await fetch('/api/ai/chat/stream', {
         method: 'POST',
@@ -395,6 +418,7 @@ export function AIAssistant() {
           sessionId,
           model: selectedModel,
         }),
+        signal: abortController.signal,
       });
 
       if (!res.ok || !res.body) {
@@ -464,6 +488,8 @@ export function AIAssistant() {
     } catch {
       // Fallback: try the non-streaming endpoint
       try {
+        const fallbackAbort = new AbortController();
+        const fallbackTimeout = setTimeout(() => fallbackAbort.abort(), 45000);
         const res = await fetch('/api/ai/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -472,7 +498,9 @@ export function AIAssistant() {
             sessionId,
             model: selectedModel,
           }),
+          signal: fallbackAbort.signal,
         });
+        clearTimeout(fallbackTimeout);
         const data = await res.json();
         if (data.success && data.data) {
           setMessages(prev => [...prev, {
@@ -499,6 +527,7 @@ export function AIAssistant() {
         }]);
       }
     } finally {
+      clearTimeout(fetchTimeout);
       setIsTyping(false);
       // Save conversation to localStorage
       setMessages(prev => {
@@ -506,7 +535,7 @@ export function AIAssistant() {
         return prev;
       });
     }
-  }, [isTyping, mpStep, personalityStep, personalityAnswers, sessionId, botReply, advanceMp, fetchPersonalityMatch]);
+  }, [isTyping, mpStep, personalityStep, personalityAnswers, sessionId, selectedModel, botReply, advanceMp, fetchPersonalityMatch]);
 
   const goToCar = useCallback((slug: string) => {
     router.push(`/cars/${slug}`);
