@@ -273,7 +273,7 @@ async function fetchCars(query: string) {
     brand: { select: { nameAr: true, nameEn: true } },
     model: { select: { nameAr: true, nameEn: true } },
     city: { select: { nameAr: true } },
-    images: { take: 1, orderBy: { order: 'asc' }, select: { url: true } },
+    images: { take: 1, orderBy: { order: 'asc' as const }, select: { url: true } },
   };
 
   let cars = await prisma.car.findMany({

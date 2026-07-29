@@ -1,0 +1,462 @@
+{
+  "root_group": {
+    "name": "",
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": [],
+    "checks": [
+        {
+          "name": "API Cars List status 200",
+          "path": "::API Cars List status 200",
+          "id": "6ae24796ab2f7164f09c8cf0dcf784fb",
+          "passes": 0,
+          "fails": 10025
+        },
+        {
+          "id": "cf38541c226092d7c789c287aa9ebe47",
+          "passes": 1840,
+          "fails": 8185,
+          "name": "API Cars List < 2s",
+          "path": "::API Cars List < 2s"
+        },
+        {
+          "name": "API Search status 200",
+          "path": "::API Search status 200",
+          "id": "33c7ffc40081891c90dc1ccdcbe4d2eb",
+          "passes": 1897,
+          "fails": 8099
+        },
+        {
+          "passes": 2784,
+          "fails": 7212,
+          "name": "API Search < 2s",
+          "path": "::API Search < 2s",
+          "id": "3ea68aca95c0b640f9b32f40f90dbc81"
+        },
+        {
+          "name": "Car Search status 200",
+          "path": "::Car Search status 200",
+          "id": "9f9c867efa92bf35f201674f3aba982d",
+          "passes": 292,
+          "fails": 1943
+        },
+        {
+          "name": "Workshops status 200",
+          "path": "::Workshops status 200",
+          "id": "37e5d9b1e27fcd4ff456963bdb5fe87f",
+          "passes": 248,
+          "fails": 1964
+        },
+        {
+          "fails": 1720,
+          "name": "Workshops < 3s",
+          "path": "::Workshops < 3s",
+          "id": "a42a8d17c10a78b85994de15d4d36dc5",
+          "passes": 492
+        },
+        {
+          "name": "Car Search < 3s",
+          "path": "::Car Search < 3s",
+          "id": "f8ed250ea92daf846cee222c8f071a6e",
+          "passes": 494,
+          "fails": 1741
+        },
+        {
+          "passes": 220,
+          "fails": 1972,
+          "name": "About status 200",
+          "path": "::About status 200",
+          "id": "c5bfc71811fe3a41cb61782fdadd0f22"
+        },
+        {
+          "id": "5bd0ba0381c80af755a35cbc60c70031",
+          "passes": 471,
+          "fails": 1721,
+          "name": "About < 3s",
+          "path": "::About < 3s"
+        },
+        {
+          "id": "05bc5df914ad0e0ecdc51c3ec450c250",
+          "passes": 275,
+          "fails": 1945,
+          "name": "Contact status 200",
+          "path": "::Contact status 200"
+        },
+        {
+          "name": "Contact < 3s",
+          "path": "::Contact < 3s",
+          "id": "e9f64b598e9b3f5b4b30afb698eac6ae",
+          "passes": 477,
+          "fails": 1743
+        },
+        {
+          "passes": 0,
+          "fails": 9703,
+          "name": "API Featured status 200",
+          "path": "::API Featured status 200",
+          "id": "fe62f713f7b5e11d819a1358ca861add"
+        },
+        {
+          "id": "686d15a31191f12a315ad9ca5bc33c0c",
+          "passes": 1794,
+          "fails": 7909,
+          "name": "API Featured < 2s",
+          "path": "::API Featured < 2s"
+        },
+        {
+          "id": "17f4bde6bedde2a32257df55cb50e9d7",
+          "passes": 77,
+          "fails": 38696,
+          "name": "AI Chat status 200",
+          "path": "::AI Chat status 200"
+        },
+        {
+          "name": "AI Chat response valid",
+          "path": "::AI Chat response valid",
+          "id": "9452aa24277aa1337de79130472d0f8b",
+          "passes": 79,
+          "fails": 38694
+        },
+        {
+          "fails": 5917,
+          "name": "AI Chat < 10s",
+          "path": "::AI Chat < 10s",
+          "id": "222c8c0d6a05b7548106e2670101fe70",
+          "passes": 32856
+        },
+        {
+          "name": "Cars Listing status 200",
+          "path": "::Cars Listing status 200",
+          "id": "b6690e3b6657dc5bd7b3157e6214e2f5",
+          "passes": 305,
+          "fails": 1880
+        },
+        {
+          "fails": 1679,
+          "name": "Cars Listing < 3s",
+          "path": "::Cars Listing < 3s",
+          "id": "0c50b89c22e7f2b87008f5baee006c43",
+          "passes": 506
+        },
+        {
+          "passes": 274,
+          "fails": 1873,
+          "name": "Parts status 200",
+          "path": "::Parts status 200",
+          "id": "424c31eac88b58530e6c83762f276496"
+        },
+        {
+          "name": "Parts < 3s",
+          "path": "::Parts < 3s",
+          "id": "868e93c520f69349364f333356403f66",
+          "passes": 493,
+          "fails": 1654
+        },
+        {
+          "id": "31004abf6b7f1843c25f4ea67a6478d6",
+          "passes": 282,
+          "fails": 1915,
+          "name": "Forum status 200",
+          "path": "::Forum status 200"
+        },
+        {
+          "name": "Forum < 3s",
+          "path": "::Forum < 3s",
+          "id": "ddef6d5eb6f11b348f82dbbcfd72cc47",
+          "passes": 463,
+          "fails": 1734
+        },
+        {
+          "id": "a78297def3f431a9e21d1e71f058e822",
+          "passes": 64,
+          "fails": 2118,
+          "name": "Homepage status 200",
+          "path": "::Homepage status 200"
+        },
+        {
+          "passes": 440,
+          "fails": 1742,
+          "name": "Homepage < 3s",
+          "path": "::Homepage < 3s",
+          "id": "f3434395cc5eab093d681ce24c32ef7b"
+        },
+        {
+          "path": "::Privacy status 200",
+          "id": "3d7a83be09df1cf1a82c9c593ce940ae",
+          "passes": 219,
+          "fails": 1977,
+          "name": "Privacy status 200"
+        },
+        {
+          "path": "::Privacy < 3s",
+          "id": "d50c036abca62b741ee11ab32491d527",
+          "passes": 528,
+          "fails": 1668,
+          "name": "Privacy < 3s"
+        },
+        {
+          "fails": 1798,
+          "name": "Featured Cars status 200",
+          "path": "::Featured Cars status 200",
+          "id": "d35df57f614bf1d93ab1dd8a567742c2",
+          "passes": 272
+        },
+        {
+          "id": "e1ffd8a1197fe74dcb10fdd818b8e9d4",
+          "passes": 452,
+          "fails": 1618,
+          "name": "Featured Cars < 3s",
+          "path": "::Featured Cars < 3s"
+        }
+      ]
+  },
+  "options": {
+    "summaryTrendStats": [
+      "avg",
+      "min",
+      "med",
+      "max",
+      "p(90)",
+      "p(95)"
+    ],
+    "summaryTimeUnit": "",
+    "noColor": false
+  },
+  "state": {
+    "isStdOutTTY": false,
+    "isStdErrTTY": false,
+    "testRunDurationMs": 735101.1074
+  },
+  "metrics": {
+    "data_sent": {
+      "contains": "data",
+      "values": {
+        "count": 21217577,
+        "rate": 28863.481208789155
+      },
+      "type": "counter"
+    },
+    "http_reqs": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 90333,
+        "rate": 122.88513660318286
+      }
+    },
+    "ai_chat_duration": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "min": 0,
+        "med": 1395.9791,
+        "max": 25008.8799,
+        "p(90)": 23524.674180000024,
+        "p(95)": 25000.350459999998,
+        "avg": 5012.913094818575
+      }
+    },
+    "http_req_failed": {
+      "type": "rate",
+      "contains": "default",
+      "values": {
+        "rate": 0.9510145793895919,
+        "passes": 85908,
+        "fails": 4425
+      },
+      "thresholds": {
+        "rate<0.20": {
+          "ok": false
+        }
+      }
+    },
+    "vus_max": {
+      "type": "gauge",
+      "contains": "default",
+      "values": {
+        "min": 2000,
+        "max": 2000,
+        "value": 2000
+      }
+    },
+    "iterations": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 90333,
+        "rate": 122.88513660318286
+      }
+    },
+    "http_req_waiting": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "avg": 5832.600627173921,
+        "min": 0,
+        "med": 2703.5981,
+        "max": 25008.8799,
+        "p(90)": 15000.305059999999,
+        "p(95)": 15004.391699999998
+      }
+    },
+    "http_req_tls_handshaking": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "avg": 455.8284319108212,
+        "min": 0,
+        "med": 0,
+        "max": 23722.6439,
+        "p(90)": 661.3082000000002,
+        "p(95)": 3733.2673399999258
+      }
+    },
+    "page_load_duration": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "avg": 8514.696211057086,
+        "min": 0,
+        "med": 10000.2619,
+        "max": 15010.9949,
+        "p(90)": 15000.373,
+        "p(95)": 15000.513705
+      }
+    },
+    "http_req_duration{expected_response:true}": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "med": 5280.7125,
+        "max": 23107.2684,
+        "p(90)": 11729.7313,
+        "p(95)": 13028.459740000002,
+        "avg": 5794.4009659434905,
+        "min": 330.4778
+      }
+    },
+    "checks": {
+      "type": "rate",
+      "contains": "default",
+      "values": {
+        "fails": 170845,
+        "rate": 0.2214465067740921,
+        "passes": 48594
+      }
+    },
+    "errors": {
+      "type": "rate",
+      "contains": "default",
+      "values": {
+        "rate": 0.9753400839273075,
+        "passes": 175016,
+        "fails": 4425
+      },
+      "thresholds": {
+        "rate<0.15": {
+          "ok": false
+        }
+      }
+    },
+    "http_req_sending": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "avg": 0.027436896815117313,
+        "min": 0,
+        "med": 0,
+        "max": 6.2201,
+        "p(90)": 0,
+        "p(95)": 0.3359
+      }
+    },
+    "vus": {
+      "type": "gauge",
+      "contains": "default",
+      "values": {
+        "value": 2,
+        "min": 2,
+        "max": 2000
+      }
+    },
+    "http_req_connecting": {
+      "values": {
+        "avg": 391.38256163860433,
+        "min": 0,
+        "med": 0,
+        "max": 16139.0097,
+        "p(90)": 1570.3839800000003,
+        "p(95)": 2190.4617599999997
+      },
+      "type": "trend",
+      "contains": "time"
+    },
+    "iteration_duration": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "min": 1039.4297,
+        "med": 11579.5333,
+        "max": 28000.129,
+        "p(90)": 17728.19642,
+        "p(95)": 26451.96074,
+        "avg": 10901.966488229133
+      }
+    },
+    "http_req_receiving": {
+      "values": {
+        "p(90)": 5832.287980000001,
+        "p(95)": 9235.236219999999,
+        "avg": 1179.022341290547,
+        "min": 0,
+        "med": 0,
+        "max": 24335.589
+      },
+      "type": "trend",
+      "contains": "time"
+    },
+    "http_req_duration": {
+      "values": {
+        "med": 5839.2913,
+        "max": 25008.8799,
+        "p(90)": 15000.4118,
+        "p(95)": 15574.600999999955,
+        "avg": 7011.650405361294,
+        "min": 0
+      },
+      "thresholds": {
+        "p(50)<500": {
+          "ok": false
+        },
+        "p(95)<3000": {
+          "ok": false
+        },
+        "p(99)<8000": {
+          "ok": false
+        }
+      },
+      "type": "trend",
+      "contains": "time"
+    },
+    "data_received": {
+      "type": "counter",
+      "contains": "data",
+      "values": {
+        "count": 964083958,
+        "rate": 1311498.4432684314
+      }
+    },
+    "http_req_blocked": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "avg": 672.778185811387,
+        "min": 0,
+        "med": 0,
+        "max": 24851.3507,
+        "p(90)": 1673.285380000002,
+        "p(95)": 5370.374899999994
+      }
+    }
+  }
+}

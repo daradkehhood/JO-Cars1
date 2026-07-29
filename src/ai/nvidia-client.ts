@@ -1,7 +1,7 @@
 /**
  * NVIDIA AI Client — centralized OpenAI-compatible client for NVIDIA API.
  * All AI modules use this client instead of local heuristics.
- * v2.0: Added retry logic, adaptive timeout, and connection pooling hints.
+ * v3.0: Added streaming support (SSE) for real-time response delivery.
  */
 
 import OpenAI from 'openai';
@@ -17,7 +17,7 @@ function getClient(): OpenAI {
     client = new OpenAI({
       apiKey: NVIDIA_API_KEY,
       baseURL: NVIDIA_BASE_URL,
-      timeout: 30000, // 30s default timeout
+      timeout: 30000,
     });
   }
   return client;
@@ -107,6 +107,57 @@ export async function chatCompletion(
     console.error(`[NVIDIA AI] Chat completion failed after ${retries + 1} attempts:`, lastError);
   }
   throw lastError;
+}
+
+/**
+ * Send a streaming chat completion request to NVIDIA API.
+ * Returns an async iterator that yields text chunks as they arrive.
+ * Used for SSE (Server-Sent Events) streaming to the frontend.
+ */
+export async function* chatCompletionStream(
+  messages: ChatMessage[],
+  options: ChatOptions = {}
+): AsyncGenerator<string, void, unknown> {
+  const openai = getClient();
+  const {
+    temperature = 0.7,
+    maxTokens = 4096,
+    topP = 1,
+    timeoutMs = 30000,
+  } = options;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const stream = await openai.chat.completions.create(
+      {
+        model: NVIDIA_MODEL,
+        messages,
+        temperature,
+        top_p: topP,
+        max_tokens: maxTokens,
+        stream: true,
+      },
+      { signal: controller.signal as any }
+    );
+
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta?.content;
+      if (delta) {
+        yield delta;
+      }
+    }
+  } catch (error: any) {
+    if (error?.name === 'AbortError' || error?.message?.includes('abort')) {
+      console.error(`[NVIDIA AI] Stream timed out after ${timeoutMs}ms`);
+    } else {
+      console.error(`[NVIDIA AI] Stream error:`, error);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 /**

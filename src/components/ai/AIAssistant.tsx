@@ -314,9 +314,18 @@ export function AIAssistant() {
       return;
     }
 
+    // ── Streaming chat via SSE ──
     setIsTyping(true);
+    const botMsgId = (Date.now() + 1).toString();
+    let streamedContent = '';
+    let streamCars: CarSuggestion[] = [];
+    let streamSuggestions: string[] = [];
+    let streamIntent = '';
+    let streamSearchUrl: string | null = null;
+    let streamNlParsed: any = null;
+
     try {
-      const res = await fetch('/api/ai/chat', {
+      const res = await fetch('/api/ai/chat/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -324,24 +333,107 @@ export function AIAssistant() {
           sessionId,
         }),
       });
-      const data = await res.json();
-      if (data.success && data.data) {
-        setMessages(prev => [...prev, {
-          id: (Date.now() + 1).toString(), type: 'bot',
-          content: data.data.message,
-          cars: data.data.cars?.length > 0 ? data.data.cars : undefined,
-          suggestions: data.data.suggestions,
-          intent: data.data.intent,
-          timestamp: new Date(),
-        }]);
-        if (data.data.suggestions) setLastSuggestions(data.data.suggestions);
+
+      if (!res.ok || !res.body) {
+        throw new Error('Stream failed');
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        let eventType = '';
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            eventType = line.slice(7).trim();
+          } else if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6);
+            try {
+              const data = JSON.parse(dataStr);
+
+              if (eventType === 'meta') {
+                streamCars = data.cars || [];
+                streamSuggestions = data.suggestions || [];
+                streamIntent = data.intent || '';
+                streamSearchUrl = data.searchUrl || null;
+                streamNlParsed = data.nlParsed || null;
+
+                // Add an initial empty bot message for streaming
+                setMessages(prev => [...prev, {
+                  id: botMsgId, type: 'bot', content: '',
+                  cars: streamCars.length > 0 ? streamCars : undefined,
+                  suggestions: streamSuggestions,
+                  intent: streamIntent,
+                  timestamp: new Date(),
+                }]);
+              } else if (eventType === 'token') {
+                streamedContent += data.content;
+                // Update the bot message with progressive content
+                setMessages(prev => prev.map(m =>
+                  m.id === botMsgId ? { ...m, content: streamedContent } : m
+                ));
+              } else if (eventType === 'done') {
+                // Final update with all metadata
+                setMessages(prev => prev.map(m =>
+                  m.id === botMsgId ? {
+                    ...m,
+                    content: streamedContent,
+                    cars: streamCars.length > 0 ? streamCars : m.cars,
+                    suggestions: streamSuggestions.length > 0 ? streamSuggestions : m.suggestions,
+                  } : m
+                ));
+                if (streamSuggestions.length > 0) setLastSuggestions(streamSuggestions);
+              }
+            } catch {
+              // Ignore parse errors
+            }
+          }
+        }
       }
     } catch {
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(), type: 'bot',
-        content: 'عذراً، حدث خطأ في الاتصال. حاول مرة أخرى.',
-        timestamp: new Date(),
-      }]);
+      // Fallback: try the non-streaming endpoint
+      try {
+        const res = await fetch('/api/ai/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: [{ role: 'user', content: content.trim() }],
+            sessionId,
+          }),
+        });
+        const data = await res.json();
+        if (data.success && data.data) {
+          setMessages(prev => [...prev, {
+            id: botMsgId, type: 'bot',
+            content: data.data.message,
+            cars: data.data.cars?.length > 0 ? data.data.cars : undefined,
+            suggestions: data.data.suggestions,
+            intent: data.data.intent,
+            timestamp: new Date(),
+          }]);
+          if (data.data.suggestions) setLastSuggestions(data.data.suggestions);
+        } else {
+          setMessages(prev => [...prev, {
+            id: botMsgId, type: 'bot',
+            content: 'عذراً، حدث خطأ في الاتصال. حاول مرة أخرى.',
+            timestamp: new Date(),
+          }]);
+        }
+      } catch {
+        setMessages(prev => [...prev, {
+          id: botMsgId, type: 'bot',
+          content: 'عذراً، حدث خطأ في الاتصال. حاول مرة أخرى.',
+          timestamp: new Date(),
+        }]);
+      }
     } finally {
       setIsTyping(false);
     }
@@ -421,6 +513,12 @@ export function AIAssistant() {
                             <span className="text-[10px] text-blue-500 font-medium">JO Cars AI</span>
                             {msg.intent && (
                               <span className="text-[9px] text-gray-400 mr-1">({msg.intent})</span>
+                            )}
+                            {isTyping && msg.content.length > 0 && msg.id !== 'welcome' && (
+                              <span className="inline-flex items-center gap-0.5 ml-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                                <span className="text-[9px] text-blue-400">جاري الكتابة</span>
+                              </span>
                             )}
                           </div>
                         )}
@@ -547,8 +645,8 @@ export function AIAssistant() {
                   </div>
                 )}
 
-                {/* Typing Indicator */}
-                {isTyping && (
+                {/* Typing Indicator — only show when no streaming bot message yet */}
+                {isTyping && !messages.some(m => m.type === 'bot' && m.content.length > 0 && m.id !== 'welcome') && (
                   <div className="flex justify-end">
                     <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -557,7 +655,7 @@ export function AIAssistant() {
                           <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '150ms' }} />
                           <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '300ms' }} />
                         </div>
-                        <span className="text-[10px] text-gray-400">يبحث...</span>
+                        <span className="text-[10px] text-gray-400">يكتب...</span>
                       </div>
                     </div>
                   </div>
