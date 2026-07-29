@@ -5,7 +5,7 @@ import { errorResponse } from '@/lib/api';
 import { chatCompletion, type ChatMessage } from '@/ai/nvidia-client';
 import { fetchOpenSooqListings } from '@/lib/opensooq-scrape';
 import {
-  getSystemPrompt, SITE_NAME, BRAND_PRICE_RANGES,
+  getSystemPrompt, SITE_NAME, SITE_URL, BRAND_PRICE_RANGES,
   INTENT_PATTERNS, CAR_SEARCH_KEYWORDS, DIALECT_MAP,
 } from '@/ai/site-knowledge';
 
@@ -25,16 +25,163 @@ setInterval(() => {
 }, 5 * 60 * 1000);
 
 // ── Intent Detection ──
-type Intent = 'car_search' | 'workshop' | 'parts' | 'price_analysis' | 'engine_sound' | 'selling' | 'site_info' | 'general';
+type Intent = 'car_search' | 'workshop' | 'parts' | 'price_analysis' | 'engine_sound' | 'selling' | 'site_info' | 'ref_code' | 'general';
 
 function detectIntent(query: string): Intent {
   const q = query.toLowerCase();
+  // Check for ref code pattern (e.g., S44-XBY, A12-ABC, X99-ZZZ)
+  if (/[A-Z]{1,3}\d{1,4}-[A-Z]{3}/i.test(q.trim()) || /^[A-Z]\d{2,3}-[A-Z]{3}$/i.test(q.trim())) {
+    return 'ref_code';
+  }
   for (const [intent, patterns] of Object.entries(INTENT_PATTERNS)) {
     for (const pattern of patterns) {
       if (pattern.test(q)) return intent as Intent;
     }
   }
   return 'general';
+}
+
+// ── Extract ref code from query ──
+function extractRefCode(query: string): string | null {
+  const match = query.trim().match(/([A-Z]{1,3}\d{1,4}-[A-Z]{3})/i);
+  return match ? match[1].toUpperCase() : null;
+}
+
+// ── Fetch car by ref code with full details ──
+async function fetchCarByRefCode(refCode: string) {
+  const car = await prisma.car.findUnique({
+    where: { refCode },
+    include: {
+      brand: { select: { nameAr: true, nameEn: true } },
+      model: { select: { nameAr: true, nameEn: true } },
+      city: { select: { nameAr: true } },
+      images: { orderBy: { order: 'asc' }, select: { url: true, order: true } },
+      user: { select: { name: true, image: true, _count: { select: { cars: true } } } },
+      carReviews: { select: { rating: true, comment: true }, take: 5 },
+    },
+  });
+  return car;
+}
+
+// ── Find similar cars for comparison ──
+async function findSimilarCars(car: any) {
+  return prisma.car.findMany({
+    where: {
+      status: 'APPROVED',
+      id: { not: car.id },
+      OR: [
+        { brand: { nameEn: car.brand?.nameEn } },
+        { model: { nameEn: car.model?.nameEn } },
+      ],
+    },
+    take: 5,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      brand: { select: { nameAr: true } },
+      model: { select: { nameAr: true } },
+      city: { select: { nameAr: true } },
+      images: { take: 1, select: { url: true } },
+    },
+  });
+}
+
+// ── Build full car report ──
+function buildCarReport(car: any, similarCars: any[], marketListings: any[]): string {
+  const conditionMap: Record<string, string> = {
+    EXCELLENT: 'ممتازة ✨', VERY_GOOD: 'جيدة جداً 👍', GOOD: 'جيدة 👌', FAIR: 'مقبولة 🤏',
+  };
+  const fuelMap: Record<string, string> = {
+    PETROL: 'بنزين ⛽', DIESEL: 'ديزل 🛢️', HYBRID: 'هايبرد 🔋', ELECTRIC: 'كهربائية ⚡',
+  };
+  const transMap: Record<string, string> = {
+    AUTOMATIC: 'أوتوماتيك 🔄', MANUAL: 'يدوي ✋',
+  };
+
+  // Market comparison
+  const sameModelListings = marketListings.filter(l =>
+    l.title?.toLowerCase().includes(car.model?.nameEn?.toLowerCase() || '')
+  );
+  const marketPrices = sameModelListings.filter(l => l.price > 0).map(l => l.price);
+  const sitePrices = similarCars.filter(s => s.price > 0).map(s => s.price);
+  const allPrices = [...marketPrices, ...sitePrices, car.price].filter(p => p > 0);
+  const avgPrice = allPrices.length > 0 ? Math.round(allPrices.reduce((a, b) => a + b, 0) / allPrices.length) : 0;
+  const minPrice = allPrices.length > 0 ? Math.min(...allPrices) : 0;
+  const maxPrice = allPrices.length > 0 ? Math.max(...allPrices) : 0;
+
+  let priceVerdict = '';
+  let priceEmoji = '';
+  if (avgPrice > 0) {
+    const diff = ((car.price - avgPrice) / avgPrice) * 100;
+    if (diff < -10) { priceVerdict = 'منخفض 🟢'; priceEmoji = '🟢'; }
+    else if (diff > 10) { priceVerdict = 'مرتفع 🔴'; priceEmoji = '🔴'; }
+    else { priceVerdict = 'عادل 🟡'; priceEmoji = '🟡'; }
+  }
+
+  // AI score
+  const aiScore = car.aiScore || null;
+  let scoreEmoji = '';
+  if (aiScore) {
+    if (aiScore >= 80) scoreEmoji = '🟢';
+    else if (aiScore >= 60) scoreEmoji = '🟡';
+    else scoreEmoji = '🔴';
+  }
+
+  // Owner count warning
+  const ownerWarning = car.ownerCount > 2 ? '\n⚠️ تنبيه: السيارة تغيرت بين أكثر من 2 مالك' : '';
+
+  // Features list
+  const features: string[] = [];
+  if (car.isNegotiable) features.push('💰 قابل للتفاوض');
+  if (car.hasWarranty) features.push('🛡️ يوجد ضمان');
+  if (car.hasServiceHistory) features.push('📄 تاريخ صيانة');
+  if (car.isPaintOriginal) features.push('🎨 طلاء أصلي');
+  if (!car.isDamaged) features.push('✅ بدون أضرار');
+
+  const report = `🚗 **تقرير سيارة كامل: ${car.brand?.nameAr || ''} ${car.model?.nameAr || ''} ${car.year}**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 **المواصفات:**
+• الماركة: ${car.brand?.nameAr || ''} (${car.brand?.nameEn || ''})
+• الموديل: ${car.model?.nameAr || ''} (${car.model?.nameEn || ''})
+• السنة: ${car.year}
+• الكيلومترات: ${car.kilometers?.toLocaleString() || 'غير محدد'} كم
+• الوقود: ${fuelMap[car.fuelType] || car.fuelType || ''}
+• الناقل: ${transMap[car.transmission] || car.transmission || ''}
+• الحالة: ${conditionMap[car.condition] || car.condition || ''}
+• نوع الهيكل: ${car.bodyType || 'غير محدد'}
+• عدد الأسطوانات: ${car.cylinders || 'غير محدد'}
+• الدفع: ${car.drivetrain || 'غير محدد'}
+• عدد المالكين: ${car.ownerCount || 1}
+${ownerWarning}
+
+💰 **تحليل السعر:**
+• السعر المعلن: **${car.price?.toLocaleString()} د.أ** ${car.isNegotiable ? '(قابل للتفاوض)' : ''}
+${avgPrice > 0 ? `• متوسط الأسعار المشابهة: ${avgPrice.toLocaleString()} د.أ
+• أدنى سعر: ${minPrice.toLocaleString()} د.أ
+• أعلى سعر: ${maxPrice.toLocaleString()} د.أ
+• تقييم السعر: **${priceVerdict}** مقارنة بالسوق (${marketPrices.length + sitePrices.length} إعلان مشابه)` : '• لا تتوفر بيانات كافية من السوق للمقارنة'}
+
+${aiScore ? `📊 **تقييم الذكاء الاصطناعي: ${aiScore}/100** ${scoreEmoji}` : ''}
+
+${features.length > 0 ? `✨ **المميزات:**\n${features.map(f => `• ${f}`).join('\n')}` : ''}
+
+📍 **المدينة:** ${car.city?.nameAr || 'غير محددة'}
+🏷️ **الرمز المرجعی:** ${car.refCode || 'غير متوفر'}
+🔗 **رابط الإعلان:** ${SITE_URL}/cars/${car.slug || car.id}
+
+👤 **البائع:** ${car.user?.name || 'غير معروف'} (${car.user?._count?.cars || 0} إعلانات)
+
+${similarCars.length > 0 ? `🔍 **سيارات مشابهة في الموقع:**
+${similarCars.slice(0, 4).map((s, i) => `${i + 1}. ${s.brand?.nameAr || ''} ${s.model?.nameAr || ''} ${s.year} — ${s.price?.toLocaleString()} د.أ | ${s.city?.nameAr || ''}`).join('\n')}` : ''}
+
+💡 **توصيات قبل الشراء:**
+1. 📞 تواصل مع البائع واستفسر عن الحالة الفعلية
+2. 🔍 اطلب تقرير فحص فني من ورشة موثوقة
+3. 🚗 اجرِ اختبار قيادة قبل الشراء
+4. 📄 تأكد من أوراق السيارة (سجل، تأمين، ضريبة)
+5. 💰 قارن السعر مع الإعلانات المشابهة أعلاه`;
+
+  return report;
 }
 
 // ── Normalize Arabic dialect to MSA ──
@@ -239,6 +386,12 @@ async function fetchMarketListings(query: string) {
 function generateSuggestions(intent: Intent, hasCars: boolean, hasWorkshops: boolean, hasParts: boolean): string[] {
   const suggestions: string[] = [];
 
+  if (intent === 'ref_code') {
+    return ['مقارنة السعر بالسوق', 'البحث عن ورشة فحص', 'قطع غيار للسيارة', 'مشابهات أخرى'];
+  }
+  if (intent === 'site_info') {
+    return ['كيف أضيف إعلان؟', 'تقييم سعر سيارة', 'بحث عن سيارة', 'دليل الورش'];
+  }
   if (intent === 'car_search' && hasCars) {
     suggestions.push('مقارنة الأسعار');
     suggestions.push('تقييم حالة السيارة');
@@ -263,13 +416,15 @@ function generateSuggestions(intent: Intent, hasCars: boolean, hasWorkshops: boo
   if (intent === 'selling') {
     suggestions.push('كيفية التسعير');
     suggestions.push('نصائح للبيع');
+    suggestions.push('أضف إعلان مجاني');
   }
 
   // General suggestions
   if (suggestions.length === 0) {
     suggestions.push('بحث عن سيارة');
+    suggestions.push('مساعد الشراء');
+    suggestions.push('تقييم السعر');
     suggestions.push('دليل الورش');
-    suggestions.push('قطع الغيار');
   }
 
   return suggestions.slice(0, 4);
@@ -294,6 +449,9 @@ export async function POST(request: NextRequest) {
     // Detect intent
     const intent = detectIntent(normalizedQuery);
 
+    // Check for ref code
+    const refCode = extractRefCode(query);
+
     // Get or create conversation memory
     const sid = sessionId || `anon-${ip}`;
     const conversation = conversationStore.get(sid) || [];
@@ -302,6 +460,52 @@ export async function POST(request: NextRequest) {
 
     // Extract preferences from conversation history
     const conversationContext = conversation.slice(-6).map(m => `${m.role}: ${m.content}`).join('\n');
+
+    // ── REF CODE LOOKUP: fast path ──
+    if (intent === 'ref_code' && refCode) {
+      const car = await fetchCarByRefCode(refCode);
+      if (!car) {
+        const notFoundMsg = `لم أجد سيارة بالرمز المرجعي **${refCode}** في الموقع.\n\n💡 تأكد من صحة الرمز أو جرّب البحث بالاسم مثل: "كامري 2020" أو " toyota"`  ;
+        conversation.push({ role: 'assistant', content: notFoundMsg });
+        conversationStore.set(sid, conversation);
+        return Response.json({
+          success: true,
+          data: { message: notFoundMsg, cars: [], intent: 'ref_code', suggestions: ['بحث عن سيارة', 'كيف أضيف إعلان؟'], sessionId: sid },
+        });
+      }
+
+      // Fetch similar cars and market data for comparison
+      const [similarCars, marketListings] = await Promise.all([
+        findSimilarCars(car),
+        fetchMarketListings(`${car.brand?.nameEn || ''} ${car.model?.nameEn || ''} ${car.year}`),
+      ]);
+
+      const report = buildCarReport(car, similarCars, marketListings);
+
+      // Save to conversation
+      conversation.push({ role: 'assistant', content: report });
+      conversationStore.set(sid, conversation);
+
+      const mappedCar = {
+        id: car.id, slug: car.slug, refCode: car.refCode,
+        title: `${car.brand?.nameAr || ''} ${car.model?.nameAr || ''} ${car.year}`,
+        price: car.price, year: car.year, kilometers: car.kilometers,
+        fuelType: car.fuelType, transmission: car.transmission, condition: car.condition,
+        image: car.images?.[0]?.url || null, city: car.city?.nameAr || '',
+        brand: car.brand, model: car.model,
+      };
+
+      return Response.json({
+        success: true,
+        data: {
+          message: report,
+          cars: [mappedCar],
+          intent: 'ref_code',
+          suggestions: ['مقارنة السعر بالسوق', 'البحث عن ورشة فحص', 'قطع غيار للسيارة', 'مشابهات أخرى'],
+          sessionId: sid,
+        },
+      });
+    }
 
     // Parallel data fetch based on intent
     const [cars, workshops, parts, marketListings] = await Promise.all([
@@ -367,13 +571,13 @@ export async function POST(request: NextRequest) {
 
 البيانات المتوفرة من قاعدة البيانات:
 
-السيارات المتاحة:
+السيارات المتاحة (${cars.length} سيارة):
 ${carContext}
 
-ورش العمل المتاحة:
+ورش العمل المتاحة (${workshops.length} ورشة):
 ${workshopContext}
 
-قطع الغيار المتاحة:
+قطع الغيار المتاحة (${parts.length} قطعة):
 ${partsContext}
 
 بيانات السوق الخارجي (أونصوك) - إعلانات مشابهة:
@@ -392,6 +596,7 @@ ${marketAvg > 0 ? `
 - المدينة: ${city || 'غير محددة'}
 - الماركة المفضلة: ${brand ? BRAND_PRICE_RANGES[brand]?.nameAr || brand : 'غير محددة'}
 - النية المكتشفة: ${intent}
+${refCode ? `- الرمز المرجعي المُدخل: ${refCode}` : ''}
 
 المحادثة السابقة:
 ${conversationContext}
@@ -404,7 +609,10 @@ ${conversationContext}
 5. **كن مختصراً** — لا تكتب فقرات طويلة.
 6. **افهم النية** — افهم ما يريده المستخدم فعلاً.
 7. **التقط الماركة والمدينة** — إذا ذكر المستخدم ماركة أو مدينة، ابحث بها.
-8. **أظهر نسبة الثقة** — عند تقديم تحليل أسعار، أظهر نسبة الثقة في البيانات (مثلاً: "بناءً على 5 إعلانات من JO Cars + 8 إعلانات من السوق الخارجي، ثقة 85%").`;
+8. **أظهر نسبة الثقة** — عند تقديم تحليل أسعار، أظهر نسبة الثقة في البيانات (مثلاً: "بناءً على 5 إعلانات من JO Cars + 8 إعلانات من السوق الخارجي، ثقة 85%").
+9. **الرمز المرجعي** — إذا ذكر المستخدم رمزاً مثل S44-XBY، ابحث في البيانات وأعطِ تقريراً كاملاً.
+10. **شرح الموقع** — إذا سأل المستخدم عن أي ميزة أو صفحة، أجب بشكل شامل مع روابط مباشرة.
+11. **أمثلة عملية** — عند شرح أي ميزة، أعطِ مثالاً عملياً كيف يستخدمها.`;
 
     const chatMessages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
