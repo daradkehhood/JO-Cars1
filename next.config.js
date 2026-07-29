@@ -6,6 +6,7 @@ const nextConfig = {
       { protocol: 'https', hostname: 'maps.googleapis.com' },
     ],
     unoptimized: true,
+    formats: ['image/avif', 'image/webp'],
   },
   experimental: {
     optimizePackageImports: ['lucide-react', 'recharts', 'framer-motion'],
@@ -38,15 +39,27 @@ const nextConfig = {
         ],
       },
       {
-        source: '/api/:path*',
+        source: '/_next/static/:path*',
         headers: [
-          { key: 'Cache-Control', value: 'public, max-age=10, stale-while-revalidate=30' },
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      {
+        source: '/api/cars/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=30, stale-while-revalidate=60' },
+        ],
+      },
+      {
+        source: '/api/ai/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'no-store' },
         ],
       },
       {
         source: '/uploads/:path*',
         headers: [
-          { key: 'Cache-Control', value: 'public, max-age=2592000' },
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],
       },
     ];

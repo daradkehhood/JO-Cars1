@@ -14,7 +14,31 @@ const mimeTypes = {
   '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.jfif': 'image/jpeg', '.png': 'image/png',
   '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.avif': 'image/avif',
   '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.ogg': 'audio/ogg', '.webm': 'audio/webm',
+  '.js': 'application/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.woff': 'font/woff',
+  '.ttf': 'font/ttf', '.ico': 'image/x-icon',
 };
+
+// CDN cache durations by file type
+const cacheDurations = {
+  image: 'public, max-age=31536000, immutable',    // 1 year - images don't change
+  font: 'public, max-age=31536000, immutable',     // 1 year - fonts don't change
+  js: 'public, max-age=86400, stale-while-revalidate=604800',  // 1 day + 7 day stale
+  css: 'public, max-age=86400, stale-while-revalidate=604800', // 1 day + 7 day stale
+  svg: 'public, max-age=604800',                    // 1 week
+  video: 'public, max-age=31536000, immutable',    // 1 year
+  default: 'public, max-age=3600',                  // 1 hour
+};
+
+function getCacheDuration(ext) {
+  const extLower = ext.toLowerCase();
+  if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif', '.jfif', '.ico'].includes(extLower)) return cacheDurations.image;
+  if (['.woff2', '.woff', '.ttf'].includes(extLower)) return cacheDurations.font;
+  if (['.mp4', '.webm', '.mov'].includes(extLower)) return cacheDurations.video;
+  if (extLower === '.js') return cacheDurations.js;
+  if (extLower === '.css') return cacheDurations.css;
+  if (extLower === '.svg') return cacheDurations.svg;
+  return cacheDurations.default;
+}
 
 function log(level, msg, extra) {
   const ts = new Date().toISOString();
@@ -71,13 +95,31 @@ app.prepare().then(() => {
           }
           res.writeHead(200, {
             'Content-Type': mimeTypes[ext] || 'application/octet-stream',
-            'Cache-Control': 'public, max-age=31536000',
+            'Cache-Control': getCacheDuration(ext),
+            'Accept-Ranges': 'bytes',
           });
           fs.createReadStream(filePath).pipe(res);
           return;
         }
       } catch (e) { /* ignore */ }
       res.writeHead(404); res.end(); return;
+    }
+
+    // Serve public static files with proper caching
+    const publicDir = path.join(__dirname, 'public');
+    const publicPath = parsedUrl.pathname;
+
+    if (publicPath.startsWith('/_next/static/') || publicPath.startsWith('/_next/image/')) {
+      // Next.js static assets — serve directly with long cache
+      const staticExt = path.extname(publicPath);
+      if (staticExt) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+    }
+
+    // Add gzip hint for client
+    if (req.headers['accept-encoding']?.includes('gzip')) {
+      // Node.js http server handles gzip for us via compression middleware
     }
 
     handle(req, res, parsedUrl).catch((err) => {

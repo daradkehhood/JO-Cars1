@@ -51,12 +51,13 @@ export const RATE_LIMITS = {
   LOGIN: { windowMs: 15 * 60 * 1000, maxRequests: 5 },
   REGISTER: { windowMs: 15 * 60 * 1000, maxRequests: 3 },
   UPLOAD: { windowMs: 60 * 1000, maxRequests: 20 },
-  AI: { windowMs: 60 * 1000, maxRequests: 10 },
+  AI: { windowMs: 60 * 1000, maxRequests: 30 },           // Increased: was 10
+  AI_CHAT: { windowMs: 60 * 1000, maxRequests: 20 },       // New: per-IP for chat
   MESSAGE: { windowMs: 60 * 1000, maxRequests: 30 },
   FORUM: { windowMs: 60 * 1000, maxRequests: 10 },
   CONTACT: { windowMs: 60 * 1000, maxRequests: 5 },
   RATING: { windowMs: 60 * 1000, maxRequests: 10 },
   WANTED: { windowMs: 60 * 1000, maxRequests: 10 },
   CAR_CREATE: { windowMs: 60 * 1000, maxRequests: 5 },
-  GENERAL: { windowMs: 60 * 1000, maxRequests: 100 },
+  GENERAL: { windowMs: 60 * 1000, maxRequests: 200 },      // Increased: was 100
 } as const;

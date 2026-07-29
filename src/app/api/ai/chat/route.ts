@@ -4,6 +4,7 @@ import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { errorResponse } from '@/lib/api';
 import { chatCompletion, type ChatMessage } from '@/ai/nvidia-client';
 import { fetchOpenSooqListings } from '@/lib/opensooq-scrape';
+import { getCachedResponse, setCachedResponse } from '@/ai/chat-cache';
 import {
   getSystemPrompt, SITE_NAME, SITE_URL, BRAND_PRICE_RANGES,
   INTENT_PATTERNS, CAR_SEARCH_KEYWORDS, DIALECT_MAP,
@@ -47,23 +48,27 @@ function extractRefCode(query: string): string | null {
   return match ? match[1].toUpperCase() : null;
 }
 
-// ── Fetch car by ref code with full details ──
+// ── Fetch car by ref code with full details (optimized) ──
 async function fetchCarByRefCode(refCode: string) {
   const car = await prisma.car.findUnique({
     where: { refCode },
-    include: {
+    select: {
+      id: true, slug: true, refCode: true, price: true, year: true, kilometers: true,
+      fuelType: true, transmission: true, condition: true, bodyType: true,
+      isNegotiable: true, hasWarranty: true, hasServiceHistory: true,
+      isPaintOriginal: true, isDamaged: true, ownerCount: true, aiScore: true,
       brand: { select: { nameAr: true, nameEn: true } },
       model: { select: { nameAr: true, nameEn: true } },
       city: { select: { nameAr: true } },
-      images: { orderBy: { order: 'asc' }, select: { url: true, order: true } },
+      images: { orderBy: { order: 'asc' }, select: { url: true, order: true }, take: 5 },
       user: { select: { name: true, image: true, _count: { select: { cars: true } } } },
-      carReviews: { select: { rating: true, comment: true }, take: 5 },
+      carReviews: { select: { rating: true, comment: true }, take: 3 }, // Reduced from 5
     },
   });
   return car;
 }
 
-// ── Find similar cars for comparison ──
+// ── Find similar cars for comparison (optimized) ──
 async function findSimilarCars(car: any) {
   return prisma.car.findMany({
     where: {
@@ -74,9 +79,10 @@ async function findSimilarCars(car: any) {
         { model: { nameEn: car.model?.nameEn } },
       ],
     },
-    take: 5,
+    take: 3, // Reduced from 5
     orderBy: { createdAt: 'desc' },
-    include: {
+    select: {
+      id: true, price: true, year: true,
       brand: { select: { nameAr: true } },
       model: { select: { nameAr: true } },
       city: { select: { nameAr: true } },
@@ -257,21 +263,24 @@ function buildCarFilters(query: string): Record<string, unknown> {
   return filters;
 }
 
-// ── Fetch cars from DB ──
+// ── Fetch cars from DB (optimized: minimal fields only) ──
 async function fetchCars(query: string) {
   const filters = buildCarFilters(query);
   const budget = parseBudget(query);
+  const selectFields = {
+    id: true, slug: true, refCode: true, price: true, year: true, kilometers: true,
+    fuelType: true, transmission: true, condition: true, bodyType: true,
+    brand: { select: { nameAr: true, nameEn: true } },
+    model: { select: { nameAr: true, nameEn: true } },
+    city: { select: { nameAr: true } },
+    images: { take: 1, orderBy: { order: 'asc' }, select: { url: true } },
+  };
 
   let cars = await prisma.car.findMany({
     where: filters as any,
-    take: 15,
+    take: 10, // Reduced from 15
     orderBy: [{ featured: 'desc' }, { createdAt: 'desc' }],
-    include: {
-      brand: { select: { nameAr: true, nameEn: true } },
-      model: { select: { nameAr: true, nameEn: true } },
-      city: { select: { nameAr: true } },
-      images: { take: 1, orderBy: { order: 'asc' }, select: { url: true } },
-    },
+    select: selectFields,
   });
 
   if (cars.length === 0 && budget) {
@@ -279,32 +288,20 @@ async function fetchCars(query: string) {
     delete (filters as any).fuelType;
     (filters as any).price = { gte: budget - 2000, lte: budget + 5000 };
     cars = await prisma.car.findMany({
-      where: filters as any, take: 10, orderBy: { createdAt: 'desc' },
-      include: {
-        brand: { select: { nameAr: true, nameEn: true } },
-        model: { select: { nameAr: true, nameEn: true } },
-        city: { select: { nameAr: true } },
-        images: { take: 1, orderBy: { order: 'asc' }, select: { url: true } },
-      },
+      where: filters as any, take: 8, orderBy: { createdAt: 'desc' }, select: selectFields,
     });
   }
 
   if (cars.length === 0) {
     cars = await prisma.car.findMany({
-      where: { status: 'APPROVED' }, take: 6, orderBy: { createdAt: 'desc' },
-      include: {
-        brand: { select: { nameAr: true, nameEn: true } },
-        model: { select: { nameAr: true, nameEn: true } },
-        city: { select: { nameAr: true } },
-        images: { take: 1, orderBy: { order: 'asc' }, select: { url: true } },
-      },
+      where: { status: 'APPROVED' }, take: 5, orderBy: { createdAt: 'desc' }, select: selectFields,
     });
   }
 
   return cars;
 }
 
-// ── Fetch workshops from DB ──
+// ── Fetch workshops from DB (optimized: minimal fields only) ──
 async function fetchWorkshops(query: string) {
   const city = parseCity(query);
   const where: Record<string, unknown> = {
@@ -314,16 +311,15 @@ async function fetchWorkshops(query: string) {
 
   const workshops = await prisma.workshop.findMany({
     where: where as any,
-    take: 10,
+    take: 6, // Reduced from 10
     orderBy: [{ rating: 'desc' }, { reviewCount: 'desc' }],
-    include: {
-      services: { select: { category: true, name: true } },
-      brands: { select: { brand: true } },
-      _count: { select: { reviews: true, appointments: true } },
+    select: {
+      id: true, name: true, address: true, rating: true, reviewCount: true,
+      services: { select: { category: true }, take: 5 },
+      brands: { select: { brand: true }, take: 5 },
     },
   });
 
-  // Filter by city name if specified (since no relation exists)
   if (city) {
     return workshops.filter((w: any) => {
       const addr = (w.address || '').toLowerCase();
@@ -334,7 +330,7 @@ async function fetchWorkshops(query: string) {
   return workshops;
 }
 
-// ── Fetch used parts from DB ──
+// ── Fetch used parts from DB (optimized: minimal fields only) ──
 async function fetchParts(query: string) {
   const parts = await prisma.usedPart.findMany({
     where: {
@@ -346,9 +342,10 @@ async function fetchParts(query: string) {
         { brand: { nameEn: { contains: query } } },
       ],
     },
-    take: 10,
+    take: 6, // Reduced from 10
     orderBy: { createdAt: 'desc' },
-    include: {
+    select: {
+      id: true, title: true, price: true, condition: true,
       brand: { select: { nameAr: true, nameEn: true } },
       city: { select: { nameAr: true } },
       user: { select: { name: true } },
@@ -434,8 +431,19 @@ function generateSuggestions(intent: Intent, hasCars: boolean, hasWorkshops: boo
 export async function POST(request: NextRequest) {
   try {
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-    const rateLimit = checkRateLimit(`ai-chat:${ip}`, RATE_LIMITS.AI);
-    if (!rateLimit.allowed) return errorResponse('تم تجاوز الحد المسموح', 429);
+    const rateLimit = checkRateLimit(`ai-chat:${ip}`, RATE_LIMITS.AI_CHAT);
+    if (!rateLimit.allowed) {
+      return Response.json({
+        success: true,
+        data: {
+          message: 'لقد تجاوزت حد الطلبات. يرجى الانتظار قليلاً ثم المحاولة مرة أخرى.',
+          cars: [],
+          intent: 'general',
+          suggestions: [],
+          retryAfter: rateLimit.resetIn,
+        },
+      }, { status: 429 });
+    }
 
     const { messages, sessionId } = await request.json();
     const query = messages?.[messages.length - 1]?.content || '';
@@ -619,33 +627,42 @@ ${conversationContext}
       ...conversation.slice(-6).map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
     ];
 
+    // ── Check cache before calling NVIDIA API ──
+    const cachedResponse = getCachedResponse(normalizedQuery, intent);
     let aiResponse = '';
-    try {
-      aiResponse = await chatCompletion(chatMessages, {
-        temperature: 0.7,
-        maxTokens: 2048,
-      });
-    } catch (llmError) {
-      console.error('[AI Chat] LLM error, using fallback:', llmError);
-      // Smart fallback based on intent
-      if (intent === 'car_search' && cars.length > 0) {
-        aiResponse = `وجدت ${cars.length} سيارة مناسبة لك:\n\n` +
-          cars.slice(0, 6).map((car: any, i: number) =>
-            `${i + 1}. **${car.brand?.nameAr || ''} ${car.model?.nameAr || ''} ${car.year}**\n   💵 ${car.price.toLocaleString()} د.أ | 📍 ${car.city?.nameAr || ''} | 🏷️ ${car.refCode || ''}`
-          ).join('\n\n') +
-          `\n\nانسخ **رقم المرجع (refCode)** من أي سيارة وضعه في البحث للوصول السريع.`;
-      } else if (intent === 'workshop' && workshops.length > 0) {
-        aiResponse = `وجدت ${workshops.length} ورشة:\n\n` +
-          workshops.slice(0, 5).map((w: any, i: number) =>
-            `${i + 1}. **${w.name}** — ${w.address || ''} | ⭐ ${w.rating || 0}/5 | ${w.services?.map((s: any) => s.category).filter(Boolean).join('، ') || 'متنوعة'}`
-          ).join('\n\n');
-      } else if (intent === 'parts' && parts.length > 0) {
-        aiResponse = `وجدت ${parts.length} قطعة غيار:\n\n` +
-          parts.slice(0, 5).map((p: any, i: number) =>
-            `${i + 1}. **${p.title}** — ${p.brand?.nameAr || ''} | 💵 ${p.price?.toLocaleString() || 'غير محدد'} د.أ | 📍 ${p.city?.nameAr || ''}`
-          ).join('\n\n');
-      } else {
-        aiResponse = 'عذراً، ما لقيت نتائج متطابقة مع طلبك. جرب تغيير الكلمات أو اسأل عن شيء آخر.';
+
+    if (cachedResponse) {
+      aiResponse = cachedResponse;
+    } else {
+      try {
+        aiResponse = await chatCompletion(chatMessages, {
+          temperature: 0.7,
+          maxTokens: 2048,
+          timeoutMs: 20000,
+          retries: 2,
+        });
+        setCachedResponse(normalizedQuery, intent, aiResponse);
+      } catch (llmError) {
+        console.error('[AI Chat] LLM error, using fallback:', llmError);
+        if (intent === 'car_search' && cars.length > 0) {
+          aiResponse = `وجدت ${cars.length} سيارة مناسبة لك:\n\n` +
+            cars.slice(0, 6).map((car: any, i: number) =>
+              `${i + 1}. **${car.brand?.nameAr || ''} ${car.model?.nameAr || ''} ${car.year}**\n   💵 ${car.price.toLocaleString()} د.أ | 📍 ${car.city?.nameAr || ''} | 🏷️ ${car.refCode || ''}`
+            ).join('\n\n') +
+            `\n\nانسخ **رقم المرجع (refCode)** من أي سيارة وضعه في البحث للوصول السريع.`;
+        } else if (intent === 'workshop' && workshops.length > 0) {
+          aiResponse = `وجدت ${workshops.length} ورشة:\n\n` +
+            workshops.slice(0, 5).map((w: any, i: number) =>
+              `${i + 1}. **${w.name}** — ${w.address || ''} | ⭐ ${w.rating || 0}/5 | ${w.services?.map((s: any) => s.category).filter(Boolean).join('، ') || 'متنوعة'}`
+            ).join('\n\n');
+        } else if (intent === 'parts' && parts.length > 0) {
+          aiResponse = `وجدت ${parts.length} قطعة غيار:\n\n` +
+            parts.slice(0, 5).map((p: any, i: number) =>
+              `${i + 1}. **${p.title}** — ${p.brand?.nameAr || ''} | 💵 ${p.price?.toLocaleString() || 'غير محدد'} د.أ | 📍 ${p.city?.nameAr || ''}`
+            ).join('\n\n');
+        } else {
+          aiResponse = 'عذراً، ما لقيت نتائج متطابقة مع طلبك. جرب تغيير الكلمات أو اسأل عن شيء آخر.';
+        }
       }
     }
 

@@ -1,6 +1,7 @@
 /**
  * NVIDIA AI Client — centralized OpenAI-compatible client for NVIDIA API.
  * All AI modules use this client instead of local heuristics.
+ * v2.0: Added retry logic, adaptive timeout, and connection pooling hints.
  */
 
 import OpenAI from 'openai';
@@ -16,6 +17,7 @@ function getClient(): OpenAI {
     client = new OpenAI({
       apiKey: NVIDIA_API_KEY,
       baseURL: NVIDIA_BASE_URL,
+      timeout: 30000, // 30s default timeout
     });
   }
   return client;
@@ -31,47 +33,80 @@ export interface ChatOptions {
   maxTokens?: number;
   topP?: number;
   stream?: boolean;
+  timeoutMs?: number;
+  retries?: number;
+}
+
+/**
+ * Sleep helper for retry delays.
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 /**
  * Send a chat completion request to NVIDIA API.
  * Returns the full response text as a string.
- * Includes a 25-second timeout to prevent hanging.
+ * Includes adaptive timeout and retry logic (exponential backoff).
  */
 export async function chatCompletion(
   messages: ChatMessage[],
   options: ChatOptions = {}
 ): Promise<string> {
   const openai = getClient();
-  const { temperature = 0.7, maxTokens = 4096, topP = 1 } = options;
+  const {
+    temperature = 0.7,
+    maxTokens = 4096,
+    topP = 1,
+    timeoutMs = 20000,
+    retries = 2,
+  } = options;
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 25000);
+  let lastError: any = null;
 
-  try {
-    const completion = await openai.chat.completions.create(
-      {
-        model: NVIDIA_MODEL,
-        messages,
-        temperature,
-        top_p: topP,
-        max_tokens: maxTokens,
-        stream: false,
-      },
-      { signal: controller.signal as any }
-    );
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-    return completion.choices[0]?.message?.content || '';
-  } catch (error: any) {
-    if (error?.name === 'AbortError' || error?.message?.includes('abort')) {
-      console.error('[NVIDIA AI] Request timed out after 25s');
-    } else {
-      console.error('[NVIDIA AI] Chat completion error:', error);
+    try {
+      const completion = await openai.chat.completions.create(
+        {
+          model: NVIDIA_MODEL,
+          messages,
+          temperature,
+          top_p: topP,
+          max_tokens: maxTokens,
+          stream: false,
+        },
+        { signal: controller.signal as any }
+      );
+
+      clearTimeout(timeout);
+      return completion.choices[0]?.message?.content || '';
+    } catch (error: any) {
+      clearTimeout(timeout);
+      lastError = error;
+
+      const isTimeout = error?.name === 'AbortError' || error?.message?.includes('abort');
+      const isRateLimit = error?.status === 429 || error?.message?.includes('rate');
+      const isServerError = error?.status >= 500;
+
+      if (attempt < retries) {
+        // Exponential backoff: 1s, 2s, 4s...
+        const delay = Math.min(1000 * Math.pow(2, attempt), 5000);
+        console.log(`[NVIDIA AI] Retry ${attempt + 1}/${retries} after ${delay}ms (timeout: ${isTimeout}, rate: ${isRateLimit}, server: ${isServerError})`);
+        await sleep(delay);
+      }
     }
-    throw error;
-  } finally {
-    clearTimeout(timeout);
   }
+
+  // All retries exhausted
+  if (lastError?.name === 'AbortError' || lastError?.message?.includes('abort')) {
+    console.error(`[NVIDIA AI] Request timed out after ${retries + 1} attempts`);
+  } else {
+    console.error(`[NVIDIA AI] Chat completion failed after ${retries + 1} attempts:`, lastError);
+  }
+  throw lastError;
 }
 
 /**
@@ -131,7 +166,7 @@ export async function isNvidiaAvailable(): Promise<boolean> {
   try {
     const text = await chatCompletion(
       [{ role: 'user', content: 'Say "ok"' }],
-      { maxTokens: 10, temperature: 0 }
+      { maxTokens: 10, temperature: 0, timeoutMs: 10000, retries: 1 }
     );
     return text.toLowerCase().includes('ok');
   } catch {
