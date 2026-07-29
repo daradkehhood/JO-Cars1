@@ -736,7 +736,7 @@ export function AIAssistant() {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-36 lg:bottom-24 right-6 z-50 w-[420px] max-w-[calc(100vw-48px)]"
+            className="fixed bottom-40 lg:bottom-24 left-6 lg:left-auto lg:right-6 z-50 w-[420px] max-w-[calc(100vw-48px)]"
           >
             <div className="rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl shadow-black/10">
               {/* Header */}
@@ -1061,7 +1061,7 @@ export function AIAssistant() {
       </AnimatePresence>
 
       <motion.button onClick={() => setIsOpen(true)}
-        className="fixed bottom-20 lg:bottom-6 right-6 z-50 w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-105 active:scale-95 transition-all flex items-center justify-center"
+        className="fixed bottom-28 lg:bottom-6 left-6 lg:left-auto lg:right-6 z-50 w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-105 active:scale-95 transition-all flex items-center justify-center"
         whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
         <MessageCircle className="w-6 h-6" />
       </motion.button>
