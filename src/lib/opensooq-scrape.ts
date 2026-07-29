@@ -174,6 +174,12 @@ function median(nums: number[]): number {
   return s.length % 2 ? s[mid] : Math.round((s[mid - 1] + s[mid]) / 2);
 }
 
+const DESKTOP_USER_AGENTS = [
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15',
+  'Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0',
+];
+
 async function fetchSerpHtml(brand: string, model: string, year?: number): Promise<string | null> {
   const params = new URLSearchParams();
   params.set('brand', normalizeBrand(brand));
@@ -183,21 +189,36 @@ async function fetchSerpHtml(brand: string, model: string, year?: number): Promi
     params.set('year_to', String(year + 2));
   }
   const url = `https://jo.opensooq.com/en/cars?${params.toString()}`;
-  try {
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9',
-        'Accept-Language': 'en-US,en;q=0.9,ar;q=0.8',
-      },
-      signal: AbortSignal.timeout(5000),
-      redirect: 'follow',
-    });
-    if (!res.ok) return null; // 410 anti-bot / 404 / anything → silent fallback
-    return await res.text();
-  } catch {
-    return null;
+
+  // Try up to 2 times with different User-Agents
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const ua = DESKTOP_USER_AGENTS[attempt % DESKTOP_USER_AGENTS.length];
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': ua,
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9,ar;q=0.8',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Cache-Control': 'no-cache',
+          'Sec-Fetch-Dest': 'document',
+          'Sec-Fetch-Mode': 'navigate',
+          'Sec-Fetch-Site': 'none',
+          'Sec-Fetch-User': '?1',
+          'Upgrade-Insecure-Requests': '1',
+        },
+        signal: AbortSignal.timeout(8000),
+        redirect: 'follow',
+      });
+      if (res.ok) return await res.text();
+      // On 410/403, retry once with different UA
+      if (attempt === 0) continue;
+      return null;
+    } catch {
+      if (attempt === 1) return null;
+    }
   }
+  return null;
 }
 
 /**

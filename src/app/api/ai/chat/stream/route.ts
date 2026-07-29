@@ -145,6 +145,7 @@ async function fetchCarByRefCode(refCode: string) {
       fuelType: true, transmission: true, condition: true, bodyType: true,
       isNegotiable: true, hasWarranty: true, hasServiceHistory: true,
       isPaintOriginal: true, isDamaged: true, ownerCount: true, aiScore: true,
+      createdAt: true,
       brand: { select: { nameAr: true, nameEn: true } },
       model: { select: { nameAr: true, nameEn: true } },
       city: { select: { nameAr: true } },
@@ -190,7 +191,7 @@ async function fetchMarketListings(query: string) {
 }
 
 // ── Build Car Report ──
-function buildCarReport(car: any, similarCars: any[], marketListings: any[]): string {
+function buildCarReport(car: any, similarCars: any[], marketListings: any[], marketStats?: { avg: number; min: number; max: number; count: number } | null): string {
   const conditionMap: Record<string, string> = {
     EXCELLENT: 'ممتازة ✨', VERY_GOOD: 'جيدة جداً 👍', GOOD: 'جيدة 👌', FAIR: 'مقبولة 🤏',
   };
@@ -201,20 +202,51 @@ function buildCarReport(car: any, similarCars: any[], marketListings: any[]): st
     AUTOMATIC: 'أوتوماتيك 🔄', MANUAL: 'يدوي ✋',
   };
 
+  // ── Listing age analysis ──
+  const createdAt = car.createdAt ? new Date(car.createdAt) : null;
+  const listingAge = createdAt ? Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24)) : null;
+  let listingAgeAnalysis = '';
+  let negotiationLeverage = '';
+  if (listingAge !== null) {
+    if (listingAge > 60) {
+      listingAgeAnalysis = 'الإعلان قديم جداً — البائع يائس من البيع ويقبل أي عرض';
+      negotiationLeverage = '💰 **نقطة تفاوض قوية:** الإعلان منشور من **' + listingAge + ' يوم** — البائع ينتظر طول الوقت، يعني ممكن ينزل السعر بشكل كبير';
+    } else if (listingAge > 30) {
+      listingAgeAnalysis = 'الإعلان قديم — السيارة ما انبععت من فترة، البائع ممكن يقبل تفاوض';
+      negotiationLeverage = '💰 **نقطة تفاوض:** الإعلان عمره **' + listingAge + ' يوم** — لو السيارة كانت مناسبة للسوق، كان انبععت من زمان';
+    } else if (listingAge > 14) {
+      listingAgeAnalysis = 'الإعلان موجود منذ أسبوعين — لا توجد استعجال';
+      negotiationLeverage = '💡 الإعلان عمره **' + listingAge + ' يوم** — يمكن تبدأ تفاوض بسيط';
+    } else {
+      listingAgeAnalysis = 'الإعلان جديد — البائع ينتظر عروض';
+      negotiationLeverage = '⚠️ الإعلان جديد (**' + listingAge + ' يوم**) — البائع ما بحتاج يبيع بسرعة';
+    }
+  }
+
+  // ── Price analysis (use market stats if available, fallback to local calculation) ──
   const sameModelListings = marketListings.filter(l =>
     l.title?.toLowerCase().includes(car.model?.nameEn?.toLowerCase() || '')
   );
   const marketPrices = sameModelListings.filter(l => l.price > 0).map(l => l.price);
   const sitePrices = similarCars.filter(s => s.price > 0).map(s => s.price);
   const allPrices = [...marketPrices, ...sitePrices, car.price].filter(p => p > 0);
-  const avgPrice = allPrices.length > 0 ? Math.round(allPrices.reduce((a, b) => a + b, 0) / allPrices.length) : 0;
+  
+  // Use market stats from OpenSooq if available, otherwise compute locally
+  const avgPrice = marketStats?.avg || (allPrices.length > 0 ? Math.round(allPrices.reduce((a: number, b: number) => a + b, 0) / allPrices.length) : 0);
+  const minPrice = marketStats?.min || (allPrices.length > 0 ? Math.min(...allPrices) : 0);
+  const maxPrice = marketStats?.max || (allPrices.length > 0 ? Math.max(...allPrices) : 0);
+  const listingCount = marketStats?.count || allPrices.length;
 
   let priceVerdict = '';
+  let priceVerdictEmoji = '';
+  let priceDiffPercent = 0;
   if (avgPrice > 0) {
-    const diff = ((car.price - avgPrice) / avgPrice) * 100;
-    if (diff < -10) priceVerdict = 'منخفض 🟢';
-    else if (diff > 10) priceVerdict = 'مرتفع 🔴';
-    else priceVerdict = 'عادل 🟡';
+    priceDiffPercent = Math.round(((car.price - avgPrice) / avgPrice) * 100);
+    if (priceDiffPercent < -15) { priceVerdict = 'ممتاز — أقل بكثير من السوق'; priceVerdictEmoji = '🟢🟢'; }
+    else if (priceDiffPercent < -10) { priceVerdict = 'منخفض —低于 المتوسط'; priceVerdictEmoji = '🟢'; }
+    else if (priceDiffPercent > 15) { priceVerdict = 'مرتفع جداً — يُنصح بالتفاوض أو التخلي'; priceVerdictEmoji = '🔴🔴'; }
+    else if (priceDiffPercent > 10) { priceVerdict = 'مرتفع — يُنصح بالتفاوض'; priceVerdictEmoji = '🔴'; }
+    else { priceVerdict = 'عادل — مناسب للسوق'; priceVerdictEmoji = '🟡'; }
   }
 
   const aiScore = car.aiScore || null;
@@ -232,7 +264,8 @@ function buildCarReport(car: any, similarCars: any[], marketListings: any[]): st
   if (car.isPaintOriginal) features.push('🎨 طلاء أصلي');
   if (!car.isDamaged) features.push('✅ بدون أضرار');
 
-  return `🚗 **تقرير سيارة كامل: ${car.brand?.nameAr || ''} ${car.model?.nameAr || ''} ${car.year}**
+  // ── Build the report ──
+  let report = `🚗 **تقرير سيارة كامل: ${car.brand?.nameAr || ''} ${car.model?.nameAr || ''} ${car.year}**
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 📋 **المواصفات:**
@@ -248,14 +281,25 @@ ${aiScore ? `- 📊 تقييم AI: ${aiScore}/100 ${scoreEmoji}` : ''}
 
 ${features.length > 0 ? `✨ **المميزات:**\n${features.join('\n')}` : ''}
 
-📊 **تحليل السعر:**
-${avgPrice > 0 ? `- متوسط السوق: ${avgPrice.toLocaleString()} د.أ
-- تقييم السعر: ${priceVerdict}
-- عدد الإعلانات المشابهة: ${allPrices.length}` : '- لا توجد بيانات كافية'}
+${listingAge !== null ? `📅 **تحليل الإعلان:**
+- عمر الإعلان: **${listingAge} يوم**
+- التحليل: ${listingAgeAnalysis}
+${negotiationLeverage}` : ''}
 
-${similarCars.length > 0 ? `\n🔄 **سيارات مشابهة:**\n${similarCars.map((s, i) => `${i + 1}. ${s.brand?.nameAr || ''} ${s.model?.nameAr || ''} ${s.year} — ${s.price?.toLocaleString() || 'غير محدد'} د.أ`).join('\n')}` : ''}
+📊 **تحليل السعر بالبيانات الحقيقية:**
+${avgPrice > 0 ? `- متوسط السوق: **${avgPrice.toLocaleString()} د.أ**
+- أدنى سعر بالسوق: ${minPrice.toLocaleString()} د.أ
+- أعلى سعر بالسوق: ${maxPrice.toLocaleString()} د.أ
+- عدد الإعلانات المشابهة: **${listingCount}** إعلان
+- تقييم السعر: **${priceVerdictEmoji} ${priceVerdict}**
+- الفرق عن المتوسط: **${priceDiffPercent > 0 ? '+' : ''}${priceDiffPercent}%**
+${marketStats ? `- مصدر البيانات: السوق المفتوح (OpenSooq) + الموقع` : '- مصدر البيانات: الموقع فقط (بيانات محدودة)'}` : '- لا توجد بيانات كافية لتحليل السعر'}
+
+${similarCars.length > 0 ? `\n🔄 **سيارات مشابهة في الموقع:**\n${similarCars.map((s, i) => `${i + 1}. ${s.brand?.nameAr || ''} ${s.model?.nameAr || ''} ${s.year} — ${s.price?.toLocaleString() || 'غير محدد'} د.أ | ${s.city?.nameAr || ''}`).join('\n')}` : ''}
 
 💡 **نصيحة:** انسخ الرمز المرجعي **${car.refCode || 'N/A'}** واحتفظ به للرجوع السريع.`;
+
+  return report;
 }
 
 // ── Generate Suggestions ──
@@ -359,10 +403,11 @@ ${conversationContext}
 6. **افهم النية** — افهم ما يريده المستخدم فعلاً.
 7. **التقط الماركة والمدينة** — إذا ذكر المستخدم ماركة أو مدينة، ابحث بها.
 8. **أظهر نسبة الثقة** — عند تقديم تحليل أسعار، أظهر نسبة الثقة في البيانات.
-9. **الرمز المرجعي** — إذا ذكر المستخدم رمزاً مثل S44-XBY، ابحث في البيانات وأعطِ تقريراً كاملاً.
+9. **الرمز المرجعي** — إذا ذكر المستخدم رمزاً مثل S44-XBY، ابحث في البيانات وأعطِ تقريراً كاملاً يشمل: المواصفات + تحليل السعر + عمر الإعلان + نقاط التفاوض.
 10. **شرح الموقع** — إذا سأل المستخدم عن أي ميزة أو صفحة، أجب بشكل شامل مع روابط مباشرة.
 11. **أمثلة عملية** — عند شرح أي ميزة، أعطِ مثالاً عملياً كيف يستخدمها.
-12. **البحث باللغة الطبيعية** — إذا فهمت البحث من كلام المستخدم الطبيعي، استخدم النتائج المفلترة واعرضها بوضوح.`;
+12. **البحث باللغة الطبيعية** — إذا فهمت البحث من كلام المستخدم الطبيعي، استخدم النتائج المفلترة واعرضها بوضوح.
+13. **البحث في السوق المفتوح** — **أنت تقدر تبحث في السوق المفتوح** — البيانات تأتي تلقائياً. لا تقل "لا أستطيع البحث" أو "لا أملك إمكانية البحث الخارجي". إذا لم تتوفر البيانات بسبب التكنولوجيا، قل: "بيانات السوق المفتوح غير متوفرة حالياً".`;
 }
 
 // ── SSE POST Handler ──
@@ -425,7 +470,21 @@ export async function POST(request: NextRequest) {
         fetchMarketListings(`${car.brand?.nameEn || ''} ${car.model?.nameEn || ''} ${car.year}`),
       ]);
 
-      const report = buildCarReport(car, similarCars, marketListings);
+      // Compute market stats for the report
+      const sameModelListings = marketListings.filter((l: any) =>
+        l.title?.toLowerCase().includes(car.model?.nameEn?.toLowerCase() || '')
+      );
+      const marketPrices = sameModelListings.filter((l: any) => l.price > 0).map((l: any) => l.price);
+      const sitePrices = similarCars.filter((s: any) => s.price > 0).map((s: any) => s.price);
+      const allPrices = [...marketPrices, ...sitePrices, car.price].filter((p: number) => p > 0);
+      const marketStats = allPrices.length >= 2 ? {
+        avg: Math.round(allPrices.reduce((a: number, b: number) => a + b, 0) / allPrices.length),
+        min: Math.min(...allPrices),
+        max: Math.max(...allPrices),
+        count: allPrices.length,
+      } : null;
+
+      const report = buildCarReport(car, similarCars, marketListings, marketStats);
       conversation.push({ role: 'assistant', content: report });
       conversationStore.set(sid, conversation);
 
