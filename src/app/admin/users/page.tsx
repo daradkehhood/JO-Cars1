@@ -31,7 +31,7 @@ export default function AdminUsersPage() {
   useEffect(() => {
     if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
     loadUsers();
-    fetch('/api/admin/badges')
+    fetch('/api/admin/badges', { headers: { Authorization: `Bearer ${useAuth.getState().token}` } })
       .then(r => r.json())
       .then(data => setAvailableBadges(data.data || []))
       .catch(() => {});
@@ -39,7 +39,7 @@ export default function AdminUsersPage() {
 
   const loadUsers = () => {
     const params = search ? `?search=${encodeURIComponent(search)}` : '';
-    fetch(`/api/admin/users${params}`)
+    fetch(`/api/admin/users${params}`, { headers: { Authorization: `Bearer ${useAuth.getState().token}` } })
       .then(r => r.json())
       .then(data => {
         const list = (data.data || []).map((u: any) => ({ ...u, badges: typeof u.badges === 'string' ? JSON.parse(u.badges || '[]') : (u.badges || []) }));
@@ -51,7 +51,7 @@ export default function AdminUsersPage() {
   const updateUser = async (userId: string, data: Record<string, unknown>) => {
     const res = await fetch(`/api/admin/users/${userId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${useAuth.getState().token}` },
       body: JSON.stringify(data),
     });
     const d = await res.json();
@@ -129,7 +129,7 @@ export default function AdminUsersPage() {
 
   const handleDelete = async (u: User) => {
     if (!confirm(`هل أنت متأكد من حذف المستخدم "${u.name}" نهائياً؟\nسيتم حذف جميع بياناته وسياراته.`)) return;
-    const res = await fetch(`/api/admin/users/${u.id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/admin/users/${u.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${useAuth.getState().token}` } });
     const d = await res.json();
     if (d.success) {
       toast.success('تم حذف المستخدم');

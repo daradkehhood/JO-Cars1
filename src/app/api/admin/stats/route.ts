@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       prisma.car.count({ where: { status: 'PENDING' } }),
       prisma.car.count({ where: { status: 'SOLD' } }),
       prisma.user.count(),
-      prisma.user.count({ where: { role: 'DEALER' } }),
+      prisma.user.count({ where: { role: { in: ['DEALER', 'TRADER'] } } }),
       prisma.car.aggregate({ _sum: { views: true } }),
       prisma.report.count({ where: { status: 'PENDING' } }),
     ]);

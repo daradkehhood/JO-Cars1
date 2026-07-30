@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/hooks/useAuth';
 import {
   LayoutDashboard,
   Settings,
@@ -176,16 +177,17 @@ export default function WorkshopDashboard() {
 
   const loadAll = useCallback(async () => {
     setLoading(true);
+    const authH = { Authorization: `Bearer ${useAuth.getState().token}` };
     try {
       const [statsRes, infoRes, servicesRes, brandsRes, pricesRes, apptRes, reviewsRes, adsRes] = await Promise.all([
-        fetch('/api/workshops/dashboard/stats').then(r => r.json()),
-        fetch('/api/workshops/dashboard/info').then(r => r.json()),
-        fetch('/api/workshops/dashboard/services').then(r => r.json()),
-        fetch('/api/workshops/dashboard/brands').then(r => r.json()),
-        fetch('/api/workshops/dashboard/prices').then(r => r.json()),
-        fetch('/api/workshops/dashboard/appointments').then(r => r.json()),
-        fetch('/api/workshops/dashboard/reviews').then(r => r.json()),
-        fetch('/api/workshops/dashboard/ads').then(r => r.json()),
+        fetch('/api/workshops/dashboard/stats', { headers: authH }).then(r => r.json()),
+        fetch('/api/workshops/dashboard/info', { headers: authH }).then(r => r.json()),
+        fetch('/api/workshops/dashboard/services', { headers: authH }).then(r => r.json()),
+        fetch('/api/workshops/dashboard/brands', { headers: authH }).then(r => r.json()),
+        fetch('/api/workshops/dashboard/prices', { headers: authH }).then(r => r.json()),
+        fetch('/api/workshops/dashboard/appointments', { headers: authH }).then(r => r.json()),
+        fetch('/api/workshops/dashboard/reviews', { headers: authH }).then(r => r.json()),
+        fetch('/api/workshops/dashboard/ads', { headers: authH }).then(r => r.json()),
       ]);
       setStats(statsRes.data || stats);
       setWorkshopInfo(infoRes.data || workshopInfo);
@@ -207,7 +209,7 @@ export default function WorkshopDashboard() {
     try {
       await fetch('/api/workshops/dashboard/info', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${useAuth.getState().token}` },
         body: JSON.stringify(workshopInfo),
       });
     } catch {}
@@ -219,7 +221,7 @@ export default function WorkshopDashboard() {
     try {
       await fetch('/api/workshops/dashboard/services', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${useAuth.getState().token}` },
         body: JSON.stringify({ nameAr: newServiceName }),
       });
       setNewServiceName('');
@@ -229,7 +231,7 @@ export default function WorkshopDashboard() {
 
   const deleteService = async (id: string) => {
     try {
-      await fetch(`/api/workshops/dashboard/services/${id}`, { method: 'DELETE' });
+      await fetch(`/api/workshops/dashboard/services/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${useAuth.getState().token}` } });
       loadAll();
     } catch {}
   };
@@ -239,7 +241,7 @@ export default function WorkshopDashboard() {
     try {
       await fetch('/api/workshops/dashboard/brands', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${useAuth.getState().token}` },
         body: JSON.stringify({ nameAr: newBrandName }),
       });
       setNewBrandName('');
@@ -249,7 +251,7 @@ export default function WorkshopDashboard() {
 
   const deleteBrand = async (id: string) => {
     try {
-      await fetch(`/api/workshops/dashboard/brands/${id}`, { method: 'DELETE' });
+      await fetch(`/api/workshops/dashboard/brands/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${useAuth.getState().token}` } });
       loadAll();
     } catch {}
   };
@@ -259,7 +261,7 @@ export default function WorkshopDashboard() {
     try {
       await fetch('/api/workshops/dashboard/prices', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${useAuth.getState().token}` },
         body: JSON.stringify({ ...newPrice, price: Number(newPrice.price) }),
       });
       setNewPrice({ serviceName: '', price: '', note: '' });
@@ -269,7 +271,7 @@ export default function WorkshopDashboard() {
 
   const deletePrice = async (id: string) => {
     try {
-      await fetch(`/api/workshops/dashboard/prices/${id}`, { method: 'DELETE' });
+      await fetch(`/api/workshops/dashboard/prices/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${useAuth.getState().token}` } });
       loadAll();
     } catch {}
   };
@@ -282,7 +284,7 @@ export default function WorkshopDashboard() {
     try {
       await fetch('/api/workshops/dashboard/appointments', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${useAuth.getState().token}` },
         body: JSON.stringify({ appointmentId: id, status, ...extra }),
       });
       loadAll();
@@ -293,7 +295,7 @@ export default function WorkshopDashboard() {
     try {
       await fetch('/api/workshops/dashboard/reviews', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${useAuth.getState().token}` },
         body: JSON.stringify({ reviewId, workshopReply: replyText }),
       });
       setReplyingTo(null);
@@ -310,7 +312,7 @@ export default function WorkshopDashboard() {
     formData.append('endDate', adForm.endDate);
     adForm.images.forEach(f => formData.append('images', f));
     try {
-      await fetch('/api/workshops/dashboard/ads', { method: 'POST', body: formData });
+      await fetch('/api/workshops/dashboard/ads', { method: 'POST', body: formData, headers: { Authorization: `Bearer ${useAuth.getState().token}` } });
       setAdForm({ title: '', description: '', startDate: '', endDate: '', images: [] });
       setActiveTab('ads');
       loadAll();

@@ -67,7 +67,7 @@ export default function AdminTradersApprovalPage() {
   const loadRequests = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/traders-approval?status=${filter}`);
+      const res = await fetch(`/api/admin/traders-approval?status=${filter}`, { headers: { Authorization: `Bearer ${useAuth.getState().token}` } });
       const d = await res.json();
       if (d.success) setRequests(d.data || []);
       else toast.error(d.error || 'فشل التحميل');
@@ -88,7 +88,7 @@ export default function AdminTradersApprovalPage() {
     try {
       const res = await fetch('/api/admin/traders-approval', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${useAuth.getState().token}` },
         body: JSON.stringify({ requestId: id, action: 'APPROVE' }),
       });
       const d = await res.json();
@@ -115,7 +115,7 @@ export default function AdminTradersApprovalPage() {
     try {
       const res = await fetch('/api/admin/traders-approval', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${useAuth.getState().token}` },
         body: JSON.stringify({ requestId: rejectModal.id, action: 'REJECT', rejectReason }),
       });
       const d = await res.json();
