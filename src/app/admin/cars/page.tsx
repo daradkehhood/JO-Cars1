@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
-import { Car, CheckCircle, XCircle, Eye, Star, Sparkles, Trash2, Tag, Search } from 'lucide-react';
+import { Car, CheckCircle, XCircle, Eye, Star, Sparkles, Trash2, Tag, Search, Clock, Filter } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Car as CarType } from '@/types';
 
@@ -15,6 +15,8 @@ export default function AdminCarsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
+  const [statusFilter, setStatusFilter] = useState('PENDING');
+  const [carCounts, setCarCounts] = useState<Record<string, number>>({});
   const [plans, setPlans] = useState<{ id: string; nameAr: string; durationDays: number; price: number; isActive: boolean }[]>([]);
   const [featureModal, setFeatureModal] = useState<{ carId: string; open: boolean }>({ carId: '', open: false });
   const [selectedPlan, setSelectedPlan] = useState('');
@@ -22,9 +24,13 @@ export default function AdminCarsPage() {
   const [tagModal, setTagModal] = useState<{ carId: string; open: boolean }>({ carId: '', open: false });
   const [carTagsMap, setCarTagsMap] = useState<Record<string, string[]>>({});
 
-  const loadCars = (q: string) => {
+  const loadCars = (q: string, status?: string) => {
     setLoading(true);
-    const params = q ? `?search=${encodeURIComponent(q)}` : '';
+    let params = '';
+    const parts: string[] = [];
+    if (q) parts.push(`search=${encodeURIComponent(q)}`);
+    if (status) parts.push(`status=${status}`);
+    if (parts.length) params = '?' + parts.join('&');
     const token = useAuth.getState().token;
     Promise.all([
       fetch(`/api/admin/cars${params}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
@@ -38,15 +44,36 @@ export default function AdminCarsPage() {
     }).catch(() => setLoading(false));
   };
 
+  const loadCounts = () => {
+    const token = useAuth.getState().token;
+    Promise.all([
+      fetch('/api/admin/cars?status=PENDING', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      fetch('/api/admin/cars?status=APPROVED', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      fetch('/api/admin/cars?status=REJECTED', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+    ]).then(([p, a, r]) => {
+      setCarCounts({
+        PENDING: (p.data || []).length,
+        APPROVED: (a.data || []).length,
+        REJECTED: (r.data || []).length,
+      });
+    }).catch(() => {});
+  };
+
   useEffect(() => {
     if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
-    loadCars('');
+    loadCars('', statusFilter);
+    loadCounts();
   }, [isAuthenticated, user, router]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setSearch(searchInput);
-    loadCars(searchInput);
+    loadCars(searchInput, statusFilter);
+  };
+
+  const handleStatusFilter = (status: string) => {
+    setStatusFilter(status);
+    loadCars(search, status);
   };
 
   const updateStatus = async (carId: string, status: string) => {
@@ -58,8 +85,9 @@ export default function AdminCarsPage() {
         body: JSON.stringify({ status }),
       });
       if (res.ok) {
-        setCars(cars.map(c => c.id === carId ? { ...c, status } as CarType : c));
+        setCars(cars.filter(c => c.id !== carId));
         toast.success(`تم ${status === 'APPROVED' ? 'قبول' : status === 'REJECTED' ? 'رفض' : 'تحديث'} الإعلان`);
+        loadCounts();
       }
     } catch { toast.error('فشل التحديث'); }
   };
@@ -104,6 +132,7 @@ export default function AdminCarsPage() {
       if (res.ok) {
         toast.success('تم حذف الإعلان');
         setCars(cars.filter(c => c.id !== carId));
+        loadCounts();
       } else {
         const data = await res.json();
         toast.error(data.error || 'فشل الحذف');
@@ -135,6 +164,29 @@ export default function AdminCarsPage() {
             </button>
           )}
         </form>
+
+        <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2">
+          {[
+            { key: 'PENDING', label: 'قيد المراجعة', icon: Clock },
+            { key: 'APPROVED', label: 'مقبول', icon: CheckCircle },
+            { key: 'REJECTED', label: 'مرفوض', icon: XCircle },
+          ].map(({ key, label, icon: Icon }) => (
+            <button key={key} onClick={() => handleStatusFilter(key)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${
+                statusFilter === key
+                  ? key === 'PENDING' ? 'bg-amber-500 text-white' : key === 'APPROVED' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                  : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+              }`}>
+              <Icon className="w-4 h-4" />
+              {label}
+              {carCounts[key] !== undefined && (
+                <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
+                  statusFilter === key ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-700'
+                }`}>{carCounts[key]}</span>
+              )}
+            </button>
+          ))}
+        </div>
 
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
@@ -223,6 +275,13 @@ export default function AdminCarsPage() {
                     </td>
                   </tr>
                 ))}
+                {!loading && cars.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-gray-400">
+                      {statusFilter === 'PENDING' ? 'لا توجد سيارات قيد المراجعة' : statusFilter === 'APPROVED' ? 'لا توجد سيارات مقبولة' : 'لا توجد سيارات مرفوضة'}
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

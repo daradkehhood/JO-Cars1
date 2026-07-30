@@ -9,6 +9,7 @@ import { uploadMultipleImages, uploadImage } from '@/lib/cloudinary';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { analyzeCarPrice } from '@/ai/price-analysis';
+import { notifyAdmins } from '@/lib/admin-notify';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -263,7 +264,8 @@ export async function POST(request: NextRequest) {
         if (coverFile) coverUrl = await saveLocalFile(coverFile);
       }
     } catch (uploadErr) {
-      console.error('Image upload failed, proceeding without images:', uploadErr);
+      console.error('Image upload failed:', uploadErr);
+      return errorResponse('فشل رفع الصور. تأكد من صيغة الصور (JPG/PNG/WebP) وحجمها (أقل من 10MB)', 400);
     }
 
     const slug = generateSlug(data.brandId as string, data.modelId as string, data.year as number, Date.now().toString());
@@ -322,15 +324,12 @@ export async function POST(request: NextRequest) {
 
     invalidateCache('cars');
 
-    await prisma.notification.create({
-      data: {
-        type: 'NEW_CAR',
-        title: 'إعلان جديد قيد المراجعة',
-        message: `تم إضافة إعلان جديد: ${car.brand?.nameAr} ${car.model?.nameAr} ${car.year}`,
-        userId: (await prisma.user.findFirst({ where: { role: 'ADMIN' } }))?.id || '',
-        link: `/admin/cars`,
-      },
-    }).catch(() => {});
+    await notifyAdmins(
+      'NEW_CAR',
+      'إعلان جديد قيد المراجعة',
+      `تم إضافة إعلان جديد: ${car.brand?.nameAr} ${car.model?.nameAr} ${car.year}`,
+      '/admin/cars',
+    );
 
     return successResponse(car, 201);
   } catch (error) {
