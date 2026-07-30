@@ -243,7 +243,7 @@ function buildCarReport(car: any, similarCars: any[], marketListings: any[], mar
   if (avgPrice > 0) {
     priceDiffPercent = Math.round(((car.price - avgPrice) / avgPrice) * 100);
     if (priceDiffPercent < -15) { priceVerdict = 'ممتاز — أقل بكثير من السوق'; priceVerdictEmoji = '🟢🟢'; }
-    else if (priceDiffPercent < -10) { priceVerdict = 'منخفض —低于 المتوسط'; priceVerdictEmoji = '🟢'; }
+    else if (priceDiffPercent < -10) { priceVerdict = 'منخفض — المتوسط'; priceVerdictEmoji = '🟢'; }
     else if (priceDiffPercent > 15) { priceVerdict = 'مرتفع جداً — يُنصح بالتفاوض أو التخلي'; priceVerdictEmoji = '🔴🔴'; }
     else if (priceDiffPercent > 10) { priceVerdict = 'مرتفع — يُنصح بالتفاوض'; priceVerdictEmoji = '🔴'; }
     else { priceVerdict = 'عادل — مناسب للسوق'; priceVerdictEmoji = '🟡'; }
@@ -341,6 +341,8 @@ function buildSystemPrompt(
   brandSummary: string,
   nlParsed: ParsedSearchQuery | null,
   searchUrl: string | null,
+  userName?: string,
+  userRole?: string,
 ): string {
   let nlSection = '';
   if (nlParsed && nlParsed.confidence > 0.5) {
@@ -385,6 +387,8 @@ ${marketAvg > 0 ? `
 نطاقات أسعار الماركات (ملخص): ${brandSummary}
 ${nlSection}
 معلومات المستخدم:
+${userName ? `- اسم المستخدم: ${userName}` : '- المستخدم غير مسجل الدخول'}
+${userRole ? `- دور المستخدم: ${userRole}` : ''}
 - الميزانية: ${budget ? budget.toLocaleString() + ' د.أ' : 'غير محددة'}
 - المدينة: ${city || 'غير محددة'}
 - الماركة المفضلة: ${brand ? BRAND_PRICE_RANGES[brand]?.nameAr || brand : 'غير محددة'}
@@ -407,7 +411,11 @@ ${conversationContext}
 10. **شرح الموقع** — إذا سأل المستخدم عن أي ميزة أو صفحة، أجب بشكل شامل مع روابط مباشرة.
 11. **أمثلة عملية** — عند شرح أي ميزة، أعطِ مثالاً عملياً كيف يستخدمها.
 12. **البحث باللغة الطبيعية** — إذا فهمت البحث من كلام المستخدم الطبيعي، استخدم النتائج المفلترة واعرضها بوضوح.
-13. **البحث في السوق المفتوح** — **أنت تقدر تبحث في السوق المفتوح** — البيانات تأتي تلقائياً. لا تقل "لا أستطيع البحث" أو "لا أملك إمكانية البحث الخارجي". إذا لم تتوفر البيانات بسبب التكنولوجيا، قل: "بيانات السوق المفتوح غير متوفرة حالياً".`;
+13. **البحث في السوق المفتوح** — **أنت تقدر تبحث في السوق المفتوح** — البيانات تأتي تلقائياً. لا تقل "لا أستطيع البحث" أو "لا أملك إمكانية البحث الخارجي". إذا لم تتوفر البيانات بسبب التكنولوجيا، قل: "بيانات السوق المفتوح غير متوفرة حالياً".
+16. **تستطيع البحث مواقع اردنية واعلانات لسيارات في الفيس بوك او اي موقع يعرض سيارات من اجل ان يكون لديك اعلان كثيرة من سيارات وتقدر تفيد المستخدم قدر الامكان ابحث قارن عبر الانترنت بين السيارات من اجل ان تكون  لديك معلومات وسيارات كثيرة ليحصل المستخدم اكبر قدر ممكن من الاسفادة**
+17. **إذا ما لقيت سيارة نفس موديل ونوع سياة يلي طلبها مستخدم لكن ما قدرت توجد بنفس عدد كيلومترات ومواصفات عامة لسيارة تقدر تعطي مستخدم متوسط سعر سيارة العام في السوق بغضي النظر عن كم ماشيه كيلوميترات والمواصفات العامة الاخرى**
+14. **اسم المستخدم** — إذا كان اسم المستخدم معروضاً في معلومات المستخدم، استخدم اسمه في الردود (مثل: "حسناً [الاسم]" أو "أهلاً [الاسم]"). لا تكرر الاسم في كل جملة — مرة أو مرتين كافية.
+15. **المدير** — إذا كان دور المستخدم ADMIN، راجعه بـ "مدير الموقع" أو "المدير" وتعامل معه باحترام وراحة أكبر. مرحّب به بشكل خاص.`;
 }
 
 // ── SSE POST Handler ──
@@ -425,7 +433,7 @@ export async function POST(request: NextRequest) {
       }, { status: 429 });
     }
 
-    const { messages, sessionId, model: requestedModel } = await request.json();
+    const { messages, sessionId, model: requestedModel, userName, userRole } = await request.json();
     const modelId: AIModelId = (requestedModel && ['glm', 'minimax', 'mistral', 'gpt-oss'].includes(requestedModel))
       ? requestedModel : DEFAULT_MODEL;
     const query = messages?.[messages.length - 1]?.content || '';
@@ -556,6 +564,7 @@ export async function POST(request: NextRequest) {
       budget, city, brand, intent, refCode,
       conversationContext, brandSummary,
       isNlSearch ? nlParsed : null, searchUrl,
+      userName, userRole,
     );
 
     const chatMessages: ChatMessage[] = [

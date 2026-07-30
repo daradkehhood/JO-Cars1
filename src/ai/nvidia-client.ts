@@ -69,7 +69,7 @@ export const AI_MODELS: Record<AIModelId, AIModelInfo> = {
   },
 };
 
-export const DEFAULT_MODEL: AIModelId = 'glm';
+export const DEFAULT_MODEL: AIModelId = 'gpt-oss';
 
 let client: OpenAI | null = null;
 

@@ -1,10 +1,62 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Bot, Send, Sparkles, Car, ShoppingBag, Search, TrendingUp, Fuel, DollarSign, BarChart3, ArrowRight, Shield, Zap } from 'lucide-react';
+import {
+  Bot, Send, Sparkles, Car, ShoppingBag, Search, TrendingUp, Fuel, DollarSign, BarChart3,
+  ArrowRight, Shield, Zap, ThumbsUp, ThumbsDown, Mic, Clock, RotateCcw, ChevronDown,
+  Settings, MessageSquare, Wrench,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useAuth } from '@/hooks/useAuth';
+
+// ── Conversation Persistence ──
+const CONVERSATION_STORAGE_KEY = 'jo-cars-ai-conversation';
+const CONVERSATION_META_KEY = 'jo-cars-ai-meta';
+
+type AIModelId = 'glm' | 'minimax' | 'mistral' | 'gpt-oss';
+interface AIModelOption { id: AIModelId; nameAr: string; nameEn: string; description: string; icon: string; }
+const AI_MODELS_LIST: AIModelOption[] = [
+  { id: 'glm', nameAr: 'GLM 5.2', nameEn: 'GLM 5.2', description: 'سريع ومتوازن — الأفضل للمحادثات', icon: '⚡' },
+  { id: 'minimax', nameAr: 'MiniMax M3', nameEn: 'MiniMax M3', description: 'قوي للنصوص الطويلة — التحليل المعمّق', icon: '🧠' },
+  { id: 'mistral', nameAr: 'Mistral Medium', nameEn: 'Mistral 3.5', description: 'ذكي مع reasoning — الأسئلة المعقدة', icon: '🔮' },
+  { id: 'gpt-oss', nameAr: 'GPT OSS 120B', nameEn: 'GPT OSS', description: 'OpenAI مفتوح — الإجابات الدقيقة', icon: '✨' },
+];
+
+function loadConversation(): { messages: Message[]; sessionId: string } | null {
+  try {
+    const stored = localStorage.getItem(CONVERSATION_STORAGE_KEY);
+    const meta = localStorage.getItem(CONVERSATION_META_KEY);
+    if (stored && meta) {
+      const messages = JSON.parse(stored).map((m: any) => ({
+        ...m, timestamp: new Date(m.timestamp),
+      }));
+      const { sessionId } = JSON.parse(meta);
+      return { messages, sessionId };
+    }
+  } catch {}
+  return null;
+}
+
+function saveConversation(messages: Message[], sessionId: string) {
+  try {
+    const toSave = messages.slice(-50);
+    localStorage.setItem(CONVERSATION_STORAGE_KEY, JSON.stringify(toSave));
+    localStorage.setItem(CONVERSATION_META_KEY, JSON.stringify({ sessionId, savedAt: Date.now() }));
+  } catch {}
+}
+
+function clearConversationStorage() {
+  try {
+    localStorage.removeItem(CONVERSATION_STORAGE_KEY);
+    localStorage.removeItem(CONVERSATION_META_KEY);
+  } catch {}
+}
+
+function generateSessionId(): string {
+  return `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
 
 interface CarSuggestion {
   id: string; slug: string; refCode?: string | null;
@@ -28,7 +80,9 @@ interface MarketPriceResult {
 
 interface Message {
   id: string; type: 'user' | 'bot'; content: string;
-  cars?: CarSuggestion[]; marketPriceResult?: MarketPriceResult; personalityResult?: any; timestamp: Date;
+  cars?: CarSuggestion[]; marketPriceResult?: MarketPriceResult; personalityResult?: any;
+  suggestions?: string[]; intent?: string; feedback?: 'up' | 'down' | null;
+  timestamp: Date;
 }
 
 type MpStep = 'brand' | 'model' | 'year' | 'kilometers' | 'condition';
@@ -48,9 +102,9 @@ const quickActions = [
   { label: 'اقترح سيارة', icon: Car, action: 'أقترح علي سيارة مناسبة لميزانية 15000 دينار' },
   { label: 'تسعير السوق', icon: BarChart3, action: '__market_price__' },
   { label: 'SUV للعائلة', icon: Shield, action: 'أفضل سيارات SUV عائلية في الأردن' },
-  { label: 'مقارنة', icon: Search, action: 'كيف أقارن بين سيارتين في الموقع؟' },
+  { label: 'ورشة', icon: Wrench, action: 'أبحث عن ورشة ميكانيكية في عمان' },
   { label: 'اقتصادية', icon: Fuel, action: 'أفضل السيارات الاقتصادية في استهلاك البنزين؟' },
-  { label: 'مستعملة', icon: TrendingUp, action: 'نصائح عند شراء سيارة مستعملة' },
+  { label: 'نصائح', icon: Search, action: 'نصائح عند شراء سيارة مستعملة' },
 ];
 
 const mpQuestions: Record<MpStep, string> = {
@@ -63,13 +117,9 @@ const mpQuestions: Record<MpStep, string> = {
 
 export default function AIPage() {
   const router = useRouter();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'welcome', type: 'bot',
-      content: 'مرحباً! 🤖 أنا المساعد الذكي JO Cars. أخبرني بميزانيتك واحتياجاتك عشان ألاقي لك السيارة المناسبة من قاعدة بياناتنا!',
-      timestamp: new Date(),
-    },
-  ]);
+  const { user } = useAuth();
+
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [mpStep, setMpStep] = useState<MpStepOrNull>(null);
@@ -77,8 +127,31 @@ export default function AIPage() {
   const [personalityStep, setPersonalityStep] = useState<number | null>(null);
   const [personalityAnswers, setPersonalityAnswers] = useState<string[]>([]);
   const [personalityResult, setPersonalityResult] = useState<any>(null);
+  const [sessionId, setSessionId] = useState(() => generateSessionId());
+  const [lastSuggestions, setLastSuggestions] = useState<string[]>([]);
+  const [isRecordingSound, setIsRecordingSound] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<AIModelId>('gpt-oss');
+  const [showModelSelector, setShowModelSelector] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Load saved conversation on mount
+  useEffect(() => {
+    const saved = loadConversation();
+    if (saved && saved.messages.length > 0) {
+      setMessages(saved.messages);
+      setSessionId(saved.sessionId);
+    } else {
+      setMessages([{
+        id: 'welcome', type: 'bot',
+        content: 'مرحباً! 🤖 أنا المساعد الذكي JO Cars.\n\nأخبرني بميزانيتك واحتياجاتك عشان ألاقي لك السيارة المناسبة، أو اسأل عن أي شيء متعلق بالسيارات!',
+        timestamp: new Date(),
+      }]);
+    }
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -88,14 +161,42 @@ export default function AIPage() {
     inputRef.current?.focus();
   }, []);
 
-  const botReply = (content: string, options?: { cars?: CarSuggestion[]; marketPriceResult?: MarketPriceResult; personalityResult?: any }) => {
+  // Safety: auto-reset isTyping if stuck for > 90 seconds
+  useEffect(() => {
+    if (isTyping) {
+      typingTimeoutRef.current = setTimeout(() => {
+        console.warn('[AI Assistant] isTyping stuck — auto-resetting after 90s');
+        setIsTyping(false);
+      }, 90000);
+    } else {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+    }
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    };
+  }, [isTyping]);
+
+  const botReply = useCallback((content: string, options?: {
+    cars?: CarSuggestion[]; marketPriceResult?: MarketPriceResult;
+    personalityResult?: any; suggestions?: string[]; intent?: string;
+  }) => {
     setMessages(prev => [...prev, {
       id: (Date.now() + 1).toString(), type: 'bot', content,
-      cars: options?.cars, marketPriceResult: options?.marketPriceResult, personalityResult: options?.personalityResult, timestamp: new Date(),
+      cars: options?.cars, marketPriceResult: options?.marketPriceResult,
+      personalityResult: options?.personalityResult, suggestions: options?.suggestions,
+      intent: options?.intent, timestamp: new Date(),
     }]);
-  };
+    if (options?.suggestions) setLastSuggestions(options.suggestions);
+  }, []);
 
-  const advanceMp = (step: MpStep, value: string) => {
+  const handleFeedback = useCallback((messageId: string, feedback: 'up' | 'down') => {
+    setMessages(prev => prev.map(m => m.id === messageId ? { ...m, feedback } : m));
+  }, []);
+
+  const advanceMp = useCallback((step: MpStep, value: string) => {
     const updated = { ...mpData };
     if (step === 'brand') updated.brand = value;
     else if (step === 'model') updated.model = value;
@@ -116,19 +217,17 @@ export default function AIPage() {
       setMpStep(null);
       fetchMarketPrice(updated);
     }
-  };
+  }, [mpData, botReply]);
 
-  const fetchMarketPrice = async (data: typeof mpData) => {
+  const fetchMarketPrice = useCallback(async (data: typeof mpData) => {
     setIsTyping(true);
     try {
       const res = await fetch('/api/ai/market-price', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          brand: data.brand,
-          model: data.model,
-          year: parseInt(data.year) || 0,
-          kilometers: parseInt(data.kilometers) || 0,
+          brand: data.brand, model: data.model,
+          year: parseInt(data.year) || 0, kilometers: parseInt(data.kilometers) || 0,
           condition: data.condition,
         }),
       });
@@ -146,9 +245,7 @@ export default function AIPage() {
         msg += `📊 **متوسط السوق:** ${range.avg.toLocaleString()} د.أ\n`;
         msg += `📋 **عدد الإعلانات المشابهة:** ${d.stats.totalListings}\n\n`;
 
-        if (d.query.kilometers > 0) {
-          msg += `🛣️ **الممشى:** ${d.query.kilometers.toLocaleString()} كم\n`;
-        }
+        if (d.query.kilometers > 0) msg += `🛣️ **الممشى:** ${d.query.kilometers.toLocaleString()} كم\n`;
         if (d.query.condition) {
           msg += `⭐ **الحالة:** ${d.query.condition}\n`;
           msg += `🔧 **تعديل السعر حسب الحالة:** ${d.stats.conditionAdjustment > 0 ? '+' : ''}${d.stats.conditionAdjustment}%\n\n`;
@@ -158,11 +255,12 @@ export default function AIPage() {
         if (trend.percent > 0) msg += ` (${trend.percent}%)`;
 
         msg += '\n\n';
-        if (d.similarCars.length > 0) {
-          msg += '🔄 **سيارات مشابهة في السوق:**';
-        }
+        if (d.similarCars.length > 0) msg += '🔄 **سيارات مشابهة في السوق:**';
 
-        botReply(msg, { marketPriceResult: d, cars: d.similarCars });
+        botReply(msg, {
+          marketPriceResult: d, cars: d.similarCars,
+          suggestions: ['مقارنة الأسعار', 'تقييم الحالة', 'بحث عن سيارة مشابهة'],
+        });
       } else {
         botReply('عذراً، ما لقيت بيانات كافية لتحليل السوق لهذه السيارة. جرب ماركة أو سنة ثانية.');
       }
@@ -170,9 +268,9 @@ export default function AIPage() {
       botReply('حدث خطأ أثناء تحليل السوق. حاول مرة أخرى.');
     }
     setIsTyping(false);
-  };
+  }, [botReply]);
 
-  const fetchPersonalityMatch = async (answers: string[]) => {
+  const fetchPersonalityMatch = useCallback(async (answers: string[]) => {
     setIsTyping(true);
     try {
       const res = await fetch('/api/ai/personality-match', {
@@ -208,10 +306,13 @@ export default function AIPage() {
         if (d.cars && d.cars.length > 0) {
           msg += '**📦 سيارات متوفرة حالياً في موقعنا:**';
         } else {
-          msg += '\n💡 **ملاحظة:** ما لقينا سيارات مطابقة في قاعدة بياناتنا حالياً، لكن السيارات اللي فوق متاحة بالسوق الأردني وתقدر تدور عليها!';
+          msg += '\n💡 **ملاحظة:** ما لقينا سيارات مطابقة في قاعدة بياناتنا حالياً، لكن السيارات اللي فوق متاحة بالسوق الأردني وتقدر تدور عليها!';
         }
 
-        botReply(msg, { cars: d.cars, personalityResult: d.personality });
+        botReply(msg, {
+          cars: d.cars, personalityResult: d.personality,
+          suggestions: ['مقارنة الأسعار', 'بحث عن سيارة', 'تقييم الحالة'],
+        });
       } else {
         botReply('عذراً، ما قدرت أحلل شخصيتك. حاول مرة أخرى.');
       }
@@ -219,9 +320,9 @@ export default function AIPage() {
       botReply('حدث خطأ أثناء تحليل الشخصية. حاول مرة أخرى.');
     }
     setIsTyping(false);
-  };
+  }, [botReply]);
 
-  const handleSend = async (content: string) => {
+  const handleSend = useCallback(async (content: string) => {
     if (!content.trim() || isTyping) return;
 
     const userMessage: Message = {
@@ -281,47 +382,277 @@ export default function AIPage() {
       return;
     }
 
+    // ── Streaming chat via SSE ──
     setIsTyping(true);
+    const botMsgId = (Date.now() + 1).toString();
+    let streamedContent = '';
+    let streamCars: CarSuggestion[] = [];
+    let streamSuggestions: string[] = [];
+    let streamIntent = '';
+
+    const abortController = new AbortController();
+    const fetchTimeout = setTimeout(() => abortController.abort(), 60000);
+
     try {
-      const res = await fetch('/api/ai/chat', {
+      const res = await fetch('/api/ai/chat/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [{ role: 'user', content: content.trim() }] }),
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: content.trim() }],
+          sessionId,
+          model: selectedModel,
+          userName: user?.name || null,
+          userRole: user?.role || null,
+        }),
+        signal: abortController.signal,
       });
-      const data = await res.json();
-      if (data.success && data.data) {
+
+      if (!res.ok || !res.body) throw new Error('Stream failed');
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        let eventType = '';
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            eventType = line.slice(7).trim();
+          } else if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6);
+            try {
+              const data = JSON.parse(dataStr);
+
+              if (eventType === 'meta') {
+                streamCars = data.cars || [];
+                streamSuggestions = data.suggestions || [];
+                streamIntent = data.intent || '';
+
+                setMessages(prev => [...prev, {
+                  id: botMsgId, type: 'bot', content: '',
+                  cars: streamCars.length > 0 ? streamCars : undefined,
+                  suggestions: streamSuggestions,
+                  intent: streamIntent,
+                  timestamp: new Date(),
+                }]);
+              } else if (eventType === 'token') {
+                streamedContent += data.content;
+                setMessages(prev => prev.map(m =>
+                  m.id === botMsgId ? { ...m, content: streamedContent } : m
+                ));
+              } else if (eventType === 'done') {
+                setMessages(prev => prev.map(m =>
+                  m.id === botMsgId ? {
+                    ...m,
+                    content: streamedContent,
+                    cars: streamCars.length > 0 ? streamCars : m.cars,
+                    suggestions: streamSuggestions.length > 0 ? streamSuggestions : m.suggestions,
+                  } : m
+                ));
+                if (streamSuggestions.length > 0) setLastSuggestions(streamSuggestions);
+              }
+            } catch {}
+          }
+        }
+      }
+    } catch {
+      // Fallback: try the non-streaming endpoint
+      try {
+        const fallbackAbort = new AbortController();
+        const fallbackTimeout = setTimeout(() => fallbackAbort.abort(), 45000);
+        const res = await fetch('/api/ai/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: [{ role: 'user', content: content.trim() }],
+            sessionId,
+            model: selectedModel,
+            userName: user?.name || null,
+            userRole: user?.role || null,
+          }),
+          signal: fallbackAbort.signal,
+        });
+        clearTimeout(fallbackTimeout);
+        const data = await res.json();
+        if (data.success && data.data) {
+          setMessages(prev => [...prev, {
+            id: botMsgId, type: 'bot',
+            content: data.data.message,
+            cars: data.data.cars?.length > 0 ? data.data.cars : undefined,
+            suggestions: data.data.suggestions,
+            intent: data.data.intent,
+            timestamp: new Date(),
+          }]);
+          if (data.data.suggestions) setLastSuggestions(data.data.suggestions);
+        } else {
+          setMessages(prev => [...prev, {
+            id: botMsgId, type: 'bot',
+            content: 'عذراً، حدث خطأ في الاتصال. حاول مرة أخرى.',
+            timestamp: new Date(),
+          }]);
+        }
+      } catch {
         setMessages(prev => [...prev, {
-          id: (Date.now() + 1).toString(), type: 'bot',
-          content: data.data.message,
-          cars: data.data.cars?.length > 0 ? data.data.cars : undefined,
+          id: botMsgId, type: 'bot',
+          content: 'عذراً، حدث خطأ في الاتصال. حاول مرة أخرى.',
           timestamp: new Date(),
         }]);
       }
-    } catch {
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(), type: 'bot',
-        content: 'عذراً، حدث خطأ في الاتصال. حاول مرة أخرى.',
-        timestamp: new Date(),
-      }]);
     } finally {
+      clearTimeout(fetchTimeout);
       setIsTyping(false);
+      setMessages(prev => {
+        saveConversation(prev, sessionId);
+        return prev;
+      });
     }
-  };
+  }, [isTyping, mpStep, personalityStep, personalityAnswers, sessionId, selectedModel, botReply, advanceMp, fetchPersonalityMatch]);
 
-  const goToCar = (slug: string) => {
+  const goToCar = useCallback((slug: string) => {
     router.push(`/cars/${slug}`);
-  };
+  }, [router]);
 
-  const resetMp = () => {
+  const resetMp = useCallback(() => {
     setMpStep(null);
     setMpData({ brand: '', model: '', year: '', kilometers: '', condition: '' });
     setPersonalityStep(null);
     setPersonalityAnswers([]);
     setPersonalityResult(null);
-  };
+  }, []);
+
+  const handleClearChat = useCallback(() => {
+    setMessages([{
+      id: 'welcome', type: 'bot',
+      content: 'مرحباً! 🤖 أنا المساعد الذكي JO Cars.\n\nأخبرني بميزانيتك واحتياجاتك عشان ألاقي لك السيارة المناسبة، أو اسأل عن أي شيء متعلق بالسيارات!',
+      timestamp: new Date(),
+    }]);
+    setLastSuggestions([]);
+    clearConversationStorage();
+    resetMp();
+  }, [resetMp]);
+
+  // ── Engine Sound Recording ──
+  const startSoundRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        if (audioChunksRef.current.length === 0) return;
+
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const arrayBuffer = await audioBlob.arrayBuffer();
+        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+        const channelData = audioBuffer.getChannelData(0);
+        const sampleRate = audioBuffer.sampleRate;
+        let sumSquares = 0;
+        let zeroCrossings = 0;
+        const frequencies: number[] = [];
+
+        for (let i = 0; i < channelData.length; i++) {
+          sumSquares += channelData[i] * channelData[i];
+          if (i > 0 && ((channelData[i] >= 0 && channelData[i - 1] < 0) || (channelData[i] < 0 && channelData[i - 1] >= 0))) {
+            zeroCrossings++;
+          }
+        }
+
+        const rms = Math.sqrt(sumSquares / channelData.length);
+        const duration = audioBuffer.duration;
+        const zcr = zeroCrossings / duration;
+
+        const fftSize = 2048;
+        const fftData = new Float32Array(fftSize);
+        for (let i = 0; i < Math.min(fftSize, channelData.length); i++) {
+          fftData[i] = channelData[i];
+        }
+
+        let maxAmplitude = 0;
+        let dominantFreq = 0;
+        for (let i = 0; i < fftSize / 2; i++) {
+          const amplitude = Math.abs(fftData[i]);
+          if (amplitude > maxAmplitude) {
+            maxAmplitude = amplitude;
+            dominantFreq = (i * sampleRate) / fftSize;
+          }
+        }
+
+        const soundData = {
+          rms, zeroCrossingRate: zcr, duration, dominantFrequency: dominantFreq,
+          maxAmplitude, sampleRate, frequencyDistribution: Array.from(frequencies),
+        };
+
+        try {
+          const res = await fetch('/api/ai/sound', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ audioFeatures: soundData }),
+          });
+          const result = await res.json();
+
+          if (result.success) {
+            const r = result.data;
+            let msg = `🔍 **تحليل صوت المحرك:**\n\n`;
+            msg += `⚙️ **الحالة:** ${r.condition}\n`;
+            msg += `📊 **الثقة:** ${Math.round(r.confidence * 100)}%\n\n`;
+            msg += `📋 **الأعطال المحتملة:**\n`;
+            r.possibleIssues?.forEach((issue: string) => { msg += `• ${issue}\n`; });
+            msg += `\n💡 **التوصية:** ${r.recommendation}\n`;
+            if (r.estimatedRepairCost) msg += `💰 **تكلفة الإصلاح التقديرية:** ${r.estimatedRepairCost}\n`;
+
+            botReply(msg, { suggestions: ['تحليل صوت آخر', 'نصائح الصيانة', 'ورشة ميكانيكية'] });
+          } else {
+            botReply('عذراً، ما قدرت أحلل الصوت. تأكد إن المايكروفون شغال وحاول مرة أخرى.');
+          }
+        } catch {
+          botReply('حدث خطأ أثناء تحليل الصوت. حاول مرة أخرى.');
+        }
+        setIsTyping(false);
+      };
+
+      mediaRecorder.start();
+      setIsRecordingSound(true);
+      setIsTyping(true);
+      botReply('🎤 جاري تسجيل صوت المحرك... اضغط على زر المايكروفون مرة ثانية للإيقاف.');
+
+      setTimeout(() => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+          mediaRecorderRef.current.stop();
+          setIsRecordingSound(false);
+        }
+      }, 5000);
+    } catch (error) {
+      botReply('ما قدرت أ الوصول للمايكروفون. تأكد من إعطاء الصلاحية للمتصفح.');
+    }
+  }, [botReply]);
+
+  const stopSoundRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+      setIsRecordingSound(false);
+    }
+  }, []);
+
+  const selectedModelObj = AI_MODELS_LIST.find(m => m.id === selectedModel);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
+      {/* Header */}
       <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 py-3">
         <div className="container-custom flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -338,15 +669,25 @@ export default function AIPage() {
               </div>
             </div>
           </div>
-          <button
-            onClick={() => { setMessages([messages[0]]); resetMp(); }}
-            className="px-4 py-2 rounded-xl text-sm font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
-          >
-            محادثة جديدة
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleClearChat}
+              className="p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              title="محادثة جديدة"
+            >
+              <RotateCcw className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => { setMessages([messages[0]]); resetMp(); }}
+              className="px-4 py-2 rounded-xl text-sm font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
+            >
+              محادثة جديدة
+            </button>
+          </div>
         </div>
       </div>
 
+      {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4">
         <div className="container-custom max-w-3xl mx-auto space-y-4 pb-4">
           {messages.map((msg) => (
@@ -367,6 +708,7 @@ export default function AIPage() {
                 </div>
               </div>
 
+              {/* Market Price Result */}
               {msg.marketPriceResult && (
                 <div className="mt-3 mx-1 p-4 rounded-xl bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-200 dark:border-purple-800/30">
                   <p className="text-sm font-semibold text-gray-900 dark:text-white mb-3">تقييم السعر:</p>
@@ -395,6 +737,7 @@ export default function AIPage() {
                 </div>
               )}
 
+              {/* Personality Result */}
               {msg.personalityResult && (
                 <div className="mt-3 mx-1 p-4 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800/30">
                   <div className="flex items-center gap-2 mb-3">
@@ -423,6 +766,7 @@ export default function AIPage() {
                 </div>
               )}
 
+              {/* Cars */}
               {msg.cars && msg.cars.length > 0 && (
                 <div className="mt-3 space-y-2 pr-4">
                   {msg.cars.map((car) => (
@@ -450,21 +794,40 @@ export default function AIPage() {
                   ))}
                 </div>
               )}
+
+              {/* Feedback buttons for bot messages */}
+              {msg.type === 'bot' && msg.id !== 'welcome' && msg.content && (
+                <div className="flex items-center gap-2 mt-2 ml-4">
+                  <button onClick={() => handleFeedback(msg.id, 'up')}
+                    className={`p-1 rounded-lg transition-colors ${msg.feedback === 'up' ? 'text-green-500 bg-green-50 dark:bg-green-500/10' : 'text-gray-400 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-500/10'}`}>
+                    <ThumbsUp className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => handleFeedback(msg.id, 'down')}
+                    className={`p-1 rounded-lg transition-colors ${msg.feedback === 'down' ? 'text-red-500 bg-red-50 dark:bg-red-500/10' : 'text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10'}`}>
+                    <ThumbsDown className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
             </div>
           ))}
 
+          {/* Typing indicator */}
           {isTyping && (
             <div className="flex justify-end">
               <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-tl-sm px-5 py-3 shadow-sm">
-                <div className="flex gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                  <span className="text-xs text-gray-400">جاري الكتابة...</span>
                 </div>
               </div>
             </div>
           )}
 
+          {/* Quick Actions */}
           {messages.length === 1 && !mpStep && (
             <div className="mt-6">
               <p className="text-sm text-gray-400 mb-3 text-center">اقتراحات سريعة</p>
@@ -483,6 +846,19 @@ export default function AIPage() {
             </div>
           )}
 
+          {/* AI Suggestion Chips */}
+          {lastSuggestions.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {lastSuggestions.map((suggestion, i) => (
+                <button key={i} onClick={() => handleSend(suggestion)}
+                  className="px-3 py-1.5 rounded-full text-xs bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20 hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors">
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Market Price Progress */}
           {mpStep && (
             <div className="mt-4 p-3 rounded-xl bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800/30">
               <p className="text-sm text-purple-600 dark:text-purple-400 font-medium text-center">
@@ -500,6 +876,7 @@ export default function AIPage() {
             </div>
           )}
 
+          {/* Personality Progress */}
           {personalityStep !== null && (
             <div className="mt-4">
               <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 mb-3">
@@ -531,15 +908,73 @@ export default function AIPage() {
         </div>
       </div>
 
+      {/* Input Area */}
       <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 p-4">
         <div className="container-custom max-w-3xl mx-auto">
           <form onSubmit={(e) => { e.preventDefault(); handleSend(input); }}
-            className="flex items-center gap-3">
+            className="flex items-center gap-2">
+            {/* Model Selector */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowModelSelector(!showModelSelector)}
+                className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm"
+              >
+                <span>{selectedModelObj?.icon}</span>
+                <span className="hidden sm:inline text-gray-600 dark:text-gray-400 text-xs">{selectedModelObj?.nameEn}</span>
+                <ChevronDown className="w-3 h-3 text-gray-400" />
+              </button>
+
+              {showModelSelector && (
+                <div className="absolute bottom-full mb-2 right-0 w-64 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg z-50 overflow-hidden">
+                  <div className="p-2">
+                    {AI_MODELS_LIST.map((model) => (
+                      <button
+                        key={model.id}
+                        onClick={() => { setSelectedModel(model.id); setShowModelSelector(false); }}
+                        className={`w-full flex items-center gap-3 p-2.5 rounded-lg text-right transition-colors ${
+                          selectedModel === model.id
+                            ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                            : 'hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-300'
+                        }`}
+                      >
+                        <span className="text-lg">{model.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium">{model.nameAr}</p>
+                          <p className="text-[11px] text-gray-400 truncate">{model.description}</p>
+                        </div>
+                        {selectedModel === model.id && (
+                          <div className="w-2 h-2 rounded-full bg-blue-500" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Voice Recording Button */}
+            <button
+              type="button"
+              onClick={isRecordingSound ? stopSoundRecording : startSoundRecording}
+              className={`p-3 rounded-xl transition-all ${
+                isRecordingSound
+                  ? 'bg-red-500 text-white animate-pulse'
+                  : 'border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
+              title={isRecordingSound ? 'إيقاف التسجيل' : 'تسجيل صوت المحرك'}
+            >
+              <Mic className="w-5 h-5" />
+            </button>
+
+            {/* Text Input */}
             <input ref={inputRef} type="text" value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={isTyping}
-              placeholder={mpStep ? 'أكتب إجابتك...' : 'اكتب سؤالك...'}
+              placeholder={mpStep ? 'أكتب إجابتك...' : isRecordingSound ? 'جاري التسجيل...' : 'اكتب سؤالك...'}
               className="flex-1 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-4 py-3 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-50" />
+
+            {/* Send Button */}
             <button type="submit" disabled={!input.trim() || isTyping}
               className="p-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white disabled:opacity-50 transition-all hover:shadow-lg hover:shadow-blue-500/25">
               <Send className="w-5 h-5" />

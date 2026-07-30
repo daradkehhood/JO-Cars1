@@ -8,6 +8,7 @@ import {
   ThumbsDown, Wrench, Settings, RotateCcw, Mic, Volume2, MessageSquare, Clock,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 
 // ── Conversation Persistence ──
 const CONVERSATION_STORAGE_KEY = 'jo-cars-ai-conversation';
@@ -118,6 +119,7 @@ function generateSessionId(): string {
 
 export function AIAssistant() {
   const router = useRouter();
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -417,6 +419,8 @@ export function AIAssistant() {
           messages: [{ role: 'user', content: content.trim() }],
           sessionId,
           model: selectedModel,
+          userName: user?.name || null,
+          userRole: user?.role || null,
         }),
         signal: abortController.signal,
       });
@@ -497,6 +501,8 @@ export function AIAssistant() {
             messages: [{ role: 'user', content: content.trim() }],
             sessionId,
             model: selectedModel,
+            userName: user?.name || null,
+            userRole: user?.role || null,
           }),
           signal: fallbackAbort.signal,
         });

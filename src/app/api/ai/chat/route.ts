@@ -445,7 +445,7 @@ export async function POST(request: NextRequest) {
       }, { status: 429 });
     }
 
-    const { messages, sessionId, model: requestedModel } = await request.json();
+    const { messages, sessionId, model: requestedModel, userName, userRole } = await request.json();
     const modelId: AIModelId = (requestedModel && ['glm', 'minimax', 'mistral', 'gpt-oss'].includes(requestedModel))
       ? requestedModel : DEFAULT_MODEL;
     const query = messages?.[messages.length - 1]?.content || '';
@@ -602,6 +602,8 @@ ${marketAvg > 0 ? `
 نطاقات أسعار الماركات (ملخص): ${brandSummary}
 
 معلومات المستخدم:
+${userName ? `- اسم المستخدم: ${userName}` : ''}
+${userRole ? `- دور المستخدم: ${userRole}` : ''}
 - الميزانية: ${budget ? budget.toLocaleString() + ' د.أ' : 'غير محددة'}
 - المدينة: ${city || 'غير محددة'}
 - الماركة المفضلة: ${brand ? BRAND_PRICE_RANGES[brand]?.nameAr || brand : 'غير محددة'}
@@ -622,7 +624,9 @@ ${conversationContext}
 8. **أظهر نسبة الثقة** — عند تقديم تحليل أسعار، أظهر نسبة الثقة في البيانات (مثلاً: "بناءً على 5 إعلانات من JO Cars + 8 إعلانات من السوق الخارجي، ثقة 85%").
 9. **الرمز المرجعي** — إذا ذكر المستخدم رمزاً مثل S44-XBY، ابحث في البيانات وأعطِ تقريراً كاملاً.
 10. **شرح الموقع** — إذا سأل المستخدم عن أي ميزة أو صفحة، أجب بشكل شامل مع روابط مباشرة.
-11. **أمثلة عملية** — عند شرح أي ميزة، أعطِ مثالاً عملياً كيف يستخدمها.`;
+11. **أمثلة عملية** — عند شرح أي ميزة، أعطِ مثالاً عملياً كيف يستخدمها.
+12. **اسم المستخدم** — إذا كان اسم المستخدم معروضاً في معلومات المستخدم، استخدم اسمه في الردود (مثل: "حسناً [الاسم]" أو "أهلاً [الاسم]"). لا تكرر الاسم في كل جملة — مرة أو مرتين كافية.
+13. **المدير** — إذا كان دور المستخدم ADMIN، راجعه بـ "مدير الموقع" أو "المدير" وتعامل معه باحترام وراحة أكبر. مرحّب به بشكل خاص.`;
 
     const chatMessages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
