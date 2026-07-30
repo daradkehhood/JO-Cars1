@@ -16,7 +16,8 @@ export default function AdminFairPricePage() {
   useEffect(() => {
     if (!_hydrated) return;
     if (!user || user.role !== 'ADMIN') { router.push('/'); return; }
-    fetch('/api/admin/fair-price')
+    const token = useAuth.getState().token;
+    fetch('/api/admin/fair-price', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(d => { if (d.success) setData(d.data); setLoading(false); })
       .catch(() => setLoading(false));
@@ -25,11 +26,12 @@ export default function AdminFairPricePage() {
   const handleRecalculate = async () => {
     setRecalculating(true);
     try {
-      const res = await fetch('/api/admin/fair-price', { method: 'POST' });
+      const token = useAuth.getState().token;
+      const res = await fetch('/api/admin/fair-price', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
       const d = await res.json();
       if (d.success) {
         toast.success(`تم إعادة حساب ${d.data.recalculated} سيارة`);
-        const r = await fetch('/api/admin/fair-price').then(r => r.json());
+        const r = await fetch('/api/admin/fair-price', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json());
         if (r.success) setData(r.data);
       } else toast.error(d.error || 'فشل');
     } catch { toast.error('فشل'); }

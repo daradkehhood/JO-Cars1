@@ -39,17 +39,19 @@ export default function AdminPartsPage() {
 
   const loadParts = () => {
     setLoading(true);
+    const token = useAuth.getState().token;
     const params = filter ? `?status=${filter}` : '';
-    fetch(`/api/admin/parts${params}`)
+    fetch(`/api/admin/parts${params}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(data => { setParts(data.data || []); setLoading(false); })
       .catch(() => setLoading(false));
   };
 
   const updateStatus = async (id: string, status: string) => {
+    const token = useAuth.getState().token;
     const res = await fetch(`/api/admin/parts/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ status }),
     });
     const d = await res.json();
@@ -59,7 +61,8 @@ export default function AdminPartsPage() {
 
   const deletePart = async (id: string) => {
     if (!confirm('حذف القطعة نهائياً؟')) return;
-    const res = await fetch(`/api/admin/parts/${id}`, { method: 'DELETE' });
+    const token = useAuth.getState().token;
+    const res = await fetch(`/api/admin/parts/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
     const d = await res.json();
     if (d.success) { toast.success('تم الحذف'); loadParts(); }
     else toast.error('فشل');

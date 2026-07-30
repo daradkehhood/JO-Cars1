@@ -23,6 +23,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 type AdminTab = 'all' | 'pending-verify' | 'banned' | 'paused';
 
@@ -76,7 +77,8 @@ export default function AdminWorkshopsPage() {
       else if (activeTab === 'banned') params.set('status', 'banned');
       else if (activeTab === 'paused') params.set('status', 'paused');
 
-      const res = await fetch(`/api/admin/workshops?${params}`);
+      const token = useAuth.getState().token;
+      const res = await fetch(`/api/admin/workshops?${params}`, { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       if (data.success) {
         setWorkshops(data.data.workshops);
@@ -91,9 +93,10 @@ export default function AdminWorkshopsPage() {
   const updateWorkshop = async (workshopId: string, updateData: Record<string, any>) => {
     setActionLoading(workshopId);
     try {
+      const token = useAuth.getState().token;
       const res = await fetch('/api/admin/workshops', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ workshopId, ...updateData }),
       });
       if (res.ok) fetchWorkshops(pagination.page);
@@ -106,7 +109,8 @@ export default function AdminWorkshopsPage() {
   const deleteWorkshop = async (workshopId: string) => {
     setActionLoading(workshopId);
     try {
-      const res = await fetch(`/api/admin/workshops?workshopId=${workshopId}`, { method: 'DELETE' });
+      const token = useAuth.getState().token;
+      const res = await fetch(`/api/admin/workshops?workshopId=${workshopId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
         setWorkshops((prev) => prev.filter((w) => w.id !== workshopId));
         setPagination((p) => ({ ...p, total: Math.max(0, p.total - 1) }));

@@ -61,16 +61,18 @@ export default function AdminForumReportsPage() {
   }, [user]);
 
   const loadReports = async () => {
-    const res = await fetch('/api/admin/forum-reports');
+    const token = useAuth.getState().token;
+    const res = await fetch('/api/admin/forum-reports', { headers: { Authorization: `Bearer ${token}` } });
     const data = await res.json();
     if (data.success) setReports(data.data);
     setLoading(false);
   };
 
   const resolveReport = async (id: string) => {
+    const token = useAuth.getState().token;
     const res = await fetch('/api/admin/forum-reports', {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ id, status: 'RESOLVED' }),
     });
     const data = await res.json();
@@ -80,9 +82,10 @@ export default function AdminForumReportsPage() {
 
   const deleteReport = async (id: string) => {
     if (!confirm('حذف البلاغ نهائياً؟')) return;
+    const token = useAuth.getState().token;
     const res = await fetch('/api/admin/forum-reports', {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ id }),
     });
     const data = await res.json();
@@ -91,9 +94,10 @@ export default function AdminForumReportsPage() {
   };
 
   const dismissReport = async (id: string) => {
+    const token = useAuth.getState().token;
     const res = await fetch('/api/admin/forum-reports', {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ id, status: 'DISMISSED' }),
     });
     const data = await res.json();
@@ -103,9 +107,10 @@ export default function AdminForumReportsPage() {
 
   const applyBan = async (userId: string, type: string, duration: string) => {
     setBanning(userId);
+    const token = useAuth.getState().token;
     const res = await fetch(`/api/admin/forum-users/${userId}/ban`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ type, duration }),
     });
     const data = await res.json();

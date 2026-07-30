@@ -22,7 +22,8 @@ export default function AdminProvincesPage() {
 
   const loadProvinces = async () => {
     try {
-      const res = await fetch('/api/admin/provinces');
+      const token = useAuth.getState().token;
+      const res = await fetch('/api/admin/provinces', { headers: { Authorization: `Bearer ${token}` } });
       const d = await res.json();
       if (d.success) setProvinces(d.data);
     } catch {
@@ -34,9 +35,10 @@ export default function AdminProvincesPage() {
 
   const handleImport = async () => {
     try {
+      const token = useAuth.getState().token;
       const res = await fetch('/api/admin/provinces', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           provinces: [],
           cities: [],
@@ -54,9 +56,10 @@ export default function AdminProvincesPage() {
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nameAr.trim()) return;
+    const token = useAuth.getState().token;
     const res = await fetch('/api/admin/provinces', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify(form),
     });
     const d = await res.json();
@@ -66,16 +69,18 @@ export default function AdminProvincesPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('حذف المحافظة؟')) return;
-    const res = await fetch(`/api/admin/provinces/${id}`, { method: 'DELETE' });
+    const token = useAuth.getState().token;
+    const res = await fetch(`/api/admin/provinces/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
     const d = await res.json();
     if (d.success) { toast.success('تم الحذف'); setProvinces(p => p.filter(x => x.id !== id)); }
     else toast.error('فشل');
   };
 
   const toggleActive = async (province: Province) => {
+    const token = useAuth.getState().token;
     const res = await fetch(`/api/admin/provinces/${province.id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ isActive: !province.isActive }),
     });
     const d = await res.json();

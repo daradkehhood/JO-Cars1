@@ -47,7 +47,8 @@ export default function AdminAdvancedStatsPage() {
 
   useEffect(() => {
     if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
-    fetch('/api/admin/advanced-stats')
+    const token = useAuth.getState().token;
+    fetch('/api/admin/advanced-stats', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(data => {
         if (data.success) setStats(data.data);

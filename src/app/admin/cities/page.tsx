@@ -25,9 +25,10 @@ export default function AdminCitiesPage() {
 
   const loadData = async () => {
     try {
+      const token = useAuth.getState().token;
       const [provinceRes, cityRes] = await Promise.all([
-        fetch('/api/admin/provinces'),
-        fetch('/api/admin/cities'),
+        fetch('/api/admin/provinces', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/admin/cities', { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       const pData = await provinceRes.json();
       const cData = await cityRes.json();
@@ -51,9 +52,10 @@ export default function AdminCitiesPage() {
 
     const body = editCity ? { ...form } : { ...form };
 
+    const token = useAuth.getState().token;
     const res = await fetch(url, {
       method,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify(body),
     });
     const d = await res.json();
@@ -77,16 +79,18 @@ export default function AdminCitiesPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('حذف المدينة؟')) return;
-    const res = await fetch(`/api/admin/cities/${id}`, { method: 'DELETE' });
+    const token = useAuth.getState().token;
+    const res = await fetch(`/api/admin/cities/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
     const d = await res.json();
     if (d.success) { toast.success('تم الحذف'); setCities(c => c.filter(x => x.id !== id)); }
     else toast.error('فشل');
   };
 
   const toggleActive = async (city: City) => {
+    const token = useAuth.getState().token;
     const res = await fetch(`/api/admin/cities/${city.id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ isActive: !city.isActive }),
     });
     const d = await res.json();

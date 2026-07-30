@@ -24,10 +24,11 @@ export default function AdminBrandsPage() {
 
   useEffect(() => {
     if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
-    fetch('/api/admin/brands').then(r => r.json()).then(d => { setBrands(d.data || []); setLoading(false); }).catch(() => setLoading(false));
+    const token = useAuth.getState().token;
+    fetch('/api/admin/brands', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).then(d => { setBrands(d.data || []); setLoading(false); }).catch(() => setLoading(false));
   }, [isAuthenticated, user, router]);
 
-  const load = () => fetch('/api/admin/brands').then(r => r.json()).then(d => setBrands(d.data || []));
+  const load = () => { const token = useAuth.getState().token; return fetch('/api/admin/brands', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).then(d => setBrands(d.data || [])); };
 
   const openAdd = () => { setEditing(null); setNameAr(''); setNameEn(''); setCountry(''); setIsActive(true); setModal(true); };
   const openEdit = (b: Brand) => { setEditing(b); setNameAr(b.nameAr); setNameEn(b.nameEn); setCountry(b.country || ''); setIsActive(b.isActive); setModal(true); };
@@ -35,9 +36,10 @@ export default function AdminBrandsPage() {
   const handleSubmit = async () => {
     if (!nameAr.trim() || !nameEn.trim()) { toast.error('الاسم مطلوب'); return; }
     setSubmitting(true);
+    const token = useAuth.getState().token;
     const method = editing ? 'PATCH' : 'POST';
     const body = editing ? { id: editing.id, nameAr, nameEn, country, isActive } : { nameAr, nameEn, country, isActive };
-    const res = await fetch('/api/admin/brands', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const res = await fetch('/api/admin/brands', { method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
     const d = await res.json();
     if (d.success) { toast.success(editing ? 'تم التحديث' : 'تمت الإضافة'); setModal(false); load(); }
     else toast.error(d.error || 'فشل');
@@ -46,7 +48,8 @@ export default function AdminBrandsPage() {
 
   const handleDelete = async (b: Brand) => {
     if (!confirm(`حذف ${b.nameAr}؟`)) return;
-    const res = await fetch('/api/admin/brands', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: b.id }) });
+    const token = useAuth.getState().token;
+    const res = await fetch('/api/admin/brands', { method: 'DELETE', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ id: b.id }) });
     const d = await res.json();
     if (d.success) { toast.success('تم الحذف'); load(); } else toast.error(d.error || 'فشل الحذف');
   };

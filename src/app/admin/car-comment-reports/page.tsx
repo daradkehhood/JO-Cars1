@@ -61,7 +61,8 @@ export default function AdminCarCommentReportsPage() {
   }, [user]);
 
   const loadReports = async () => {
-    const res = await fetch('/api/admin/car-comment-reports');
+    const token = useAuth.getState().token;
+    const res = await fetch('/api/admin/car-comment-reports', { headers: { Authorization: `Bearer ${token}` } });
     const d = await res.json();
     if (d.success) setReports(d.data.data);
     setLoading(false);
@@ -69,9 +70,10 @@ export default function AdminCarCommentReportsPage() {
 
   const applyBan = async (userId: string, duration: string) => {
     setBanning(userId);
+    const token = useAuth.getState().token;
     const res = await fetch(`/api/admin/car-comment-users/${userId}/ban`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ duration }),
     });
     const d = await res.json();
@@ -81,9 +83,10 @@ export default function AdminCarCommentReportsPage() {
   };
 
   const updateStatus = async (id: string, status: string) => {
+    const token = useAuth.getState().token;
     const res = await fetch('/api/admin/car-comment-reports', {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ id, status }),
     });
     const d = await res.json();
@@ -93,9 +96,10 @@ export default function AdminCarCommentReportsPage() {
 
   const deleteReport = async (id: string) => {
     if (!confirm('حذف البلاغ نهائياً؟')) return;
+    const token = useAuth.getState().token;
     const res = await fetch('/api/admin/car-comment-reports', {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ id }),
     });
     const d = await res.json();

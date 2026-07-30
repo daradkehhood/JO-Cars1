@@ -25,10 +25,11 @@ export default function AdminCarsPage() {
   const loadCars = (q: string) => {
     setLoading(true);
     const params = q ? `?search=${encodeURIComponent(q)}` : '';
+    const token = useAuth.getState().token;
     Promise.all([
-      fetch(`/api/admin/cars${params}`).then(r => r.json()),
-      fetch('/api/admin/plans').then(r => r.json()),
-      fetch('/api/admin/tags').then(r => r.json()),
+      fetch(`/api/admin/cars${params}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      fetch('/api/admin/plans', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      fetch('/api/admin/tags', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
     ]).then(([carsData, plansData, tagsData]) => {
       setCars(carsData.data || []);
       setPlans(plansData.data || []);
@@ -50,9 +51,10 @@ export default function AdminCarsPage() {
 
   const updateStatus = async (carId: string, status: string) => {
     try {
+      const token = useAuth.getState().token;
       const res = await fetch(`/api/admin/cars/${carId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status }),
       });
       if (res.ok) {
@@ -65,16 +67,17 @@ export default function AdminCarsPage() {
   const handleFeature = async () => {
     if (!selectedPlan) { toast.error('اختر باقة أولاً'); return; }
     try {
+      const token = useAuth.getState().token;
       const res = await fetch(`/api/admin/cars/${featureModal.carId}/feature`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ planId: selectedPlan }),
       });
       if (res.ok) {
         toast.success('تم تمييز الإعلان');
         setFeatureModal({ carId: '', open: false });
         setSelectedPlan('');
-        const carsRes = await fetch('/api/admin/cars');
+        const carsRes = await fetch('/api/admin/cars', { headers: { Authorization: `Bearer ${token}` } });
         const data = await carsRes.json();
         setCars(data.data || []);
       } else { toast.error('فشل التمييز'); }
@@ -84,7 +87,8 @@ export default function AdminCarsPage() {
   const removeFeatured = async (carId: string) => {
     if (!confirm('إلغاء تمييز هذا الإعلان؟')) return;
     try {
-      const res = await fetch(`/api/admin/cars/${carId}/feature`, { method: 'DELETE' });
+      const token = useAuth.getState().token;
+      const res = await fetch(`/api/admin/cars/${carId}/feature`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
         toast.success('تم إلغاء التمييز');
         setCars(cars.map(c => c.id === carId ? { ...c, featured: false, featuredUntil: null } as CarType : c));
@@ -95,7 +99,8 @@ export default function AdminCarsPage() {
   const deleteCar = async (carId: string) => {
     if (!confirm('هل أنت متأكد من حذف هذا الإعلان؟ لا يمكن التراجع عن هذا الإجراء.')) return;
     try {
-      const res = await fetch(`/api/admin/cars/${carId}`, { method: 'DELETE' });
+      const token = useAuth.getState().token;
+      const res = await fetch(`/api/admin/cars/${carId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
         toast.success('تم حذف الإعلان');
         setCars(cars.filter(c => c.id !== carId));
@@ -194,7 +199,8 @@ export default function AdminCarsPage() {
                         )}
                         <Button variant="ghost" size="sm" onClick={() => {
                           setTagModal({ carId: car.id, open: true });
-                          fetch(`/api/car-tags?carId=${car.id}`)
+                          const token = useAuth.getState().token;
+                          fetch(`/api/car-tags?carId=${car.id}`, { headers: { Authorization: `Bearer ${token}` } })
                             .then(r => r.json())
                             .then(data => setCarTagsMap(prev => ({ ...prev, [car.id]: (data.data || []).map((t: any) => t.id) })));
                         }}>
@@ -283,10 +289,11 @@ export default function AdminCarsPage() {
                       }`}>
                       <input type="checkbox" checked={isAssigned} onChange={async () => {
                         try {
+                          const token = useAuth.getState().token;
                           if (isAssigned) {
                             const res = await fetch('/api/car-tags', {
                               method: 'DELETE',
-                              headers: { 'Content-Type': 'application/json' },
+                              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                               body: JSON.stringify({ carId: tagModal.carId, tagId: tag.id }),
                             });
                             if (res.ok) {
@@ -296,7 +303,7 @@ export default function AdminCarsPage() {
                           } else {
                             const res = await fetch('/api/car-tags', {
                               method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
+                              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                               body: JSON.stringify({ carId: tagModal.carId, tagId: tag.id }),
                             });
                             if (res.ok) {

@@ -18,7 +18,8 @@ export default function AdminContentToolsPage() {
 
   useEffect(() => {
     if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
-    fetch('/api/admin/cars?status=APPROVED')
+    const token = useAuth.getState().token;
+    fetch('/api/admin/cars?status=APPROVED', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(data => setRecentCars((data.data || []).slice(0, 20)))
       .catch(() => {});
@@ -28,9 +29,10 @@ export default function AdminContentToolsPage() {
     if (!carId) { toast.error('اختر سيارة أولاً'); return; }
     setGenerating(true); setResult(null); setResultType(null);
     try {
+      const token = useAuth.getState().token;
       const res = await fetch('/api/admin/content-tools', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ action: 'generate-description', carId }),
       });
       const data = await res.json();
@@ -44,9 +46,10 @@ export default function AdminContentToolsPage() {
     if (!carId) { toast.error('اختر سيارة أولاً'); return; }
     setChecking(true); setResult(null); setResultType(null);
     try {
+      const token = useAuth.getState().token;
       const res = await fetch('/api/admin/content-tools', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ action: 'check-duplicates', carId }),
       });
       const data = await res.json();

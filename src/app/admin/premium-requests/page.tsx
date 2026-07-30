@@ -36,8 +36,9 @@ export default function AdminPremiumRequestsPage() {
   }, [isAuthenticated, user, router, filter]);
 
   const loadRequests = () => {
+    const token = useAuth.getState().token;
     const params = filter ? `?status=${filter}` : '';
-    fetch(`/api/admin/premium-requests${params}`)
+    fetch(`/api/admin/premium-requests${params}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(data => { setRequests(data.data || []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -46,9 +47,10 @@ export default function AdminPremiumRequestsPage() {
   const handleAction = async (requestId: string, action: 'APPROVE' | 'REJECT') => {
     if (action === 'REJECT' && !confirm('رفض الطلب؟')) return;
     try {
+      const token = useAuth.getState().token;
       const res = await fetch('/api/admin/premium-requests', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ requestId, action }),
       });
       const d = await res.json();

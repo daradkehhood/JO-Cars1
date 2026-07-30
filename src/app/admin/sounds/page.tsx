@@ -96,7 +96,8 @@ export default function SoundReportsAdmin() {
 
   const fetchReports = async () => {
     try {
-      const res = await fetch(`/api/sounds/reports?status=${filterStatus}`);
+      const token = useAuth.getState().token;
+      const res = await fetch(`/api/sounds/reports?status=${filterStatus}`, { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       if (data.success) setReports(data.data);
     } catch (error) {
@@ -108,7 +109,8 @@ export default function SoundReportsAdmin() {
 
   const fetchBans = async () => {
     try {
-      const res = await fetch('/api/sounds/bans');
+      const token = useAuth.getState().token;
+      const res = await fetch('/api/sounds/bans', { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       if (data.success) setBans(data.data);
     } catch (error) {
@@ -148,7 +150,8 @@ export default function SoundReportsAdmin() {
     if (!banModal.report) return;
 
     try {
-      const soundsRes = await fetch(`/api/cars/${banModal.report.car.id}/sounds`);
+      const token = useAuth.getState().token;
+      const soundsRes = await fetch(`/api/cars/${banModal.report.car.id}/sounds`, { headers: { Authorization: `Bearer ${token}` } });
       const soundsData = await soundsRes.json();
       const recording = soundsData.data?.find((r: any) => r.id === banModal.report!.recording.id);
       const userId = recording?.userId;
@@ -160,7 +163,7 @@ export default function SoundReportsAdmin() {
 
       const res = await fetch('/api/sounds/bans', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           userId,
           reason: banForm.reason,
@@ -183,9 +186,10 @@ export default function SoundReportsAdmin() {
 
   const handleDismissReport = async (reportId: string) => {
     try {
+      const token = useAuth.getState().token;
       await fetch('/api/sounds/reports', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ reportId, status: 'dismissed' })
       });
       fetchReports();

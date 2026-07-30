@@ -47,16 +47,18 @@ export default function AdminReportsPage() {
   }, [isAuthenticated, user, router, statusFilter]);
 
   const loadReports = () => {
-    fetch(`/api/admin/reports?status=${statusFilter}`)
+    const token = useAuth.getState().token;
+    fetch(`/api/admin/reports?status=${statusFilter}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(d => { setReports(d.data?.reports || []); setLoading(false); })
       .catch(() => setLoading(false));
   };
 
   const handleResolve = async (id: string) => {
+    const token = useAuth.getState().token;
     const res = await fetch('/api/admin/reports', {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ id, status: 'RESOLVED' }),
     });
     const d = await res.json();
@@ -65,9 +67,10 @@ export default function AdminReportsPage() {
   };
 
   const handleReject = async (id: string) => {
+    const token = useAuth.getState().token;
     const res = await fetch('/api/admin/reports', {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ id, status: 'REJECTED' }),
     });
     const d = await res.json();
@@ -78,9 +81,10 @@ export default function AdminReportsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('هل أنت متأكد من حذف البلاغ؟')) return;
     setDeleting(id);
+    const token = useAuth.getState().token;
     const res = await fetch('/api/admin/reports', {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ id }),
     });
     const d = await res.json();

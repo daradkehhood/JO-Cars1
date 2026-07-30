@@ -30,7 +30,8 @@ export default function AdminBadgesPage() {
 
   useEffect(() => {
     if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
-    fetch('/api/admin/badges')
+    const token = useAuth.getState().token;
+    fetch('/api/admin/badges', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(data => { setBadges(data.data || []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -46,9 +47,10 @@ export default function AdminBadgesPage() {
       const isEdit = modal.edit;
       const url = isEdit ? `/api/admin/badges/${modal.edit!.id}` : '/api/admin/badges';
       const method = isEdit ? 'PUT' : 'POST';
+      const token = useAuth.getState().token;
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ nameAr: formName, icon: formIcon, color: formColor }),
       });
       const d = await res.json();
@@ -64,16 +66,18 @@ export default function AdminBadgesPage() {
 
   const handleDelete = async (b: BadgeItem) => {
     if (!confirm(`حذف الشارة "${b.nameAr}"؟`)) return;
-    const res = await fetch(`/api/admin/badges/${b.id}`, { method: 'DELETE' });
+    const token = useAuth.getState().token;
+    const res = await fetch(`/api/admin/badges/${b.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
     const d = await res.json();
     if (d.success) { toast.success('تم الحذف'); setBadges(badges.filter(x => x.id !== b.id)); }
     else toast.error(d.error || 'فشل الحذف');
   };
 
   const toggleActive = async (b: BadgeItem) => {
+    const token = useAuth.getState().token;
     const res = await fetch(`/api/admin/badges/${b.id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ isActive: !b.isActive }),
     });
     const d = await res.json();

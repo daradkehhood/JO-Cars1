@@ -68,7 +68,8 @@ export default function AdminSubscriptionsPage() {
       if (filterStatus) params.set('status', filterStatus);
       if (filterPlan) params.set('plan', filterPlan);
 
-      const res = await fetch(`/api/admin/subscriptions?${params}`);
+      const token = useAuth.getState().token;
+      const res = await fetch(`/api/admin/subscriptions?${params}`, { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       if (data.success) {
         setSubscriptions(data.data.subscriptions);
@@ -89,9 +90,10 @@ export default function AdminSubscriptionsPage() {
     if (!confirm(`هل أنت متأكد من ${label} اشتراك هذا المستخدم؟`)) return;
 
     try {
+      const token = useAuth.getState().token;
       const res = await fetch(`/api/admin/subscriptions/${sub.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status: newStatus }),
       });
       if (res.ok) {
@@ -106,7 +108,8 @@ export default function AdminSubscriptionsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('هل أنت متأكد من حذف هذا الاشتراك نهائياً؟')) return;
     try {
-      const res = await fetch(`/api/admin/subscriptions/${id}`, { method: 'DELETE' });
+      const token = useAuth.getState().token;
+      const res = await fetch(`/api/admin/subscriptions/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) { toast.success('تم حذف الاشتراك'); loadSubscriptions(); }
       else { toast.error('فشل الحذف'); }
     } catch { toast.error('حدث خطأ'); }

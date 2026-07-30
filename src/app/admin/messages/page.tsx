@@ -25,7 +25,8 @@ export default function AdminMessagesPage() {
 
   useEffect(() => {
     if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
-    fetch('/api/admin/conversations')
+    const token = useAuth.getState().token;
+    fetch('/api/admin/conversations', { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((data) => {
         if (data.success) {
@@ -63,7 +64,8 @@ export default function AdminMessagesPage() {
       if (activeConv && data.conversationId === activeConv.id) {
         setMessages((prev) => (prev.some((m) => m.id === data.id) ? prev : [...prev, data]));
       }
-      fetch('/api/admin/conversations')
+      const token = useAuth.getState().token;
+      fetch('/api/admin/conversations', { headers: { Authorization: `Bearer ${token}` } })
         .then((r) => r.json())
         .then((d) => { if (d.success) { setConversations(d.data); setFiltered(d.data); } });
     });
@@ -74,7 +76,8 @@ export default function AdminMessagesPage() {
     setActiveConv(conv);
     setShowList(false);
     try {
-      const res = await fetch(`/api/admin/conversations/${conv.id}`);
+      const token = useAuth.getState().token;
+      const res = await fetch(`/api/admin/conversations/${conv.id}`, { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       if (data.success) {
         setMessages(data.data.messages || []);
@@ -87,9 +90,10 @@ export default function AdminMessagesPage() {
     const content = newMessage.trim();
     setNewMessage('');
     try {
+      const token = useAuth.getState().token;
       const res = await fetch(`/api/admin/conversations/${activeConv.id}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ content }),
       });
       const data = await res.json();

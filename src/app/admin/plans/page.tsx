@@ -37,7 +37,8 @@ export default function AdminPlansPage() {
 
   const loadPlans = async () => {
     try {
-      const res = await fetch('/api/admin/plans');
+      const token = useAuth.getState().token;
+      const res = await fetch('/api/admin/plans', { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       setPlans(data.data || []);
     } catch { toast.error('فشل تحميل الباقات'); }
@@ -68,10 +69,11 @@ export default function AdminPlansPage() {
   const handleSave = async () => {
     if (!form.nameAr || !form.price) { toast.error('الاسم والسعر مطلوبان'); return; }
     try {
+      const token = useAuth.getState().token;
       const url = editingId ? `/api/admin/plans/${editingId}` : '/api/admin/plans';
       const res = await fetch(url, {
         method: editingId ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(form),
       });
       if (res.ok) {
@@ -85,7 +87,8 @@ export default function AdminPlansPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('هل أنت متأكد من حذف هذه الباقة؟')) return;
     try {
-      const res = await fetch(`/api/admin/plans/${id}`, { method: 'DELETE' });
+      const token = useAuth.getState().token;
+      const res = await fetch(`/api/admin/plans/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) { toast.success('تم حذف الباقة'); loadPlans(); }
       else { toast.error('فشل الحذف'); }
     } catch { toast.error('فشل الحذف'); }

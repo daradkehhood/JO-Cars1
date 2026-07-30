@@ -201,7 +201,7 @@ export default function AdminPage() {
               const btn = document.getElementById('newsAggregatorBtn') as HTMLButtonElement;
               btn.disabled = true; btn.innerHTML = 'جاري الاستيراد...';
               try {
-                const res = await fetch('/api/admin/news-aggregator', { method: 'POST' });
+                const res = await fetch('/api/admin/news-aggregator', { method: 'POST', headers: { Authorization: `Bearer ${useAuth.getState().token}` } });
                 const data = await res.json();
                 if (data.success) alert(data.data.message);
                 else alert('خطأ: ' + data.error);

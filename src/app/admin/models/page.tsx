@@ -27,13 +27,14 @@ export default function AdminModelsPage() {
 
   useEffect(() => {
     if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
+    const token = useAuth.getState().token;
     Promise.all([
-      fetch('/api/admin/models').then(r => r.json()),
-      fetch('/api/admin/brands').then(r => r.json()),
+      fetch('/api/admin/models', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      fetch('/api/admin/brands', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
     ]).then(([m, b]) => { setModels(m.data || []); setBrands(b.data || []); setLoading(false); }).catch(() => setLoading(false));
   }, [isAuthenticated, user, router]);
 
-  const load = () => fetch('/api/admin/models').then(r => r.json()).then(d => setModels(d.data || []));
+  const load = () => { const token = useAuth.getState().token; return fetch('/api/admin/models', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).then(d => setModels(d.data || [])); };
 
   const openAdd = () => { setEditing(null); setNameAr(''); setNameEn(''); setBrandId(''); setIsActive(true); setModal(true); };
   const openEdit = (m: CarModel) => { setEditing(m); setNameAr(m.nameAr); setNameEn(m.nameEn); setBrandId(m.brandId); setIsActive(m.isActive); setModal(true); };
@@ -43,7 +44,8 @@ export default function AdminModelsPage() {
     setSubmitting(true);
     const method = editing ? 'PATCH' : 'POST';
     const body = editing ? { id: editing.id, nameAr, nameEn, brandId, isActive } : { nameAr, nameEn, brandId, isActive };
-    const res = await fetch('/api/admin/models', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const token = useAuth.getState().token;
+    const res = await fetch('/api/admin/models', { method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
     const d = await res.json();
     if (d.success) { toast.success(editing ? 'تم التحديث' : 'تمت الإضافة'); setModal(false); load(); } else toast.error(d.error || 'فشل');
     setSubmitting(false);
@@ -51,7 +53,8 @@ export default function AdminModelsPage() {
 
   const handleDelete = async (m: CarModel) => {
     if (!confirm(`حذف ${m.nameAr}؟`)) return;
-    const res = await fetch('/api/admin/models', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: m.id }) });
+    const token = useAuth.getState().token;
+    const res = await fetch('/api/admin/models', { method: 'DELETE', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ id: m.id }) });
     const d = await res.json();
     if (d.success) { toast.success('تم الحذف'); load(); } else toast.error(d.error || 'فشل');
   };

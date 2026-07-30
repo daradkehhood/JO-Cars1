@@ -41,7 +41,8 @@ export default function AdminSellerReportsPage() {
 
   const loadReports = () => {
     const params = search ? `?search=${encodeURIComponent(search)}` : '';
-    fetch(`/api/admin/seller-reports${params}`)
+    const token = useAuth.getState().token;
+    fetch(`/api/admin/seller-reports${params}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(data => { setReports(data.data || []); setLoading(false); })
       .catch(() => setLoading(false));

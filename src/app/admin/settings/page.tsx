@@ -31,7 +31,8 @@ export default function AdminSettingsPage() {
 
   useEffect(() => {
     if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
-    fetch('/api/admin/settings')
+    const token = useAuth.getState().token;
+    fetch('/api/admin/settings', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(data => { if (data.success) setForm(data.data); setLoading(false); })
       .catch(() => setLoading(false));
@@ -54,7 +55,8 @@ export default function AdminSettingsPage() {
       for (const key of textFields) {
         if (form[key] !== undefined) fd.append(key, String(form[key]));
       }
-      const res = await fetch('/api/admin/settings', { method: 'PUT', body: fd });
+      const token = useAuth.getState().token;
+      const res = await fetch('/api/admin/settings', { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: fd });
       const data = await res.json();
       if (data.success) toast.success('تم حفظ الإعدادات');
       else toast.error(data.error || 'فشل الحفظ');
@@ -66,7 +68,8 @@ export default function AdminSettingsPage() {
     if (!file) return;
     const fd = new FormData();
     fd.append(key, file);
-    const res = await fetch('/api/admin/settings', { method: 'PUT', body: fd });
+    const token = useAuth.getState().token;
+    const res = await fetch('/api/admin/settings', { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: fd });
     const data = await res.json();
     if (data.success) { setForm(data.data); toast.success('تم رفع الشعار'); }
     else toast.error('فشل الرفع');

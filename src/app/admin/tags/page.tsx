@@ -36,7 +36,8 @@ export default function AdminTagsPage() {
   }, [isAuthenticated, user, router]);
 
   const loadTags = () => {
-    fetch('/api/admin/tags')
+    const token = useAuth.getState().token;
+    fetch('/api/admin/tags', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(data => { setTags(data.data || []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -61,9 +62,10 @@ export default function AdminTagsPage() {
       const url = isEdit ? `/api/admin/tags/${modal.edit!.id}` : '/api/admin/tags';
       const method = isEdit ? 'PUT' : 'POST';
 
+      const token = useAuth.getState().token;
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ nameAr, nameEn: nameEn || null, slug: slug.toLowerCase().replace(/\s+/g, '-'), icon, color }),
       });
       const d = await res.json();
@@ -81,7 +83,8 @@ export default function AdminTagsPage() {
   const handleDelete = async (tag: CarTag) => {
     if (!confirm(`حذف الوسم "${tag.nameAr}"؟`)) return;
     try {
-      const res = await fetch(`/api/admin/tags/${tag.id}`, { method: 'DELETE' });
+      const token = useAuth.getState().token;
+      const res = await fetch(`/api/admin/tags/${tag.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
       const d = await res.json();
       if (d.success) { toast.success('تم حذف الوسم'); loadTags(); }
       else toast.error(d.error || 'فشل الحذف');
@@ -90,9 +93,10 @@ export default function AdminTagsPage() {
 
   const toggleActive = async (tag: CarTag) => {
     try {
+      const token = useAuth.getState().token;
       const res = await fetch(`/api/admin/tags/${tag.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ isActive: !tag.isActive }),
       });
       const d = await res.json();

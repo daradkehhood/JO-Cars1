@@ -34,7 +34,8 @@ export default function AdminForumCategoriesPage() {
   }, [isAuthenticated, user, router]);
 
   const loadCategories = () => {
-    fetch('/api/admin/forum-categories')
+    const token = useAuth.getState().token;
+    fetch('/api/admin/forum-categories', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(data => { setCategories(data.data || []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -54,11 +55,12 @@ export default function AdminForumCategoriesPage() {
 
   const save = async () => {
     if (!form.nameAr || !form.nameEn || !form.slug) { toast.error('الاسم وال slug مطلوب'); return; }
+    const token = useAuth.getState().token;
     const url = editId ? `/api/admin/forum-categories/${editId}` : '/api/admin/forum-categories';
     const method = editId ? 'PUT' : 'POST';
     const res = await fetch(url, {
       method,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ ...form, sortOrder: parseInt(form.sortOrder) || 0 }),
     });
     const data = await res.json();
@@ -68,7 +70,8 @@ export default function AdminForumCategoriesPage() {
 
   const deleteCategory = async (id: string) => {
     if (!confirm('حذف القسم نهائياً؟')) return;
-    const res = await fetch(`/api/admin/forum-categories/${id}`, { method: 'DELETE' });
+    const token = useAuth.getState().token;
+    const res = await fetch(`/api/admin/forum-categories/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
     const data = await res.json();
     if (data.success) { toast.success('تم الحذف'); loadCategories(); }
     else toast.error(data.error || 'فشل');

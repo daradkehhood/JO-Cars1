@@ -50,8 +50,9 @@ export default function AdminTicketsPage() {
   }, [isAuthenticated, user, router, filter]);
 
   const loadTickets = () => {
+    const token = useAuth.getState().token;
     const params = filter ? `?status=${filter}` : '';
-    fetch(`/api/admin/tickets${params}`)
+    fetch(`/api/admin/tickets${params}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(data => {
         if (data.success) {
@@ -71,7 +72,8 @@ export default function AdminTicketsPage() {
     setExpanded(ticket.id);
     if (!expandedMessages[ticket.id]) {
       try {
-        const res = await fetch(`/api/tickets/${ticket.id}`);
+        const token = useAuth.getState().token;
+        const res = await fetch(`/api/tickets/${ticket.id}`, { headers: { Authorization: `Bearer ${token}` } });
         const data = await res.json();
         if (data.success) setExpandedMessages(prev => ({ ...prev, [ticket.id]: data.data.messages }));
       } catch {}
@@ -82,16 +84,17 @@ export default function AdminTicketsPage() {
     if (!replyText.trim()) return;
     setSending(true);
     try {
+      const token = useAuth.getState().token;
       const res = await fetch(`/api/tickets/${ticketId}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ content: replyText }),
       });
       const data = await res.json();
       if (data.success) {
         toast.success('تم إرسال الرد');
         setReplyText('');
-        const res2 = await fetch(`/api/tickets/${ticketId}`);
+        const res2 = await fetch(`/api/tickets/${ticketId}`, { headers: { Authorization: `Bearer ${token}` } });
         const data2 = await res2.json();
         if (data2.success) setExpandedMessages(prev => ({ ...prev, [ticketId]: data2.data.messages }));
         loadTickets();
@@ -102,9 +105,10 @@ export default function AdminTicketsPage() {
 
   const handleAction = async (ticketId: string, action: string, assigneeId?: string) => {
     try {
+      const token = useAuth.getState().token;
       const res = await fetch('/api/admin/tickets', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ ticketId, action, assigneeId }),
       });
       const data = await res.json();
