@@ -132,6 +132,7 @@ export default function AIPage() {
   const [isRecordingSound, setIsRecordingSound] = useState(false);
   const [selectedModel, setSelectedModel] = useState<AIModelId>('gpt-oss');
   const [showModelSelector, setShowModelSelector] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const modelSelectorRef = useRef<HTMLDivElement>(null);
@@ -161,6 +162,26 @@ export default function AIPage() {
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  // Calculate dropdown position relative to viewport
+  const calcDropdownPos = useCallback(() => {
+    if (!modelSelectorRef.current) return;
+    const rect = modelSelectorRef.current.getBoundingClientRect();
+    const ddWidth = 288; // w-72
+    const ddHeight = 300; // approximate height
+    let top = rect.top - ddHeight - 8;
+    let right = window.innerWidth - rect.right;
+    // Keep within viewport bounds
+    if (top < 8) top = rect.bottom + 8; // flip below if no room above
+    if (right < 8) right = 8;
+    if (right + ddWidth > window.innerWidth - 8) right = window.innerWidth - ddWidth - 8;
+    setDropdownPos({ top, right });
+  }, []);
+
+  const toggleModelSelector = useCallback(() => {
+    if (!showModelSelector) calcDropdownPos();
+    setShowModelSelector(prev => !prev);
+  }, [showModelSelector, calcDropdownPos]);
 
   // Close model selector when clicking outside
   useEffect(() => {
@@ -930,7 +951,7 @@ export default function AIPage() {
             <div className="relative" ref={modelSelectorRef}>
               <button
                 type="button"
-                onClick={() => setShowModelSelector(!showModelSelector)}
+                onClick={toggleModelSelector}
                 className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm"
               >
                 <span>{selectedModelObj?.icon}</span>
@@ -939,7 +960,10 @@ export default function AIPage() {
               </button>
 
               {showModelSelector && (
-                <div className="absolute bottom-full mb-2 right-0 w-72 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl z-[100] overflow-hidden">
+                <div
+                  className="fixed w-72 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl z-[100]"
+                  style={{ top: dropdownPos.top, right: dropdownPos.right }}
+                >
                   <div className="p-1.5">
                     <p className="px-2.5 py-1.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">اختر النموذج</p>
                     {AI_MODELS_LIST.map((model) => (
