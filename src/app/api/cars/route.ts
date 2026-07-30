@@ -212,51 +212,58 @@ export async function POST(request: NextRequest) {
     if (data.videoUrl === '') delete data.videoUrl;
 
     const validation = carSchema.safeParse(data);
-    if (!validation.success) return validationErrorResponse(validation.error);
+    if (!validation.success) {
+      console.error('Car validation failed:', JSON.stringify(validation.error.issues));
+      return validationErrorResponse(validation.error);
+    }
 
-    const hasCloudinary = process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_KEY !== 'your-api-key';
+    const hasCloudinary = !!(process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_KEY !== 'your-api-key' && process.env.CLOUDINARY_API_SECRET);
     let uploadedImages: { url: string }[] = [];
     let coverUrl: string | undefined;
 
-    if (hasCloudinary) {
-      if (uploadedFiles.length > 0) {
-        const buffers = await Promise.all(uploadedFiles.map(img => img.arrayBuffer()));
-        const base64s = buffers.map(buf => Buffer.from(buf).toString('base64'));
-        uploadedImages = await uploadMultipleImages(base64s, 'jo-cars/cars');
-      }
-      if (coverFile) {
-        const buffer = await coverFile.arrayBuffer();
-        const base64 = Buffer.from(buffer).toString('base64');
-        const result = await uploadImage(base64, { folder: 'jo-cars/covers' });
-        coverUrl = result.secure_url;
-      }
-    } else {
-      const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-      const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    try {
+      if (hasCloudinary) {
+        if (uploadedFiles.length > 0) {
+          const buffers = await Promise.all(uploadedFiles.map(img => img.arrayBuffer()));
+          const base64s = buffers.map(buf => Buffer.from(buf).toString('base64'));
+          uploadedImages = await uploadMultipleImages(base64s, 'jo-cars/cars');
+        }
+        if (coverFile) {
+          const buffer = await coverFile.arrayBuffer();
+          const base64 = Buffer.from(buffer).toString('base64');
+          const result = await uploadImage(base64, { folder: 'jo-cars/covers' });
+          coverUrl = result.secure_url;
+        }
+      } else {
+        const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+        const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
-      const saveLocalFile = async (file: File) => {
-        if (!ALLOWED_MIME.includes(file.type)) {
-          throw new Error('نوع الملف غير مسموح. الأنواع المسموحة: JPG, PNG, WebP, GIF');
+        const saveLocalFile = async (file: File) => {
+          if (!ALLOWED_MIME.includes(file.type)) {
+            throw new Error('نوع الملف غير مسموح. الأنواع المسموحة: JPG, PNG, WebP, GIF');
+          }
+          if (file.size > MAX_FILE_SIZE) {
+            throw new Error('حجم الملف يتجاوز الحد الأقصى (10MB)');
+          }
+          const bytes = await file.arrayBuffer();
+          if (!bytes || bytes.byteLength === 0) throw new Error('Empty file');
+          const buffer = Buffer.from(bytes);
+          const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : file.type === 'image/gif' ? 'gif' : 'jpg';
+          const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+          const dir = path.join(process.cwd(), 'public', 'uploads');
+          await mkdir(dir, { recursive: true });
+          const filePath = path.join(dir, filename);
+          await writeFile(filePath, buffer);
+          return `/uploads/${filename}`;
+        };
+        for (const img of uploadedFiles) {
+          const url = await saveLocalFile(img);
+          uploadedImages.push({ url });
         }
-        if (file.size > MAX_FILE_SIZE) {
-          throw new Error('حجم الملف يتجاوز الحد الأقصى (10MB)');
-        }
-        const bytes = await file.arrayBuffer();
-        if (!bytes || bytes.byteLength === 0) throw new Error('Empty file');
-        const buffer = Buffer.from(bytes);
-        const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : file.type === 'image/gif' ? 'gif' : 'jpg';
-        const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-        const dir = path.join(process.cwd(), 'public', 'uploads');
-        await mkdir(dir, { recursive: true });
-        const filePath = path.join(dir, filename);
-        await writeFile(filePath, buffer);
-        return `/uploads/${filename}`;
-      };
-      for (const img of uploadedFiles) {
-        const url = await saveLocalFile(img);
-        uploadedImages.push({ url });
+        if (coverFile) coverUrl = await saveLocalFile(coverFile);
       }
-      if (coverFile) coverUrl = await saveLocalFile(coverFile);
+    } catch (uploadErr) {
+      console.error('Image upload failed, proceeding without images:', uploadErr);
     }
 
     const slug = generateSlug(data.brandId as string, data.modelId as string, data.year as number, Date.now().toString());
@@ -284,7 +291,6 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Calculate fair price estimate (non-blocking)
     analyzeCarPrice({
       brand: car.brand?.nameAr || car.brand?.nameEn || '',
       model: car.model?.nameAr || car.model?.nameEn || '',
