@@ -656,6 +656,11 @@ export default function CarDetailPage() {
                 )}
                 <Button className="w-full" variant="ghost" icon={<MessageCircle className="w-4 h-4" />}
                   onClick={async () => {
+                    if (!currentUser) {
+                      toast.error('يجب تسجيل الدخول أولاً');
+                      router.push('/login');
+                      return;
+                    }
                     try {
                       const res = await fetch('/api/conversations', {
                         method: 'POST',
@@ -677,6 +682,11 @@ export default function CarDetailPage() {
 
                 <Button className="w-full" icon={<CarIcon className="w-4 h-4" />}
                   onClick={async () => {
+                    if (!currentUser) {
+                      toast.error('يجب تسجيل الدخول أولاً');
+                      router.push('/login');
+                      return;
+                    }
                     try {
                       const res = await fetch('/api/conversations', {
                         method: 'POST',

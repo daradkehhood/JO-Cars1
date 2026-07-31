@@ -77,88 +77,135 @@ export function MobileBottomNav() {
     return false;
   };
 
+  const leftItems = navItems.slice(0, 2);
+  const rightItems = navItems.slice(3);
+  const centerItem = navItems[2];
+
   return (
     <>
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 safe-area-bottom">
-        <div className="px-2 pb-2">
-          <div className="relative mx-auto max-w-lg bg-white/95 dark:bg-surface-900/95 backdrop-blur-xl border border-surface-200/80 dark:border-surface-800/80 rounded-2xl shadow-soft-lg">
-            {/* Gold top accent line */}
-            <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-gold-400/40 to-transparent" />
-            <div className="flex items-center justify-around h-16">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const active = isActive(item.href);
+        <div className="px-3 pb-3">
+          <div className="relative mx-auto max-w-md">
+            <div className="relative">
+              {/* Main bar body */}
+              <div className="relative bg-surface-900/80 backdrop-blur-xl rounded-2xl border border-surface-700/30 overflow-visible">
 
-                // Highlighted center button (Sell)
-                if (item.highlight) {
-                  return (
-                    <Link key={item.href} href={item.href}
-                      className="relative flex flex-col items-center justify-center -mt-6 active:scale-95 transition-transform duration-150">
-                      <div className="w-14 h-14 rounded-2xl bg-gradient-gold flex items-center justify-center shadow-gold-lg ring-4 ring-white dark:ring-surface-900">
-                        <Icon className="w-6 h-6 text-primary-900" strokeWidth={2.5} />
-                      </div>
-                      <span className="text-[10px] font-bold text-gold-700 dark:text-gold-400 mt-1">{item.label}</span>
-                    </Link>
-                  );
-                }
+                <div className="flex items-center justify-between h-[60px] px-2 pt-1">
+                  {/* Left items (الرئيسية, السيارات) */}
+                  {leftItems.map((item) => {
+                    const Icon = item.icon;
+                    const active = isActive(item.href);
 
-                // "More" button → opens bottom sheet
-                if (item.isMore) {
-                  return (
-                    <button
-                      key="more"
-                      onClick={() => setMoreOpen(true)}
-                      className="relative flex flex-col items-center justify-center min-w-[3.5rem] min-h-[3.5rem] gap-0.5 text-surface-400 dark:text-surface-500 active:scale-95 transition-transform duration-150"
-                      aria-label="المزيد"
-                    >
-                      {isAuthenticated ? (
-                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-xs font-bold ring-2 ring-gold-400/30">
-                          {user?.image ? (
-                            <img src={user.image} alt="" className="w-7 h-7 rounded-full object-cover" />
-                          ) : (
-                            user?.name?.charAt(0) || 'U'
+                    return (
+                      <Link key={item.href} href={item.href}
+                        className={cn(
+                          'relative flex flex-col items-center justify-center min-w-[3.2rem] gap-0.5 transition-all duration-200 active:scale-90',
+                          active ? 'text-white' : 'text-surface-400'
+                        )}>
+                        <div className="relative">
+                          {active && (
+                            <motion.div
+                              layoutId="bottomNavIndicator"
+                              className="absolute -inset-2 bg-accent-500/20 rounded-xl blur-[6px]"
+                              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                            />
+                          )}
+                          <Icon className={cn('w-[22px] h-[22px] relative z-10', active && 'stroke-[2.2]')} strokeWidth={active ? 2.2 : 1.8} />
+                          {item.href === '/cars' && compareCars.length > 0 && (
+                            <motion.span
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              className="absolute -top-1.5 -right-2 min-w-[16px] h-[16px] rounded-full bg-gold-100 text-gold-900 text-[8px] font-bold flex items-center justify-center px-0.5"
+                            >
+                              {compareCars.length}
+                            </motion.span>
                           )}
                         </div>
-                      ) : (
-                        <Icon className="w-5 h-5" />
-                      )}
-                      <span className="text-[10px] font-medium">{item.label}</span>
-                    </button>
-                  );
-                }
+                        <span className={cn('text-[10px] font-medium leading-none', active && 'font-bold')}>{item.label}</span>
+                        {active && (
+                          <motion.div
+                            layoutId="bottomNavLine"
+                            className="absolute -bottom-[5px] w-5 h-[3px] rounded-full bg-accent-400 shadow-[0_0_8px_rgba(100,160,255,0.6)]"
+                            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                          />
+                        )}
+                      </Link>
+                    );
+                  })}
 
-                // Regular nav items
-                return (
-                  <Link key={item.href} href={item.href}
-                    className={cn(
-                      'relative flex flex-col items-center justify-center min-w-[3.5rem] min-h-[3.5rem] gap-0.5 transition-all duration-200 active:scale-95',
-                      active
-                        ? 'text-primary-700 dark:text-primary-300'
-                        : 'text-surface-400 dark:text-surface-500'
-                    )}>
+                  {/* Center Sell Button */}
+                  <Link href={centerItem.href}
+                    className="relative flex flex-col items-center justify-center -mt-7 active:scale-90 transition-transform duration-150 z-30">
                     <div className="relative">
-                      {active && (
-                        <motion.div
-                          layoutId="bottomNavIndicator"
-                          className="absolute -inset-1.5 bg-primary-50 dark:bg-primary-500/15 rounded-xl"
-                          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                        />
-                      )}
-                      <Icon className={cn('w-5 h-5 relative z-10', active && 'stroke-[2.5]')} />
-                      {item.href === '/cars' && compareCars.length > 0 && (
-                        <motion.span
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="absolute -top-2 -right-2.5 min-w-[18px] h-[18px] rounded-full bg-gold-500 text-white text-[9px] font-bold flex items-center justify-center px-1"
-                        >
-                          {compareCars.length}
-                        </motion.span>
-                      )}
+                      <div className="absolute -inset-1 rounded-full bg-gradient-to-b from-gold-100/60 via-gold-100/30 to-gold-200/10 blur-[4px]" />
+                      <div className="relative w-[56px] h-[56px] rounded-full bg-gradient-to-b from-gold-100 via-gold-100 to-gold-200 flex items-center justify-center shadow-[0_4px_20px_rgba(255,198,64,0.45),0_0_40px_rgba(255,198,64,0.15)] ring-[3px] ring-surface-900/80">
+                        <Plus className="w-7 h-7 text-gold-900" strokeWidth={2.5} />
+                      </div>
                     </div>
-                    <span className={cn('text-[10px] font-medium', active && 'font-bold')}>{item.label}</span>
+                    <span className="text-[10px] font-bold text-gold-200 mt-1">{centerItem.label}</span>
                   </Link>
-                );
-              })}
+
+                  {/* Right items (الورش, المزيد) */}
+                  {rightItems.map((item) => {
+                    const Icon = item.icon;
+                    const active = isActive(item.href);
+
+                    // Handle "More" button — opens bottom sheet, does NOT navigate
+                    if (item.isMore) {
+                      return (
+                        <button
+                          key="more"
+                          onClick={() => setMoreOpen(true)}
+                          className="relative flex flex-col items-center justify-center min-w-[3.2rem] gap-0.5 text-surface-400 active:scale-90 transition-all duration-200"
+                          aria-label="المزيد"
+                        >
+                          <div className="relative">
+                            {isAuthenticated ? (
+                              <div className="w-6 h-6 rounded-full bg-accent-600 flex items-center justify-center text-white text-[10px] font-bold ring-1 ring-surface-600/30">
+                                {user?.image ? (
+                                  <img src={user.image} alt="" className="w-6 h-6 rounded-full object-cover" />
+                                ) : (
+                                  user?.name?.charAt(0) || 'U'
+                                )}
+                              </div>
+                            ) : (
+                              <Icon className="w-[22px] h-[22px]" strokeWidth={1.8} />
+                            )}
+                          </div>
+                          <span className="text-[10px] font-medium leading-none">{item.label}</span>
+                        </button>
+                      );
+                    }
+
+                    return (
+                      <Link key={item.href} href={item.href}
+                        className={cn(
+                          'relative flex flex-col items-center justify-center min-w-[3.2rem] gap-0.5 transition-all duration-200 active:scale-90',
+                          active ? 'text-white' : 'text-surface-400'
+                        )}>
+                        <div className="relative">
+                          {active && (
+                            <motion.div
+                              layoutId="bottomNavIndicator"
+                              className="absolute -inset-2 bg-accent-500/20 rounded-xl blur-[6px]"
+                              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                            />
+                          )}
+                          <Icon className={cn('w-[22px] h-[22px] relative z-10', active && 'stroke-[2.2]')} strokeWidth={active ? 2.2 : 1.8} />
+                        </div>
+                        <span className={cn('text-[10px] font-medium leading-none', active && 'font-bold')}>{item.label}</span>
+                        {active && (
+                          <motion.div
+                            layoutId="bottomNavLine"
+                            className="absolute -bottom-[5px] w-5 h-[3px] rounded-full bg-accent-400 shadow-[0_0_8px_rgba(100,160,255,0.6)]"
+                            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                          />
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -172,7 +219,7 @@ export function MobileBottomNav() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-surface-950/60 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
               onClick={() => setMoreOpen(false)}
             />
             <motion.div
@@ -180,24 +227,21 @@ export function MobileBottomNav() {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="absolute bottom-0 left-0 right-0 max-h-[88dvh] bg-white dark:bg-surface-900 rounded-t-3xl overflow-hidden flex flex-col shadow-soft-xl"
+              className="absolute bottom-0 left-0 right-0 max-h-[88dvh] bg-surface-800 rounded-t-2xl overflow-hidden flex flex-col shadow-soft-xl"
             >
-              {/* Gold accent line at top */}
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-gold" />
-              {/* Handle */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-gold-100 to-gold-200" />
               <div className="flex justify-center pt-3 pb-1">
-                <div className="w-10 h-1 rounded-full bg-surface-300 dark:bg-surface-600" />
+                <div className="w-10 h-1 rounded-full bg-surface-600" />
               </div>
 
-              <div className="flex items-center justify-between px-5 py-3 border-b border-surface-100 dark:border-surface-800">
-                <h3 className="font-bold text-surface-900 dark:text-white">المزيد من الخيارات</h3>
-                <button onClick={() => setMoreOpen(false)} className="p-2 -mr-2 rounded-xl hover:bg-surface-100 dark:hover:bg-surface-800">
+              <div className="flex items-center justify-between px-5 py-3 border-b border-surface-700/50">
+                <h3 className="font-bold text-surface-200">المزيد من الخيارات</h3>
+                <button onClick={() => setMoreOpen(false)} className="p-2 -mr-2 rounded-lg hover:bg-surface-700">
                   <X className="w-5 h-5 text-surface-500" />
                 </button>
               </div>
 
               <div className="flex-1 overflow-y-auto overscroll-contain p-3">
-                {/* Search */}
                 <form onSubmit={(e) => {
                   e.preventDefault();
                   if (searchQuery.trim()) {
@@ -210,38 +254,34 @@ export function MobileBottomNav() {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="ابحث عن سيارة..."
-                      className="w-full h-12 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 pl-11 pr-4 text-sm text-surface-900 dark:text-surface-100 placeholder-surface-400 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/10"
+                      className="input-field w-full h-12 pl-11 pr-4 text-sm"
                     />
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-500" />
                   </div>
                 </form>
 
-                {/* Sell button — prominent gold */}
                 <Link
                   href="/cars/add"
                   onClick={() => setMoreOpen(false)}
-                  className="flex items-center justify-center gap-2 w-full h-12 bg-gradient-gold text-primary-900 font-bold text-sm rounded-xl mb-3 shadow-gold active:scale-[0.98] transition-transform"
+                  className="flex items-center justify-center gap-2 w-full h-12 bg-gold-100 text-gold-900 font-bold text-sm rounded-lg mb-3 shadow-gold active:scale-[0.98] transition-transform"
                 >
                   <Plus className="w-4 h-4" strokeWidth={2.5} />
                   بيع سيارتك
                 </Link>
 
-                {/* Theme toggle */}
                 <button
                   onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                  className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800 mb-3 transition-all duration-200"
+                  className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-semibold text-surface-400 hover:bg-surface-700 mb-3 transition-all duration-200"
                 >
                   {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                   {theme === 'dark' ? 'الوضع الفاتح' : 'الوضع الداكن'}
                 </button>
 
-                {/* User section if authenticated */}
                 {isAuthenticated && (
                   <div className="mb-3">
-                    {/* User header card */}
                     <Link href="/auth/profile" onClick={() => setMoreOpen(false)}
-                      className="flex items-center gap-3 p-3 mb-2 rounded-xl bg-gradient-to-br from-primary-50/70 to-transparent dark:from-primary-500/10 border border-primary-100/50 dark:border-primary-500/20">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-sm font-bold ring-2 ring-gold-400/30">
+                      className="flex items-center gap-3 p-3 mb-2 rounded-lg bg-accent-500/10 border border-accent-500/20">
+                      <div className="w-10 h-10 rounded-full bg-accent-600 flex items-center justify-center text-white text-sm font-bold ring-2 ring-gold-100/20">
                         {user?.image ? (
                           <img src={user.image} alt="" className="w-10 h-10 rounded-full object-cover" />
                         ) : (
@@ -249,11 +289,11 @@ export function MobileBottomNav() {
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-bold text-surface-900 dark:text-white text-sm truncate">{user?.name}</p>
+                        <p className="font-bold text-surface-200 text-sm truncate">{user?.name}</p>
                         <p className="text-xs text-surface-500 truncate">{user?.email}</p>
                       </div>
                     </Link>
-                    <p className="text-xs font-semibold text-surface-400 px-3 mb-2">حسابي</p>
+                    <p className="text-xs font-bold text-surface-500 px-3 mb-2">حسابي</p>
                     <motion.div
                       variants={listVariants}
                       initial="hidden"
@@ -269,10 +309,10 @@ export function MobileBottomNav() {
                               href={item.href}
                               onClick={() => setMoreOpen(false)}
                               className={cn(
-                                'flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200',
+                                'flex items-center justify-between px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-200',
                                 active
-                                  ? 'text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-500/10'
-                                  : 'text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800'
+                                  ? 'text-accent-300 bg-accent-500/15'
+                                  : 'text-surface-400 hover:bg-surface-700/50'
                               )}
                             >
                               <span className="flex items-center gap-3">
@@ -293,7 +333,7 @@ export function MobileBottomNav() {
                           <Link
                             href="/admin"
                             onClick={() => setMoreOpen(false)}
-                            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800 transition-all duration-200"
+                            className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-surface-400 hover:bg-surface-700/50 transition-all duration-200"
                           >
                             <ShieldCheck className="w-5 h-5" />
                             لوحة التحكم
@@ -301,12 +341,11 @@ export function MobileBottomNav() {
                         </motion.div>
                       )}
                     </motion.div>
-                    <div className="border-t border-surface-100 dark:border-surface-800 my-3" />
+                    <div className="border-t border-surface-700/50 my-3" />
                   </div>
                 )}
 
-                {/* All navigation links */}
-                <p className="text-xs font-semibold text-surface-400 px-3 mb-2">الاستكشاف</p>
+                <p className="text-xs font-bold text-surface-500 px-3 mb-2">الاستكشاف</p>
                 <motion.div
                   variants={listVariants}
                   initial="hidden"
@@ -322,10 +361,10 @@ export function MobileBottomNav() {
                           href={item.href}
                           onClick={() => setMoreOpen(false)}
                           className={cn(
-                            'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200',
+                            'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-200',
                             active
-                              ? 'text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-500/10'
-                              : 'text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800'
+                              ? 'text-accent-300 bg-accent-500/15'
+                              : 'text-surface-400 hover:bg-surface-700/50'
                           )}
                         >
                           <Icon className="w-5 h-5" />
@@ -336,32 +375,30 @@ export function MobileBottomNav() {
                   })}
                 </motion.div>
 
-                {/* Login/Register for guests */}
                 {!isAuthenticated && (
-                  <div className="border-t border-surface-100 dark:border-surface-800 mt-3 pt-3 space-y-2">
+                  <div className="border-t border-surface-700/50 mt-3 pt-3 space-y-2">
                     <Link
                       href="/auth/login"
                       onClick={() => setMoreOpen(false)}
-                      className="flex items-center justify-center gap-2 w-full h-11 btn-primary text-sm rounded-xl"
+                      className="flex items-center justify-center gap-2 w-full h-11 btn-primary text-sm rounded-lg"
                     >
                       تسجيل دخول
                     </Link>
                     <Link
                       href="/auth/register"
                       onClick={() => setMoreOpen(false)}
-                      className="flex items-center justify-center gap-2 w-full h-11 btn-secondary text-sm rounded-xl"
+                      className="flex items-center justify-center gap-2 w-full h-11 btn-secondary text-sm rounded-lg"
                     >
                       حساب جديد
                     </Link>
                   </div>
                 )}
 
-                {/* Logout */}
                 {isAuthenticated && (
-                  <div className="border-t border-surface-100 dark:border-surface-800 mt-3 pt-3">
+                  <div className="border-t border-surface-700/50 mt-3 pt-3">
                     <button
                       onClick={() => { logout(); setMoreOpen(false); }}
-                      className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-sm font-semibold text-accent-600 bg-accent-50 dark:bg-accent-500/10 hover:bg-accent-100 dark:hover:bg-accent-500/20 transition-all duration-200"
+                      className="flex items-center justify-center gap-2 w-full py-3.5 rounded-lg text-sm font-semibold text-error-400 bg-error-500/10 hover:bg-error-500/20 transition-all duration-200"
                     >
                       <LogOut className="w-5 h-5" />
                       تسجيل خروج

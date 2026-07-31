@@ -19,6 +19,13 @@ interface CalculationResult {
   annualLicensing: number;
   customsRate: number;
   depreciatedValue: number;
+  breakdown?: {
+    cifValue: number;
+    customsBase: number;
+    specialTax: number;
+    vat: number;
+    note: string;
+  };
 }
 
 export function CustomsCalculator({ year, engineCapacity, price }: Props) {
@@ -26,67 +33,28 @@ export function CustomsCalculator({ year, engineCapacity, price }: Props) {
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const calculate = () => {
+  const calculate = async () => {
     setLoading(true);
-    setTimeout(() => {
-      const currentYear = new Date().getFullYear();
-      const age = currentYear - year;
-      const cc = engineCapacity || 2000;
-
-      // Depreciation tier (CIF value estimation)
-      let depreciationFactor: number;
-      if (age <= 1) depreciationFactor = 0.95;
-      else if (age <= 3) depreciationFactor = 0.90;
-      else if (age <= 5) depreciationFactor = 0.80;
-      else if (age <= 7) depreciationFactor = 0.70;
-      else if (age <= 10) depreciationFactor = 0.55;
-      else depreciationFactor = 0.40;
-
-      const depreciatedValue = Math.round(price * depreciationFactor);
-
-      // Customs duty rate by engine capacity
-      let customsRate: number;
-      if (cc <= 1500) customsRate = 0.36;
-      else if (cc <= 2000) customsRate = 0.40;
-      else if (cc <= 2500) customsRate = 0.55;
-      else if (cc <= 3000) customsRate = 0.70;
-      else customsRate = 0.85;
-
-      const customsDuty = Math.round(depreciatedValue * customsRate);
-
-      // One-time registration fee
-      let registrationFee: number;
-      if (cc <= 2000) registrationFee = 85;
-      else if (cc <= 3000) registrationFee = 110;
-      else registrationFee = 140;
-
-      // Annual licensing fee
-      let annualLicensing: number;
-      if (cc <= 1500) annualLicensing = 35;
-      else if (cc <= 2000) annualLicensing = 45;
-      else if (cc <= 2500) annualLicensing = 60;
-      else if (cc <= 3000) annualLicensing = 75;
-      else annualLicensing = 100;
-
-      // If diesel, add 20%
-      // We don't know fuel type here so we keep as gasoline rates
-
-      const totalFees = customsDuty + registrationFee + annualLicensing;
-      const totalCarCost = price + totalFees;
-
-      setResult({
-        customsDuty, registrationFee, licensingFee: annualLicensing,
-        totalFees, totalCarCost, annualLicensing, customsRate,
-        depreciatedValue,
+    try {
+      const res = await fetch('/api/ai/customs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ year, engineCapacity, price }),
       });
-      setLoading(false);
-    }, 500);
+      const data = await res.json();
+      if (data.success && data.data) {
+        setResult(data.data);
+      }
+    } catch {
+      // Silent fail — result stays null
+    }
+    setLoading(false);
   };
 
   const handleToggle = () => {
     if (!open) {
       setOpen(true);
-      calculate();
+      if (!result) calculate();
     } else {
       setOpen(false);
     }
@@ -102,7 +70,7 @@ export function CustomsCalculator({ year, engineCapacity, price }: Props) {
           </div>
           <div className="text-right">
             <p className="font-semibold text-gray-900 dark:text-white">حاسبة الجمارك والتسجيل</p>
-            <p className="text-sm text-gray-500">تقدير رسوم الجمارك والترخيص والفحص</p>
+            <p className="text-sm text-gray-500">تقدير رسوم الجمارك والترخيص والفحص بالذكاء الاصطناعي</p>
           </div>
         </div>
         <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -144,6 +112,24 @@ export function CustomsCalculator({ year, engineCapacity, price }: Props) {
                       <p className="text-lg font-bold text-gray-900 dark:text-white">{result.depreciatedValue.toLocaleString('ar-JO')} د.أ</p>
                     </div>
                   </div>
+
+                  {result.breakdown && (
+                    <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">ضريبة القيمة المضافة (16%)</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{result.breakdown.vat.toLocaleString('ar-JO')} د.أ</span>
+                      </div>
+                      {result.breakdown.specialTax > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">رسوم خاصة</span>
+                          <span className="font-medium text-gray-900 dark:text-white">{result.breakdown.specialTax.toLocaleString('ar-JO')} د.أ</span>
+                        </div>
+                      )}
+                      {result.breakdown.note && (
+                        <p className="text-xs text-gray-400 pt-1">{result.breakdown.note}</p>
+                      )}
+                    </div>
+                  )}
 
                   <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
                     <p className="text-xs opacity-80 mb-1">المجموع الكامل (سعر السيارة + الرسوم)</p>

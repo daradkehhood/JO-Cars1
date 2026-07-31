@@ -46,7 +46,6 @@ export function Header() {
     setMobileMenuOpen(false);
   }, [pathname, setMobileMenuOpen]);
 
-  // Close menus ONLY when clicking outside BOTH the button and the dropdown panel
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Node;
@@ -59,7 +58,6 @@ export function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Position the dropdown panels when they open (portal-style fixed positioning)
   useEffect(() => {
     if (moreOpen && moreMenuRef.current && moreBtnRef.current) {
       const rect = moreBtnRef.current.getBoundingClientRect();
@@ -126,8 +124,8 @@ export function Header() {
         className={cn(
           'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
           scrolled
-            ? 'bg-white/90 dark:bg-surface-950/90 backdrop-blur-xl border-b border-surface-200/60 dark:border-surface-800/60 shadow-soft'
-            : 'bg-white/70 dark:bg-surface-950/70 backdrop-blur-sm'
+            ? 'bg-surface-950/82 backdrop-blur-xl border-b border-surface-700/50 shadow-lg shadow-black/15'
+            : 'bg-surface-950/50 backdrop-blur-md'
         )}
       >
         <div className="container-custom">
@@ -136,12 +134,11 @@ export function Header() {
             <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
               <div className="relative transition-transform duration-300 group-hover:scale-105">
                 <img src="/shield-logo-sm.png" alt="JO Cars" className="h-10 w-10 rounded-lg object-cover" />
-                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-gradient-to-r from-transparent via-gold-400 to-transparent opacity-60 blur-[2px]" />
-                <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-gold-400 opacity-40 blur-[1px]" />
+                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-gradient-to-r from-transparent via-gold-100/40 to-transparent opacity-60 blur-[2px]" />
               </div>
-              <span className="text-lg font-bold text-surface-900 dark:text-white hidden sm:block tracking-tight">
-                <span className="gradient-text">JO</span>
-                <span className="text-gold-500 dark:text-gold-400">Cars</span>
+              <span className="text-lg font-bold text-surface-200 hidden sm:block tracking-tight" style={{ fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
+                <span className="text-accent-400">JO</span>
+                <span className="text-gold-100">Cars</span>
               </span>
             </Link>
 
@@ -155,10 +152,10 @@ export function Header() {
                     key={link.href}
                     href={link.href}
                     className={cn(
-                      'relative flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200',
+                      'relative flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all duration-200',
                       active
-                        ? 'text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-500/10'
-                        : 'text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-white hover:bg-surface-100 dark:hover:bg-surface-800'
+                        ? 'text-accent-300 bg-accent-500/15'
+                        : 'text-surface-400 hover:text-surface-200 hover:bg-surface-800'
                     )}
                   >
                     <Icon className="w-4 h-4" />
@@ -167,15 +164,14 @@ export function Header() {
                 );
               })}
 
-              {/* More dropdown button */}
               <button
                 ref={moreBtnRef}
                 onClick={() => setMoreOpen(!moreOpen)}
                 className={cn(
-                  'flex items-center gap-1 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200',
+                  'flex items-center gap-1 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all duration-200',
                   moreOpen
-                    ? 'text-surface-900 dark:text-white bg-surface-100 dark:bg-surface-800'
-                    : 'text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-white hover:bg-surface-100 dark:hover:bg-surface-800'
+                    ? 'text-surface-200 bg-surface-800'
+                    : 'text-surface-400 hover:text-surface-200 hover:bg-surface-800'
                 )}
               >
                 المزيد
@@ -191,63 +187,58 @@ export function Header() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="ابحث عن سيارة..."
-                  className="w-full h-10 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 pl-10 pr-4 text-sm text-surface-900 dark:text-surface-100 placeholder-surface-400 transition-all duration-200 focus:border-primary-500 focus:bg-white dark:focus:bg-surface-700 focus:ring-2 focus:ring-primary-500/10 focus:shadow-soft outline-none"
+                  className="input-field w-full h-10 pl-10 pr-4 text-sm"
                 />
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400 group-focus-within:text-primary-500 transition-colors" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-500 group-focus-within:text-accent-400 transition-colors" />
               </form>
             </div>
 
             {/* Right actions */}
             <div className="flex items-center gap-1">
-              {/* Compare */}
               {compareCars.length > 0 && (
                 <Link
                   href="/cars/compare"
-                  className="relative p-2 rounded-xl text-surface-500 hover:text-primary-600 hover:bg-surface-100 dark:hover:bg-surface-800 transition-all duration-200"
+                  className="relative p-2 rounded-lg text-surface-500 hover:text-accent-400 hover:bg-surface-800 transition-all duration-200"
                   title="مقارنة"
                 >
                   <GitCompare className="w-5 h-5" />
-                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full bg-gold-500 text-white text-[9px] font-bold flex items-center justify-center px-1">
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full bg-gold-100 text-gold-900 text-[9px] font-bold flex items-center justify-center px-1">
                     {compareCars.length}
                   </span>
                 </Link>
               )}
 
-              {/* Theme toggle */}
               <button
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="hidden md:flex p-2 rounded-xl text-surface-500 hover:text-surface-700 dark:hover:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 transition-all duration-200"
+                className="hidden md:flex p-2 rounded-lg text-surface-500 hover:text-surface-300 hover:bg-surface-800 transition-all duration-200"
                 aria-label="تبديل المظهر"
               >
                 {mounted ? (theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />) : <div className="w-5 h-5" />}
               </button>
 
-              {/* User area */}
               {isAuthenticated ? (
                 <>
-                  {/* Desktop: user dropdown button */}
                   <button
                     ref={userBtnRef}
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
-                    className="hidden md:flex items-center gap-1.5 p-1.5 pr-2.5 rounded-xl hover:bg-surface-100 dark:hover:bg-surface-800 transition-all duration-200"
+                    className="hidden md:flex items-center gap-1.5 p-1.5 pr-2.5 rounded-lg hover:bg-surface-800 transition-all duration-200"
                   >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-xs font-semibold ring-2 ring-gold-400/30">
+                    <div className="w-8 h-8 rounded-full bg-accent-600 flex items-center justify-center text-white text-xs font-bold ring-2 ring-gold-100/20">
                       {user?.image ? (
                         <img src={user.image} alt="" className="w-8 h-8 rounded-full object-cover" />
                       ) : (
                         user?.name?.charAt(0) || 'U'
                       )}
                     </div>
-                    <ChevronDown className={cn('w-4 h-4 text-surface-400 transition-transform duration-200', userMenuOpen && 'rotate-180')} />
+                    <ChevronDown className={cn('w-4 h-4 text-surface-500 transition-transform duration-200', userMenuOpen && 'rotate-180')} />
                   </button>
 
-                  {/* Mobile: user avatar */}
                   <button
                     onClick={openUserMenu}
-                    className="md:hidden p-1 rounded-xl hover:bg-surface-100 dark:hover:bg-surface-800 transition-all duration-200"
+                    className="md:hidden p-1 rounded-lg hover:bg-surface-800 transition-all duration-200"
                     aria-label="حسابي"
                   >
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-sm font-bold ring-2 ring-gold-400/40">
+                    <div className="w-9 h-9 rounded-full bg-accent-600 flex items-center justify-center text-white text-sm font-bold ring-2 ring-gold-100/30">
                       {user?.image ? (
                         <img src={user.image} alt="" className="w-9 h-9 rounded-full object-cover" />
                       ) : (
@@ -258,7 +249,7 @@ export function Header() {
                 </>
               ) : (
                 <div className="hidden sm:flex items-center gap-1.5">
-                  <Link href="/auth/login" className="px-3.5 py-1.5 rounded-xl text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-all duration-200">
+                  <Link href="/auth/login" className="px-3.5 py-1.5 rounded-lg text-sm font-semibold text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-all duration-200">
                     دخول
                   </Link>
                   <Link href="/auth/register" className="btn-primary text-sm px-3.5 py-1.5">
@@ -267,10 +258,10 @@ export function Header() {
                 </div>
               )}
 
-              {/* Sell button */}
+              {/* Sell button — gold */}
               <Link
                 href="/cars/add"
-                className="flex items-center gap-1.5 rounded-xl bg-gradient-gold text-primary-900 font-bold text-sm px-4 py-2 shadow-gold hover:shadow-gold-lg active:scale-[0.97] transition-all duration-200"
+                className="flex items-center gap-1.5 rounded-lg bg-gold-100 text-gold-900 font-bold text-sm px-4 py-2 shadow-gold hover:shadow-gold-lg active:scale-[0.97] transition-all duration-200"
               >
                 <Plus className="w-4 h-4" strokeWidth={2.5} />
                 <span className="hidden sm:inline">بيع سيارتك</span>
@@ -280,13 +271,13 @@ export function Header() {
         </div>
       </header>
 
-      {/* ── "More" dropdown portal (renders OUTSIDE the header) ── */}
+      {/* "More" dropdown */}
       {moreOpen && (
         <div
           ref={moreMenuRef}
-          className="fixed z-[70] w-60 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 shadow-soft-xl overflow-hidden"
+          className="fixed z-[70] w-60 rounded-xl border border-surface-700/60 bg-surface-800 shadow-soft-xl overflow-hidden"
         >
-          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-gold opacity-80" />
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gold-100 opacity-80" />
           <div className="p-1.5">
             {secondaryLinks.map((link) => {
               const Icon = link.icon;
@@ -297,10 +288,10 @@ export function Header() {
                   href={link.href}
                   onClick={() => setMoreOpen(false)}
                   className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200',
                     active
-                      ? 'text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-500/10'
-                      : 'text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700'
+                      ? 'text-accent-300 bg-accent-500/15'
+                      : 'text-surface-400 hover:bg-surface-700/50'
                   )}
                 >
                   <Icon className="w-4 h-4" />
@@ -312,17 +303,16 @@ export function Header() {
         </div>
       )}
 
-      {/* ── User dropdown portal (renders OUTSIDE the header) ── */}
+      {/* User dropdown */}
       {userMenuOpen && isAuthenticated && (
         <div
           ref={userMenuRef}
-          className="fixed z-[70] w-64 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 shadow-soft-xl overflow-hidden"
+          className="fixed z-[70] w-64 rounded-xl border border-surface-700/60 bg-surface-800 shadow-soft-xl overflow-hidden"
         >
-            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-gold opacity-80" />
-            {/* User header */}
-            <div className="p-4 border-b border-surface-100 dark:border-surface-700 bg-gradient-to-br from-primary-50/50 to-transparent dark:from-primary-500/5">
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gold-100 opacity-80" />
+            <div className="p-4 border-b border-surface-700/50 bg-accent-500/5">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-sm font-bold ring-2 ring-gold-400/30">
+                <div className="w-10 h-10 rounded-full bg-accent-600 flex items-center justify-center text-white text-sm font-bold ring-2 ring-gold-100/20">
                   {user?.image ? (
                     <img src={user.image} alt="" className="w-10 h-10 rounded-full object-cover" />
                   ) : (
@@ -330,7 +320,7 @@ export function Header() {
                   )}
                 </div>
                 <div className="min-w-0">
-                  <p className="font-bold text-surface-900 dark:text-white text-sm truncate">{user?.name}</p>
+                  <p className="font-bold text-surface-200 text-sm truncate">{user?.name}</p>
                   <p className="text-xs text-surface-500 truncate">{user?.email}</p>
                 </div>
               </div>
@@ -343,7 +333,7 @@ export function Header() {
                     key={item.href}
                     href={item.href}
                     onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700 transition-all duration-200"
+                    className="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-surface-400 hover:bg-surface-700/50 transition-all duration-200"
                   >
                     <span className="flex items-center gap-3">
                       <Icon className="w-4 h-4" />
@@ -361,23 +351,23 @@ export function Header() {
                 <Link
                   href="/admin"
                   onClick={() => setUserMenuOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700 transition-all duration-200"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-surface-400 hover:bg-surface-700/50 transition-all duration-200"
                 >
                   <ShieldCheck className="w-4 h-4" />
                   لوحة التحكم
                 </Link>
               )}
             </div>
-            <div className="p-1.5 border-t border-surface-100 dark:border-surface-700">
+            <div className="p-1.5 border-t border-surface-700/50">
               <button
                 onClick={() => { logout(); setUserMenuOpen(false); }}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-accent-600 hover:bg-accent-50 dark:hover:bg-accent-500/10 w-full transition-all duration-200"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-error-400 hover:bg-error-500/10 w-full transition-all duration-200"
               >
                 <LogOut className="w-4 h-4" />
                 تسجيل خروج
               </button>
             </div>
-        </div>
+          </div>
       )}
     </>
   );

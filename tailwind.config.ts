@@ -10,62 +10,60 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // ===== Luxury Navy (Primary) — Mercedes/BMW inspired =====
-        primary: {
-          50: '#eef4ff',
-          100: '#d9e6ff',
-          200: '#bcd2ff',
-          300: '#8eb4ff',
-          400: '#598bff',
-          500: '#3366ff',
-          600: '#1e40af', // royal blue
-          700: '#1e3a8a', // navy (main brand)
-          800: '#172554', // deep navy
-          900: '#0f1f3d', // near-black navy
-          950: '#0a1428', // darkest navy
-        },
-        // ===== Gold (Accent) — luxury accent =====
-        gold: {
-          50: '#fbf6e9',
-          100: '#f5e9c6',
-          200: '#ecd592',
-          300: '#e0bd5c',
-          400: '#d4af37', // classic gold
-          500: '#c39826', // main gold
-          600: '#a8761c',
-          700: '#85591a',
-          800: '#70471b',
-          900: '#5f3b1c',
-          950: '#361f0e',
-        },
-        // ===== Neutral Surface (warmer, premium grays) =====
+        // ===== Velocity Elite Surface System =====
         surface: {
-          50: '#fafafa',
-          100: '#f4f4f5',
-          200: '#e4e4e7',
-          300: '#d4d4d8',
-          400: '#a1a1aa',
-          500: '#71717a',
-          600: '#52525b',
-          700: '#3f3f46',
-          800: '#1e2130', // dark cards
-          900: '#13151f', // dark bg
-          950: '#0a0c14', // darkest
+          50: '#f5f5f5',
+          100: '#e5e5e5',
+          200: '#d4d4d4',
+          300: '#c6c6cc',
+          400: '#909096',
+          500: '#737887',
+          600: '#45474c',
+          700: '#333535',
+          800: '#1e2020',
+          900: '#121414',
+          950: '#0c0f0f',
         },
-        // ===== Accent (kept red for danger/CTA) =====
+        // ===== Primary — Subtle blue-gray tint =====
+        primary: {
+          50: '#f0f1f5',
+          100: '#dce1f3',
+          200: '#c1c6d7',
+          300: '#b7c4ff',
+          400: '#737887',
+          500: '#595e6c',
+          600: '#414754',
+          700: '#2b303d',
+          800: '#161c28',
+          900: '#030712',
+        },
+        // ===== Secondary — Gold / Amber =====
+        gold: {
+          50: '#ffdf9f',
+          100: '#ffc640',
+          200: '#f9bd22',
+          300: '#e3aa00',
+          400: '#d49b00',
+          500: '#b38600',
+          600: '#8a6800',
+          700: '#5c4300',
+          800: '#402d00',
+          900: '#261a00',
+        },
+        // ===== Tertiary — Blue =====
         accent: {
-          50: '#fff1f1',
-          100: '#ffe0e0',
-          200: '#ffc5c5',
-          300: '#ff9d9d',
-          400: '#ff6464',
-          500: '#f83b3b',
-          600: '#e51d1d',
-          700: '#c11414',
-          800: '#a01414',
-          900: '#841818',
-          950: '#480505',
+          50: '#dce1ff',
+          100: '#b7c4ff',
+          200: '#93a8ff',
+          300: '#6b85f6',
+          400: '#456df6',
+          500: '#1d4ed8',
+          600: '#0039b5',
+          700: '#002682',
+          800: '#001551',
+          900: '#000523',
         },
+        // ===== Status Colors =====
         success: {
           50: '#ecfdf3',
           100: '#d1fadf',
@@ -90,37 +88,55 @@ const config: Config = {
           800: '#93370d',
           900: '#7a2e0e',
         },
+        error: {
+          50: '#ffdad6',
+          100: '#ffb4ab',
+          200: '#ff8a7d',
+          300: '#ff6456',
+          400: '#ff3b30',
+          500: '#ef4444',
+          600: '#dc2626',
+          700: '#b91c1c',
+          800: '#991b1b',
+          900: '#690005',
+        },
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
-        arabic: ["Tajawal", "Inter", "system-ui", "sans-serif"],
-        display: ["Tajawal", "Inter", "system-ui", "sans-serif"],
+        sans: ["'Be Vietnam Pro'", "'IBM Plex Sans Arabic'", "system-ui", "sans-serif"],
+        display: ["'IBM Plex Sans'", "'IBM Plex Sans Arabic'", "'Be Vietnam Pro'", "system-ui", "sans-serif"],
+        arabic: ["'IBM Plex Sans Arabic'", "'Be Vietnam Pro'", "system-ui", "sans-serif"],
+        mono: ["'JetBrains Mono'", "monospace"],
       },
       borderRadius: {
+        'sm': '0.125rem',
+        DEFAULT: '0.25rem',
+        'md': '0.375rem',
+        'lg': '0.5rem',
+        'xl': '0.75rem',
         '2xl': '1rem',
-        '3xl': '1.25rem',
-        '4xl': '1.5rem',
+        '3xl': '1.5rem',
+        '4xl': '2rem',
+        'full': '9999px',
       },
       boxShadow: {
-        // soft layered shadows for premium feel
-        'soft': '0 1px 2px rgba(15, 31, 61, 0.04), 0 4px 12px -2px rgba(15, 31, 61, 0.06)',
-        'soft-md': '0 2px 4px rgba(15, 31, 61, 0.04), 0 8px 24px -4px rgba(15, 31, 61, 0.1)',
-        'soft-lg': '0 4px 8px rgba(15, 31, 61, 0.05), 0 16px 40px -8px rgba(15, 31, 61, 0.14)',
-        'soft-xl': '0 8px 16px rgba(15, 31, 61, 0.06), 0 24px 64px -12px rgba(15, 31, 61, 0.18)',
-        'inner-soft': 'inset 0 1px 2px 0 rgba(15, 31, 61, 0.04)',
-        // brand glows
-        'primary': '0 6px 20px -4px rgba(30, 58, 138, 0.45)',
-        'primary-lg': '0 12px 32px -6px rgba(30, 58, 138, 0.55)',
-        'gold': '0 6px 20px -4px rgba(212, 175, 55, 0.45)',
-        'gold-lg': '0 12px 32px -6px rgba(212, 175, 55, 0.55)',
-        // premium card lift
-        'card': '0 1px 3px rgba(15, 31, 61, 0.05), 0 10px 30px -10px rgba(15, 31, 61, 0.12)',
-        'card-hover': '0 4px 8px rgba(15, 31, 61, 0.06), 0 24px 48px -12px rgba(15, 31, 61, 0.22)',
+        'soft': '0 1px 4px rgba(0, 0, 0, 0.08)',
+        'soft-md': '0 2px 8px rgba(0, 0, 0, 0.1)',
+        'soft-lg': '0 4px 16px rgba(0, 0, 0, 0.12)',
+        'soft-xl': '0 8px 32px rgba(0, 0, 0, 0.16)',
+        'inner-soft': 'inset 0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+        'primary': '0 8px 24px -6px rgba(29, 78, 216, 0.4)',
+        'primary-lg': '0 16px 40px -8px rgba(29, 78, 216, 0.5)',
+        'gold': '0 8px 24px -6px rgba(251, 191, 36, 0.3)',
+        'gold-lg': '0 16px 40px -8px rgba(251, 191, 36, 0.4)',
+        'card': '0 1px 4px rgba(0, 0, 0, 0.06), 0 8px 24px -8px rgba(0, 0, 0, 0.08)',
+        'card-hover': '0 4px 12px rgba(0, 0, 0, 0.1), 0 24px 48px -12px rgba(0, 0, 0, 0.18)',
       },
       backgroundImage: {
-        'gradient-luxury': 'linear-gradient(135deg, #1e3a8a 0%, #172554 50%, #0f1f3d 100%)',
-        'gradient-gold': 'linear-gradient(135deg, #e0bd5c 0%, #d4af37 50%, #c39826 100%)',
-        'gradient-shine': 'linear-gradient(110deg, transparent 25%, rgba(212,175,55,0.15) 50%, transparent 75%)',
+        'gradient-luxury': 'linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%)',
+        'gradient-gold': 'linear-gradient(135deg, #ffc640 0%, #e3aa00 100%)',
+        'gradient-shine': 'linear-gradient(110deg, transparent 25%, rgba(251,191,36,0.12) 50%, transparent 75%)',
+        'gradient-dark': 'linear-gradient(180deg, #030712 0%, #121414 100%)',
+        'gradient-hero': 'linear-gradient(135deg, rgba(3,7,18,0.92) 0%, rgba(18,20,20,0.85) 50%, rgba(3,7,18,0.92) 100%)',
       },
       animation: {
         'fade-in': 'fadeIn 0.6s ease-out',
@@ -131,6 +147,7 @@ const config: Config = {
         'glow': 'glow 3s ease-in-out infinite alternate',
         'shimmer': 'shimmer 2.5s ease-in-out infinite',
         'shine': 'shine 3s ease-in-out infinite',
+        'pulse-slow': 'pulse 3s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -154,8 +171,8 @@ const config: Config = {
           '50%': { transform: 'translateY(-8px)' },
         },
         glow: {
-          '0%': { boxShadow: '0 0 20px rgba(30, 58, 138, 0.2)' },
-          '100%': { boxShadow: '0 0 40px rgba(30, 58, 138, 0.35)' },
+          '0%': { boxShadow: '0 0 20px rgba(29, 78, 216, 0.2)' },
+          '100%': { boxShadow: '0 0 40px rgba(29, 78, 216, 0.35)' },
         },
         shimmer: {
           '0%': { backgroundPosition: '200% 0' },
