@@ -34,20 +34,26 @@ export default function AdminPage() {
   const [notifOpen, setNotifOpen] = useState(false);
 
   useEffect(() => {
-    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
-    fetch('/api/admin/stats', { headers: { Authorization: `Bearer ${useAuth.getState().token}` } })
+    if (!_hydrated) return;
+    if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/'); return; }
+    const token = useAuth.getState().token;
+    if (!token) return;
+    fetch('/api/admin/stats', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(data => { if (data.success) setStats(data.data); })
       .catch(() => {});
-  }, [isAuthenticated, user, router]);
+  }, [_hydrated, isAuthenticated, user, router]);
 
   useEffect(() => {
-    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) return;
-    fetch('/api/admin/notifications', { headers: { Authorization: `Bearer ${useAuth.getState().token}` } })
+    if (!_hydrated) return;
+    if (!isAuthenticated || user?.role !== 'ADMIN') return;
+    const token = useAuth.getState().token;
+    if (!token) return;
+    fetch('/api/admin/notifications', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(data => { if (data.success) { setNotifications(data.data.notifications); setUnreadCount(data.data.unreadCount); } })
       .catch(() => {});
-  }, [isAuthenticated, user]);
+  }, [_hydrated, isAuthenticated, user]);
 
   const markAllRead = async () => {
     try {
