@@ -60,10 +60,11 @@ export default function AdminCarsPage() {
   };
 
   useEffect(() => {
-    if (_hydrated && (!isAuthenticated || user?.role !== 'ADMIN')) { router.push('/'); return; }
-    loadCars('', statusFilter);
+    if (!_hydrated) return;
+    if (!isAuthenticated || user?.role !== 'ADMIN') { router.push('/'); return; }
+    loadCars(search, statusFilter);
     loadCounts();
-  }, [isAuthenticated, user, router]);
+  }, [_hydrated, isAuthenticated, user, router]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,6 +194,7 @@ export default function AdminCarsPage() {
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-800/50">
                   <tr>
+                    <th className="text-right p-4 text-sm text-gray-500">الصورة</th>
                     <th className="text-right p-4 text-sm text-gray-500">السيارة</th>
                     <th className="text-right p-4 text-sm text-gray-500">الرمز</th>
                     <th className="text-right p-4 text-sm text-gray-500">البائع</th>
@@ -205,6 +207,27 @@ export default function AdminCarsPage() {
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {cars.map(car => (
                   <tr key={car.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30">
+                    <td className="p-4">
+                      {car.images && car.images.length > 0 ? (
+                        <img
+                          src={car.images[0].thumbnail || car.images[0].url}
+                          alt={`${car.brand?.nameAr} ${car.model?.nameAr}`}
+                          className="w-16 h-12 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
+                          onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-car.svg'; }}
+                        />
+                      ) : car.coverImage ? (
+                        <img
+                          src={car.coverImage}
+                          alt={`${car.brand?.nameAr} ${car.model?.nameAr}`}
+                          className="w-16 h-12 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
+                          onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-car.svg'; }}
+                        />
+                      ) : (
+                        <div className="w-16 h-12 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center border border-gray-200 dark:border-gray-700">
+                          <Car className="w-5 h-5 text-gray-400" />
+                        </div>
+                      )}
+                    </td>
                     <td className="p-4 font-medium text-gray-900 dark:text-white">{car.brand?.nameAr} {car.model?.nameAr} {car.year}</td>
                     <td className="p-4">
                       {car.refCode ? (
@@ -277,7 +300,7 @@ export default function AdminCarsPage() {
                 ))}
                 {!loading && cars.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-gray-400">
+                    <td colSpan={8} className="p-8 text-center text-gray-400">
                       {statusFilter === 'PENDING' ? 'لا توجد سيارات قيد المراجعة' : statusFilter === 'APPROVED' ? 'لا توجد سيارات مقبولة' : 'لا توجد سيارات مرفوضة'}
                     </td>
                   </tr>

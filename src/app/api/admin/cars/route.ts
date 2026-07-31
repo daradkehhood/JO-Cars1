@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const status = request.nextUrl.searchParams.get('status');
     const search = request.nextUrl.searchParams.get('search') || '';
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { deletedAt: null };
     if (status) where.status = status;
 
     if (search.trim()) {
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
         brand: { select: { nameAr: true, nameEn: true } },
         model: { select: { nameAr: true, nameEn: true } },
         user: { select: { id: true, name: true, email: true, dealerName: true } },
-        images: { take: 1 },
+        images: { take: 1, orderBy: { order: 'asc' } },
       },
     });
     return successResponse(cars);
