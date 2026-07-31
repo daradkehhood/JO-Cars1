@@ -91,6 +91,7 @@ export default function AddCarPage() {
   const { getRootProps, getInputProps } = useDropzone({
     onDrop, accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.webp'] },
     maxSize: 10485760, maxFiles: 20,
+    useFsAccessApi: false,
   });
 
   const removeImage = (index: number) => {

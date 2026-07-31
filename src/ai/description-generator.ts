@@ -32,6 +32,9 @@ interface DescriptionInput {
   hasWarranty?: boolean;
   hasServiceHistory?: boolean;
   isNegotiable?: boolean;
+  isDamaged?: boolean;
+  isPaintOriginal?: boolean;
+  trim?: string;
 }
 
 interface LLMDescriptionResult {
@@ -67,11 +70,12 @@ async function generateDescriptionWithLLM(input: DescriptionInput): Promise<LLMD
   try {
     const systemPrompt = getSystemPrompt('description');
 
-    const userMessage = `اكتب وصفاً جذاباً ومحترفاً لهذه السيارة:
+    const userMessage = `اكتب وصفاً احترافياً مبهراً لهذه السيارة بأسلوب رسمي راقٍ:
 
 المواصفات:
 - الماركة: ${input.brand}
 - الموديل: ${input.model}
+${input.trim ? `- الفئة: ${input.trim}` : ''}
 - السنة: ${input.year}
 - الكيلومترات: ${input.kilometers.toLocaleString()} كم
 - نوع الوقود: ${input.fuelType}
@@ -82,17 +86,30 @@ async function generateDescriptionWithLLM(input: DescriptionInput): Promise<LLMD
 - نوع الهيكل: ${input.bodyType || 'غير محدد'}
 - سعة المحرك: ${input.engineCapacity || 'غير محدد'}
 - عدد الملاك: ${input.ownerCount || 1}
-- ضمان: ${input.hasWarranty ? 'نعم' : 'لا'}
-- سجل صيانة: ${input.hasServiceHistory ? 'نعم' : 'لا'}
-- قابل للتفاوض: ${input.isNegotiable ? 'نعم' : 'لا'}
+- ضمان: ${input.hasWarranty ? 'نعم — السيارة لا تزال تحت الضمان الوكيلي' : 'لا يوجد ضمان'}
+- سجل صيانة: ${input.hasServiceHistory ? 'نعم — مسجل صيانة كامل ودوري لدى الوكيل' : 'لا يوجد سجل صيانة'}
+- قابل للتفاوض: ${input.isNegotiable ? 'نعم — السعر قابل للتفاوض للجادين' : 'لا — السعر ثابت'}
+- دهان أصلي: ${input.isPaintOriginal === true ? 'نعم — الدهان أصلي بالكامل من الوكالة ولم يُعاد طلاؤه' : input.isPaintOriginal === false ? 'لا — تم إعادة طلاء السيارة' : 'غير محدد'}
+- حالة هيكلية: ${input.isDamaged ? 'السيارة مصدومة سابقاً — تم إصلاحها وتحتاج فحص دقيق' : 'السيارة سليمة من جميع الجوانب الهيكلية ولم تشهد أي حادث'}
 ${input.features.length > 0 ? `- المميزات: ${input.features.join('، ')}` : ''}
 ${input.currentDescription ? `- ملاحظات البائع: ${input.currentDescription}` : ''}
 
-اكتب وصفاً جذاباً بالعربية الفصحى المبسطة. اذكر الميزات الرئيسية. لا تبالغ. اختم بدعوة للتواصل.
+تعليمات الكتابة:
+1. اكتب وصفاً طويلاً ومفصلاً (200-350 كلمة على الأقل) يتضمن تحليلاً شاملاً لحالة السيارة
+2. استخدم أسلوباً رسمياً مهنياً يليق بسوق السيارات الفاخر — لا تستخدم عاميات
+3. ابدأ بمقدمة جذابة تلفت انتباه المشتري وتبرز أبرز ما في السيارة
+4. اشرح تفاصيل الحالة الفنية: المحرك، ناقل الحركة، الفرامل، الإطارات، التعليق
+5. اذكر المميزات الفريدة: الضمان، سجل الصيانة، الدهان الأصلي، عدد الملاك
+6. إذا كانت السيارة مصدومة سابقاً، اذكر ذلك بصراحة مع شرح ما تم إصلاحه
+7. إذا كان الدهان أصلياً، أبرز ذلك كنقطة قوة كبيرة
+8. إذا كان قابل للتفاوض، اذكر ذلك بأسلوب مهني
+9. اختم بدعوة احترافية للتواصل والمعاينة مع ذكر أن الجادين فقط مرحب بهم
+10. لا تبالغ في الوصف — كن واقعياً وصادقاً مع استخدم لغة جذابة
+11. استخدم فقرات منظمة وواضحة مع علامات ترقيم مناسبة
 
-أجب بالـ JSON فقط:
+أج ببالـ JSON فقط:
 {
-  "description": "<الوصف الكامل>",
+  "description": "<الوصف الكامل المفصل>",
   "tags": ["<وسم 1>", "<وسم 2>", ...]
 }`;
 
@@ -103,7 +120,7 @@ ${input.currentDescription ? `- ملاحظات البائع: ${input.currentDesc
 
     const result = await chatCompletionJSON<LLMDescriptionResult>(messages, {
       temperature: 0.7,
-      maxTokens: 1500,
+      maxTokens: 2500,
     });
 
     if (result && result.description && result.description.length > 50) {
@@ -125,17 +142,22 @@ function generateTemplate(input: DescriptionInput): { description: string; tags:
   const pitch = CONDITION_SALES_PITCH[conditionLabel] || `بحالة ${conditionLabel}`;
 
   const ownersText = input.ownerCount === 1 ? 'مالك واحد فقط' : input.ownerCount ? `${input.ownerCount} ملاك سابقين` : '';
-  const warrantyText = input.hasWarranty ? 'السيارة لا تزال تحت الضمان الوكيل.' : '';
-  const serviceText = input.hasServiceHistory ? 'يوجد سجل صيانة كامل لدى الوكيل.' : '';
-  const negotiationText = input.isNegotiable ? 'السعر قابل للتفاوض البسيط للجادين.' : 'السعر ثابت.';
+  const warrantyText = input.hasWarranty ? 'السيارة لا تزال تحت الضمان الوكيليلي.' : '';
+  const serviceText = input.hasServiceHistory ? 'يوجد سجل صيانة كامل ودوري لدى الوكيل.' : '';
+  const negotiationText = input.isNegotiable ? 'السعر قابل للتفاوض للجادين فقط.' : 'السعر ثابت.';
+  const damageText = input.isDamaged ? 'تنبيه: السيارة مصدومة سابقاً — تم إصلاحها بشكل كامل وتحتاج فحص دقيق قبل الشراء.' : '';
+  const paintText = input.isPaintOriginal === true ? 'الدهان أصلي بالكامل من الوكالة — لم يُعاد طلاء السيارة.' : input.isPaintOriginal === false ? 'الدهان غير أصلي — تم إعادة طلاء السيارة.' : '';
+  const trimText = input.trim ? ` — فئة ${input.trim}` : '';
   const featuresText = input.features?.length > 0 ? `تأتي هذه السيارة مزوّدة بمميزات بارزة: ${input.features.join('، ')}.` : '';
   const sellerNotes = input.currentDescription ? `ملاحظات البائع: ${input.currentDescription.trim()}` : '';
 
   const parts: string[] = [];
-  parts.push(`للبيع ${input.brand} ${input.model} ${input.year} ${pitch}.`);
+  parts.push(`للبيع ${input.brand} ${input.model} ${input.year}${trimText} ${pitch}.`);
   parts.push(`السيارة ${input.color || 'بلون أنيق'}, تعمل بوقود ${fuelLabel}، قير ${transLabel}${input.engineCapacity ? ` بسعة محرك ${input.engineCapacity}` : ''}.`);
   parts.push(`عدد الكيلومترات: ${input.kilometers.toLocaleString()} كم فقط.`);
   if (ownersText) parts.push(ownersText + '.');
+  if (paintText) parts.push(paintText);
+  if (damageText) parts.push(damageText);
   parts.push(`السعر: ${input.price.toLocaleString()} دينار أردني. ${negotiationText}`);
   if (warrantyText) parts.push(warrantyText);
   if (serviceText) parts.push(serviceText);

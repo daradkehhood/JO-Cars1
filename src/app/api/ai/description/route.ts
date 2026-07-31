@@ -22,6 +22,15 @@ export async function POST(request: NextRequest) {
       price: body.price || 0,
       features: [],
       currentDescription: body.description,
+      trim: body.trim || '',
+      bodyType: body.bodyType || '',
+      engineCapacity: body.engineCapacity || '',
+      ownerCount: body.ownerCount || 1,
+      hasWarranty: body.hasWarranty || false,
+      hasServiceHistory: body.hasServiceHistory || false,
+      isNegotiable: body.isNegotiable || false,
+      isDamaged: body.isDamaged || false,
+      isPaintOriginal: body.isPaintOriginal !== undefined ? body.isPaintOriginal : true,
     });
 
     return successResponse(result.data);
