@@ -6,8 +6,6 @@ import { successResponse, errorResponse, unauthorizedResponse, validationErrorRe
 import { generateSlug } from '@/lib/utils';
 import { generateRefCode } from '@/lib/generate-refcode';
 import { uploadMultipleImages, uploadImage } from '@/lib/cloudinary';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
 import { analyzeCarPrice } from '@/ai/price-analysis';
 import { notifyAdmins } from '@/lib/admin-notify';
 
@@ -222,6 +220,22 @@ export async function POST(request: NextRequest) {
     let uploadedImages: { url: string }[] = [];
     let coverUrl: string | undefined;
 
+    const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+    const toDataUri = async (file: File): Promise<string> => {
+      if (!ALLOWED_MIME.includes(file.type)) {
+        throw new Error('نوع الملف غير مسموح. الأنواع المسموحة: JPG, PNG, WebP, GIF');
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        throw new Error('حجم الملف يتجاوز الحد الأقصى (10MB)');
+      }
+      const bytes = await file.arrayBuffer();
+      if (!bytes || bytes.byteLength === 0) throw new Error('Empty file');
+      const base64 = Buffer.from(bytes).toString('base64');
+      return `data:${file.type};base64,${base64}`;
+    };
+
     try {
       if (hasCloudinary) {
         if (uploadedFiles.length > 0) {
@@ -236,36 +250,25 @@ export async function POST(request: NextRequest) {
           coverUrl = result.secure_url;
         }
       } else {
-        const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-        const MAX_FILE_SIZE = 10 * 1024 * 1024;
-
-        const saveLocalFile = async (file: File) => {
-          if (!ALLOWED_MIME.includes(file.type)) {
-            throw new Error('نوع الملف غير مسموح. الأنواع المسموحة: JPG, PNG, WebP, GIF');
-          }
-          if (file.size > MAX_FILE_SIZE) {
-            throw new Error('حجم الملف يتجاوز الحد الأقصى (10MB)');
-          }
-          const bytes = await file.arrayBuffer();
-          if (!bytes || bytes.byteLength === 0) throw new Error('Empty file');
-          const buffer = Buffer.from(bytes);
-          const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : file.type === 'image/gif' ? 'gif' : 'jpg';
-          const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-          const dir = path.join(process.cwd(), 'public', 'uploads');
-          await mkdir(dir, { recursive: true });
-          const filePath = path.join(dir, filename);
-          await writeFile(filePath, buffer);
-          return `/uploads/${filename}`;
-        };
         for (const img of uploadedFiles) {
-          const url = await saveLocalFile(img);
-          uploadedImages.push({ url });
+          const dataUri = await toDataUri(img);
+          uploadedImages.push({ url: dataUri });
         }
-        if (coverFile) coverUrl = await saveLocalFile(coverFile);
+        if (coverFile) coverUrl = await toDataUri(coverFile);
       }
     } catch (uploadErr) {
-      console.error('Image upload failed:', uploadErr);
-      return errorResponse('فشل رفع الصور. تأكد من صيغة الصور (JPG/PNG/WebP) وحجمها (أقل من 10MB)', 400);
+      console.error('Cloudinary upload failed, falling back to data URIs:', uploadErr);
+      try {
+        uploadedImages = [];
+        for (const img of uploadedFiles) {
+          const dataUri = await toDataUri(img);
+          uploadedImages.push({ url: dataUri });
+        }
+        if (coverFile) coverUrl = await toDataUri(coverFile);
+      } catch (fallbackErr) {
+        console.error('Image upload failed:', fallbackErr);
+        return errorResponse('فشل رفع الصور. تأكد من صيغة الصور (JPG/PNG/WebP) وحجمها (أقل من 10MB)', 400);
+      }
     }
 
     const slug = generateSlug(data.brandId as string, data.modelId as string, data.year as number, Date.now().toString());
