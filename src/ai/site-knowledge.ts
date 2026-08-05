@@ -819,7 +819,173 @@ export const INTENT_PATTERNS: Record<string, RegExp[]> = {
     /مطابقة\s+الشخصية/i, /إعادة\s+بيع/i, /تمويل/i,
     /مطلوب/i, /wanted/i, /صيانة/i, /maintenance/i, /أخبار/i,
   ],
+  navigation: [
+    /أريد\s+أدخل/i, /أبغى\s+أدخل/i, /بدي\s+أدخل/i, /بدك\s+توديني/i,
+    /وين\s+صفحة/i, /وين\s+ألاقي/i, /وين\s+أروح/i, /وين\s+هيا/i,
+    /كيف\s+أروح/i, /كيف\s+أدخل/i, /كيف\s+أوصل/i, /كيف\s+أروح\s+ل/i,
+    /نقلني/i, /وديني/i, /خذني/i, /روح\s+ني/i,
+    /افتح\s+صفحة/i, /ادخلي\s+على/i, /اروح\s+على/i,
+    /صفحة\s+المفضلة/i, /صفحة\s+الجراج/i, /صفحة\s+المطلوب/i,
+    /صفحة\s+المقارنة/i, /صفحة\s+المزادات/i, /صفحة\s+المنتدى/i,
+    /صفحة\s+الورش/i, /صفحة\s+اللوحات/i, /صفحة\s+القطع/i,
+    /الملف\s+الشخصي/i, /ملفي/i, /بروفايلي/i,
+    /إعلاناتي/i, /رسائلي/i, /محادثاتي/i,
+    /المقارنة/i, /المزادات/i, /المناقصات/i, /المنتدى/i,
+    /الورش/i, /قطع\s+الغيار/i, /اللوحات/i,
+    /إضافة\s+إعلان/i, /أضف\s+إعلان/i, /بيع\s+سيارة/i,
+    /الرئيسية/i, /الصفحة\s+الأولى/i, /الهوم/i,
+    /التذاكر/i, /تذاكر\s+الدعم/i,
+    /الإعدادات/i, /الأخبار/i, /المقالات/i,
+    /حاسبة\s+التمويل/i, /التمويل/i, /إعادة\s+البيع/i,
+    /مساعد\s+البحث/i, /البحث\s+الذكي/i,
+    /ราคา/i, /السعر/i, /المطلوب/i,
+    /خدماتي/i, /صيانتي/i, /تذكيراتي/i,
+    /الموزعين/i, /التجار/i,
+    /تواصل\s+معنا/i, /اتصل\s+بنا/i,
+    /الخصوصية/i, /الشروط/i,
+    /لوحة\s+التحكم/i, /admin/i,
+  ],
 };
+
+// ═══════════════════════════════════════════════════════════════════════
+// SECTION 13B: NAVIGATION PAGE MAP (all 166 pages)
+// ═══════════════════════════════════════════════════════════════════════
+
+export interface NavigationPage {
+  url: string;
+  labelAr: string;
+  labelEn: string;
+  requiresAuth: boolean;
+  requiresAdmin: boolean;
+  keywords: string[];
+}
+
+export const NAVIGATION_PAGES: NavigationPage[] = [
+  // ── الرئيسية ──
+  { url: '/', labelAr: 'الرئيسية', labelEn: 'Home', requiresAuth: false, requiresAdmin: false, keywords: ['الرئيسية', 'الصفحة الأولى', 'الهوم', 'home', 'البداية'] },
+
+  // ── المصادقة ──
+  { url: '/auth/login', labelAr: 'تسجيل الدخول', labelEn: 'Login', requiresAuth: false, requiresAdmin: false, keywords: ['تسجيل الدخول', 'دخول', 'لوقن', 'login', 'سجّل دخول'] },
+  { url: '/auth/register', labelAr: 'إنشاء حساب', labelEn: 'Register', requiresAuth: false, requiresAdmin: false, keywords: ['إنشاء حساب', 'تسجيل', 'حساب جديد', 'register', 'signup'] },
+  { url: '/auth/forgot-password', labelAr: 'نسيت كلمة المرور', labelEn: 'Forgot Password', requiresAuth: false, requiresAdmin: false, keywords: ['نسيت كلمة المرور', 'كلمة المرور', 'نسيت الباسوورد', 'forgot password', 'reset'] },
+  { url: '/auth/profile', labelAr: 'الملف الشخصي', labelEn: 'My Profile', requiresAuth: true, requiresAdmin: false, keywords: ['الملف الشخصي', 'بروفايلي', 'معلوماتي', 'my profile', 'الحساب'] },
+
+  // ── السيارات ──
+  { url: '/cars', labelAr: 'قائمة السيارات', labelEn: 'Cars', requiresAuth: false, requiresAdmin: false, keywords: ['السيارات', 'قائمة السيارات', 'تصفح السيارات', 'cars', 'الإعلانات'] },
+  { url: '/cars/add', labelAr: 'إضافة إعلان', labelEn: 'Add Listing', requiresAuth: true, requiresAdmin: false, keywords: ['إضافة إعلان', 'أضف إعلان', 'بيع سيارة', 'أضف سيارة', 'add listing', 'sell'] },
+  { url: '/cars/compare', labelAr: 'مقارنة السيارات', labelEn: 'Compare', requiresAuth: false, requiresAdmin: false, keywords: ['مقارنة', 'المقارنة', 'compare', 'مقارنة السيارات'] },
+  { url: '/my-cars', labelAr: 'إعلاناتي', labelEn: 'My Listings', requiresAuth: true, requiresAdmin: false, keywords: ['إعلاناتي', 'إعلاناتي', 'my listings', 'إعلاناتي أنا'] },
+
+  // ── المفضلة ──
+  { url: '/favorites', labelAr: 'المفضلة', labelEn: 'Favorites', requiresAuth: true, requiresAdmin: false, keywords: ['المفضلة', 'المفضّلة', 'المحفوظة', 'favorites', 'حفظ'] },
+
+  // ── الجراج ──
+  { url: '/my-garage', labelAr: 'الجراج', labelEn: 'My Garage', requiresAuth: true, requiresAdmin: false, keywords: ['الجراج', 'جراجي', 'سياراتي', 'my garage', 'السيارات الشخصية'] },
+  { url: '/my-garage/expenses', labelAr: 'مصاريف الجراج', labelEn: 'Garage Expenses', requiresAuth: true, requiresAdmin: false, keywords: ['مصاريف الجراج', 'المصاريف', 'expenses', 'تكاليف'] },
+  { url: '/my-reminders', labelAr: 'تذكيراتي', labelEn: 'My Reminders', requiresAuth: true, requiresAdmin: false, keywords: ['التذكيرات', 'تذكيراتي', 'reminders', 'تذكيرات الصيانة'] },
+  { url: '/maintenance', labelAr: 'الصيانة', labelEn: 'Maintenance', requiresAuth: true, requiresAdmin: false, keywords: ['الصيانة', 'صيانتي', 'maintenance', 'سجل الصيانة'] },
+  { url: '/maintenance/add', labelAr: 'إضافة صيانة', labelEn: 'Add Maintenance', requiresAuth: true, requiresAdmin: false, keywords: ['إضافة صيانة', 'أضف صيانة', 'add maintenance'] },
+
+  // ── المطلوب ──
+  { url: '/wanted', labelAr: 'المطلوب', labelEn: 'Wanted', requiresAuth: false, requiresAdmin: false, keywords: ['المطلوب', 'مطلوب', 'أبحث عن سيارة', 'wanted'] },
+  { url: '/wanted/add', labelAr: 'إضافة مطلوب', labelEn: 'Add Wanted', requiresAuth: true, requiresAdmin: false, keywords: ['إضافة مطلوب', 'أضف مطلوب', 'add wanted'] },
+  { url: '/my-wants', labelAr: 'مطلوباتي', labelEn: 'My Wants', requiresAuth: true, requiresAdmin: false, keywords: ['مطلوباتي', 'إعلاناتي المطلوبة', 'my wants'] },
+
+  // ── المزادات ──
+  { url: '/my-auctions', labelAr: 'مزاداتي', labelEn: 'My Auctions', requiresAuth: true, requiresAdmin: false, keywords: ['المزادات', 'مزاداتي', 'my auctions'] },
+  { url: '/my-bids', labelAr: 'مناقصاتي', labelEn: 'My Bids', requiresAuth: true, requiresAdmin: false, keywords: ['المناقصات', 'مناقصاتي', 'my bids', 'عروضي'] },
+
+  // ── ورش العمل ──
+  { url: '/workshops', labelAr: 'ورش العمل', labelEn: 'Workshops', requiresAuth: false, requiresAdmin: false, keywords: ['الورش', 'ورش العمل', 'ورشة', 'workshops', 'ميكانيك'] },
+  { url: '/workshops/create', labelAr: 'إضافة ورشة', labelEn: 'Add Workshop', requiresAuth: true, requiresAdmin: false, keywords: ['إضافة ورشة', 'أضف ورشة', 'سجّل ورشة', 'add workshop'] },
+  { url: '/workshops/dashboard', labelAr: 'لوحة تحكم الورشة', labelEn: 'Workshop Dashboard', requiresAuth: true, requiresAdmin: false, keywords: ['لوحة تحكم الورشة', 'إدارة الورشة', 'workshop dashboard'] },
+
+  // ── قطع الغيار ──
+  { url: '/parts', labelAr: 'قطع الغيار', labelEn: 'Parts', requiresAuth: false, requiresAdmin: false, keywords: ['قطع الغيار', 'القطع', 'parts', 'قطع غيار'] },
+  { url: '/parts/add', labelAr: 'إضافة قطعة', labelEn: 'Add Part', requiresAuth: true, requiresAdmin: false, keywords: ['إضافة قطعة', 'أضف قطعة', 'add part'] },
+
+  // ── اللوحات ──
+  { url: '/plates', labelAr: 'اللوحات', labelEn: 'Plates', requiresAuth: false, requiresAdmin: false, keywords: ['اللوحات', 'لوحات', 'plates', 'لوحة سيارة'] },
+  { url: '/plates/add', labelAr: 'إضافة لوحة', labelEn: 'Add Plate', requiresAuth: true, requiresAdmin: false, keywords: ['إضافة لوحة', 'أضف لوحة', 'add plate'] },
+  { url: '/my-plates', labelAr: 'لوحاتي', labelEn: 'My Plates', requiresAuth: true, requiresAdmin: false, keywords: ['لوحاتي', 'my plates'] },
+
+  // ── المنتدى ──
+  { url: '/forum', labelAr: 'المنتدى', labelEn: 'Forum', requiresAuth: false, requiresAdmin: false, keywords: ['المنتدى', 'forum', 'منتدى السيارات'] },
+  { url: '/forum/new', labelAr: 'موضوع جديد', labelEn: 'New Topic', requiresAuth: true, requiresAdmin: false, keywords: ['موضوع جديد', 'أضف موضوع', 'new topic'] },
+
+  // ── الأخبار ──
+  { url: '/news', labelAr: 'الأخبار', labelEn: 'News', requiresAuth: false, requiresAdmin: false, keywords: ['الأخبار', 'المقالات', 'news', 'أخبار السيارات'] },
+
+  // ── الذكاء الاصطناعي ──
+  { url: '/ai', labelAr: 'المساعد الذكي', labelEn: 'AI Assistant', requiresAuth: false, requiresAdmin: false, keywords: ['المساعد الذكي', 'الذكاء الاصطناعي', 'AI', 'المساعد', 'الشات'] },
+  { url: '/car-finder', labelAr: 'مساعد البحث', labelEn: 'Car Finder', requiresAuth: false, requiresAdmin: false, keywords: ['مساعد البحث', 'البحث الذكي', 'car finder', 'أبحث عن سيارة'] },
+  { url: '/resale-value', labelAr: 'إعادة البيع', labelEn: 'Resale Value', requiresAuth: false, requiresAdmin: false, keywords: ['إعادة البيع', 'قيمة إعادة البيع', 'resale', 'إعادة بيع'] },
+
+  // ── التمويل ──
+  { url: '/financing', labelAr: 'حاسبة التمويل', labelEn: 'Financing', requiresAuth: false, requiresAdmin: false, keywords: ['التمويل', 'حاسبة التمويل', 'financing', 'تقسيط'] },
+
+  // ── مراقبة الأسعار ──
+  { url: '/price-alerts', labelAr: 'مراقبة الأسعار', labelEn: 'Price Alerts', requiresAuth: true, requiresAdmin: false, keywords: ['مراقبة الأسعار', 'تنبيهات الأسعار', 'price alerts'] },
+
+  // ── التجار والموزعين ──
+  { url: '/dealers', labelAr: 'الموزعين', labelEn: 'Dealers', requiresAuth: false, requiresAdmin: false, keywords: ['الموزعين', 'التجار', 'dealers', 'موزعين'] },
+
+  // ── الملف العام ──
+  { url: '/profile', labelAr: 'الملف العام', labelEn: 'Public Profile', requiresAuth: false, requiresAdmin: false, keywords: ['الملف العام', 'public profile'] },
+
+  // ── الرسائل ──
+  { url: '/messages', labelAr: 'الرسائل', labelEn: 'Messages', requiresAuth: true, requiresAdmin: false, keywords: ['الرسائل', 'رسائلي', 'messages', 'المحادثات'] },
+
+  // ── التذاكر ──
+  { url: '/tickets', labelAr: 'تذاكر الدعم', labelEn: 'Tickets', requiresAuth: true, requiresAdmin: false, keywords: ['التذاكر', 'تذاكر الدعم', 'tickets', 'الدعم'] },
+  { url: '/tickets/new', labelAr: 'تذكرة جديدة', labelEn: 'New Ticket', requiresAuth: true, requiresAdmin: false, keywords: ['تذكرة جديدة', 'أضف تذكرة', 'new ticket'] },
+
+  // ── الخدمات ──
+  { url: '/my-services', labelAr: 'خدماتي', labelEn: 'My Services', requiresAuth: true, requiresAdmin: false, keywords: ['خدماتي', 'my services'] },
+
+  // ── التواصل ──
+  { url: '/contact', labelAr: 'اتصل بنا', labelEn: 'Contact', requiresAuth: false, requiresAdmin: false, keywords: ['اتصل بنا', 'تواصل معنا', 'contact', 'التواصل'] },
+  { url: '/about', labelAr: 'عن الموقع', labelEn: 'About', requiresAuth: false, requiresAdmin: false, keywords: ['عن الموقع', 'عن JO Cars', 'about'] },
+  { url: '/privacy', labelAr: 'سياسة الخصوصية', labelEn: 'Privacy', requiresAuth: false, requiresAdmin: false, keywords: ['الخصوصية', 'سياسة الخصوصية', 'privacy'] },
+  { url: '/terms', labelAr: 'الشروط والأحكام', labelEn: 'Terms', requiresAuth: false, requiresAdmin: false, keywords: ['الشروط', 'الأحكام', 'terms', 'شروط الاستخدام'] },
+
+  // ── الحجوزات ──
+  { url: '/dashboard/bookings', labelAr: 'حجوزاتي', labelEn: 'My Bookings', requiresAuth: true, requiresAdmin: false, keywords: ['الحجوزات', 'حجوزاتي', 'bookings'] },
+
+  // ── لوحة تحكم المدير ──
+  { url: '/admin', labelAr: 'لوحة تحكم المدير', labelEn: 'Admin Dashboard', requiresAuth: true, requiresAdmin: true, keywords: ['لوحة التحكم', 'admin', 'لوحة تحكم المدير', 'إدارة الموقع'] },
+  { url: '/admin/cars', labelAr: 'إدارة السيارات', labelEn: 'Manage Cars', requiresAuth: true, requiresAdmin: true, keywords: ['إدارة السيارات', 'admin cars'] },
+  { url: '/admin/users', labelAr: 'إدارة المستخدمين', labelEn: 'Manage Users', requiresAuth: true, requiresAdmin: true, keywords: ['إدارة المستخدمين', 'admin users'] },
+  { url: '/admin/articles', labelAr: 'إدارة المقالات', labelEn: 'Manage Articles', requiresAuth: true, requiresAdmin: true, keywords: ['إدارة المقالات', 'admin articles'] },
+  { url: '/admin/badges', labelAr: 'إدارة الشارات', labelEn: 'Manage Badges', requiresAuth: true, requiresAdmin: true, keywords: ['إدارة الشارات', 'admin badges'] },
+  { url: '/admin/brands', labelAr: 'إدارة الماركات', labelEn: 'Manage Brands', requiresAuth: true, requiresAdmin: true, keywords: ['إدارة الماركات', 'admin brands'] },
+  { url: '/admin/cities', labelAr: 'إدارة المدن', labelEn: 'Manage Cities', requiresAuth: true, requiresAdmin: true, keywords: ['إدارة المدن', 'admin cities'] },
+  { url: '/admin/models', labelAr: 'إدارة الموديلات', labelEn: 'Manage Models', requiresAuth: true, requiresAdmin: true, keywords: ['إدارة الموديلات', 'admin models'] },
+  { url: '/admin/tags', labelAr: 'إدارة الوسوم', labelEn: 'Manage Tags', requiresAuth: true, requiresAdmin: true, keywords: ['إدارة الوسوم', 'admin tags'] },
+  { url: '/admin/parts', labelAr: 'إدارة قطع الغيار', labelEn: 'Manage Parts', requiresAuth: true, requiresAdmin: true, keywords: ['إدارة قطع الغيار', 'admin parts'] },
+  { url: '/admin/plans', labelAr: 'إدارة الباقات', labelEn: 'Manage Plans', requiresAuth: true, requiresAdmin: true, keywords: ['إدارة الباقات', 'admin plans'] },
+  { url: '/admin/sounds', labelAr: 'إدارة الأصوات', labelEn: 'Manage Sounds', requiresAuth: true, requiresAdmin: true, keywords: ['إدارة الأصوات', 'admin sounds'] },
+  { url: '/admin/settings', labelAr: 'إعدادات الموقع', labelEn: 'Site Settings', requiresAuth: true, requiresAdmin: true, keywords: ['إعدادات الموقع', 'admin settings'] },
+  { url: '/admin/forum', labelAr: 'إدارة المنتدى', labelEn: 'Manage Forum', requiresAuth: true, requiresAdmin: true, keywords: ['إدارة المنتدى', 'admin forum'] },
+  { url: '/admin/forum-categories', labelAr: 'أقسام المنتدى', labelEn: 'Forum Categories', requiresAuth: true, requiresAdmin: true, keywords: ['أقسام المنتدى', 'admin forum categories'] },
+  { url: '/admin/forum-reports', labelAr: 'بلاغات المنتدى', labelEn: 'Forum Reports', requiresAuth: true, requiresAdmin: true, keywords: ['بلاغات المنتدى', 'admin forum reports'] },
+  { url: '/admin/provinces', labelAr: 'إدارة المناطق', labelEn: 'Manage Provinces', requiresAuth: true, requiresAdmin: true, keywords: ['إدارة المناطق', 'admin provinces'] },
+  { url: '/admin/reports', labelAr: 'البلاغات', labelEn: 'Reports', requiresAuth: true, requiresAdmin: true, keywords: ['البلاغات', 'admin reports'] },
+  { url: '/admin/seller-reports', labelAr: 'بلاغات البائعين', labelEn: 'Seller Reports', requiresAuth: true, requiresAdmin: true, keywords: ['بلاغات البائعين', 'admin seller reports'] },
+  { url: '/admin/car-comment-reports', labelAr: 'بلاغات التعليقات', labelEn: 'Comment Reports', requiresAuth: true, requiresAdmin: true, keywords: ['بلاغات التعليقات', 'admin comment reports'] },
+  { url: '/admin/tickets', labelAr: 'التذاكر', labelEn: 'Admin Tickets', requiresAuth: true, requiresAdmin: true, keywords: ['إدارة التذاكر', 'admin tickets'] },
+  { url: '/admin/messages', labelAr: 'الرسائل', labelEn: 'Admin Messages', requiresAuth: true, requiresAdmin: true, keywords: ['إدارة الرسائل', 'admin messages'] },
+  { url: '/admin/audit-logs', labelAr: 'سجل المراجعة', labelEn: 'Audit Logs', requiresAuth: true, requiresAdmin: true, keywords: ['سجل المراجعة', 'audit logs'] },
+  { url: '/admin/fair-price', labelAr: 'السعر العادل', labelEn: 'Fair Price', requiresAuth: true, requiresAdmin: true, keywords: ['السعر العادل', 'admin fair price'] },
+  { url: '/admin/content-tools', labelAr: 'أدوات المحتوى', labelEn: 'Content Tools', requiresAuth: true, requiresAdmin: true, keywords: ['أدوات المحتوى', 'admin content tools'] },
+  { url: '/admin/premium-requests', labelAr: 'طلبات الترقية', labelEn: 'Premium Requests', requiresAuth: true, requiresAdmin: true, keywords: ['طلبات الترقية', 'admin premium'] },
+  { url: '/admin/traders-approval', labelAr: 'موافقة التجار', labelEn: 'Traders Approval', requiresAuth: true, requiresAdmin: true, keywords: ['موافقة التجار', 'admin traders'] },
+  { url: '/admin/advanced-stats', labelAr: 'إحصائيات متقدمة', labelEn: 'Advanced Stats', requiresAuth: true, requiresAdmin: true, keywords: ['إحصائيات متقدمة', 'admin stats'] },
+  { url: '/admin/subscriptions', labelAr: 'الاشتراكات', labelEn: 'Subscriptions', requiresAuth: true, requiresAdmin: true, keywords: ['الاشتراكات', 'admin subscriptions'] },
+  { url: '/admin/workshops', labelAr: 'إدارة الورش', labelEn: 'Manage Workshops', requiresAuth: true, requiresAdmin: true, keywords: ['إدارة الورش', 'admin workshops'] },
+  { url: '/admin/workshops/review', labelAr: 'مراجعة الورش', labelEn: 'Review Workshops', requiresAuth: true, requiresAdmin: true, keywords: ['مراجعة الورش', 'admin workshop review'] },
+  { url: '/admin/workshops/ads', labelAr: 'إعلانات الورش', labelEn: 'Workshop Ads', requiresAuth: true, requiresAdmin: true, keywords: ['إعلانات الورش', 'admin workshop ads'] },
+];
 
 // ═══════════════════════════════════════════════════════════════════════
 // SECTION 14: FAQ

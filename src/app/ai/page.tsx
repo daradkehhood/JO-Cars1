@@ -446,6 +446,7 @@ export default function AIPage() {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
+      let streamNavigate: { url: string; label: string } | null = null;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -468,6 +469,7 @@ export default function AIPage() {
                 streamCars = data.cars || [];
                 streamSuggestions = data.suggestions || [];
                 streamIntent = data.intent || '';
+                streamNavigate = data.navigate || null;
 
                 setMessages(prev => [...prev, {
                   id: botMsgId, type: 'bot', content: '',
@@ -491,6 +493,11 @@ export default function AIPage() {
                   } : m
                 ));
                 if (streamSuggestions.length > 0) setLastSuggestions(streamSuggestions);
+
+                // Auto-navigate if URL provided
+                if (streamNavigate?.url) {
+                  setTimeout(() => router.push(streamNavigate!.url), 800);
+                }
               }
             } catch {}
           }
@@ -525,6 +532,11 @@ export default function AIPage() {
             timestamp: new Date(),
           }]);
           if (data.data.suggestions) setLastSuggestions(data.data.suggestions);
+
+          // Auto-navigate if URL provided
+          if (data.data.navigate?.url) {
+            setTimeout(() => router.push(data.data.navigate.url), 800);
+          }
         } else {
           setMessages(prev => [...prev, {
             id: botMsgId, type: 'bot',

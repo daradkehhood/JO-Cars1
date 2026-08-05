@@ -8,6 +8,7 @@ import { getCachedResponse, setCachedResponse } from '@/ai/chat-cache';
 import {
   getSystemPrompt, SITE_NAME, SITE_URL, BRAND_PRICE_RANGES,
   INTENT_PATTERNS, CAR_SEARCH_KEYWORDS, DIALECT_MAP,
+  NAVIGATION_PAGES, type NavigationPage,
 } from '@/ai/site-knowledge';
 
 // ── In-memory conversation store (sessionId → messages) ──
@@ -26,7 +27,7 @@ setInterval(() => {
 }, 5 * 60 * 1000);
 
 // ── Intent Detection ──
-type Intent = 'car_search' | 'workshop' | 'parts' | 'price_analysis' | 'engine_sound' | 'selling' | 'site_info' | 'ref_code' | 'general';
+type Intent = 'car_search' | 'workshop' | 'parts' | 'price_analysis' | 'engine_sound' | 'selling' | 'site_info' | 'ref_code' | 'navigation' | 'general';
 
 function detectIntent(query: string): Intent {
   const q = query.toLowerCase();
@@ -46,6 +47,42 @@ function detectIntent(query: string): Intent {
 function extractRefCode(query: string): string | null {
   const match = query.trim().match(/([A-Z]{1,3}\d{1,4}-[A-Z]{3})/i);
   return match ? match[1].toUpperCase() : null;
+}
+
+// ── Navigation: detect target page from user query ──
+function detectTargetPage(query: string): NavigationPage | null {
+  const q = query.toLowerCase().trim();
+
+  // Direct URL match
+  const urlMatch = q.match(/\/([a-z\-\/]+)/i);
+  if (urlMatch) {
+    const path = '/' + urlMatch[1];
+    const found = NAVIGATION_PAGES.find(p => p.url === path);
+    if (found) return found;
+  }
+
+  // Score each page by keyword matches
+  let bestMatch: NavigationPage | null = null;
+  let bestScore = 0;
+
+  for (const page of NAVIGATION_PAGES) {
+    let score = 0;
+    for (const keyword of page.keywords) {
+      const kw = keyword.toLowerCase();
+      if (q.includes(kw)) {
+        score += kw.length;
+      }
+    }
+    if (q.includes(page.labelAr.toLowerCase())) {
+      score += page.labelAr.length + 2;
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      bestMatch = page;
+    }
+  }
+
+  return bestScore >= 2 ? bestMatch : null;
 }
 
 // ── Fetch car by ref code with full details (optimized) ──
@@ -513,6 +550,56 @@ export async function POST(request: NextRequest) {
           intent: 'ref_code',
           suggestions: ['مقارنة السعر بالسوق', 'البحث عن ورشة فحص', 'قطع غيار للسيارة', 'مشابهات أخرى'],
           sessionId: sid,
+        },
+      });
+    }
+
+    // ── NAVIGATION: fast path ──
+    if (intent === 'navigation') {
+      const targetPage = detectTargetPage(normalizedQuery);
+      if (targetPage) {
+        if (targetPage.requiresAuth && !userName) {
+          const authMsg = `🔒 هذه الصفحة "${targetPage.labelAr}" تتطلب تسجيل دخول.\n\nسأنقلك الآن لصفحة تسجيل الدخول...`;
+          conversation.push({ role: 'assistant', content: authMsg });
+          conversationStore.set(sid, conversation);
+          return Response.json({
+            success: true,
+            data: {
+              message: authMsg, cars: [], intent: 'navigation',
+              navigate: { url: '/auth/login', label: 'تسجيل الدخول' },
+              suggestions: ['إنشاء حساب جديد', 'العودة للرئيسية'], sessionId: sid,
+            },
+          });
+        }
+        if (targetPage.requiresAdmin && userRole !== 'ADMIN') {
+          const adminMsg = `⛔ صفحة "${targetPage.labelAr}" متاحة فقط لمدير الموقع.`;
+          conversation.push({ role: 'assistant', content: adminMsg });
+          conversationStore.set(sid, conversation);
+          return Response.json({
+            success: true,
+            data: { message: adminMsg, cars: [], intent: 'navigation', suggestions: ['العودة للرئيسية'], sessionId: sid },
+          });
+        }
+        const successMsg = `✅ سأنقلك الآن إلى صفحة "${targetPage.labelAr}"...`;
+        conversation.push({ role: 'assistant', content: successMsg });
+        conversationStore.set(sid, conversation);
+        return Response.json({
+          success: true,
+          data: {
+            message: successMsg, cars: [], intent: 'navigation',
+            navigate: { url: targetPage.url, label: targetPage.labelAr },
+            suggestions: ['العودة للرئيسية', 'المساعد الذكي'], sessionId: sid,
+          },
+        });
+      }
+      const fallbackNavMsg = `🤔 أي صفحة تريد أن أخذك إليها؟\n\nأمثلة:\n- المفضلة\n- إعلاناتي\n- الجراج\n- ورش العمل\n- قطع الغيار\n- المنتدى\n- الملف الشخصي\n\nاكتب اسم الصفحة وسأنقلك لها مباشرة!`;
+      conversation.push({ role: 'assistant', content: fallbackNavMsg });
+      conversationStore.set(sid, conversation);
+      return Response.json({
+        success: true,
+        data: {
+          message: fallbackNavMsg, cars: [], intent: 'navigation',
+          suggestions: ['المفضلة', 'إعلاناتي', 'الجراج', 'ورش العمل'], sessionId: sid,
         },
       });
     }
