@@ -820,12 +820,16 @@ export const INTENT_PATTERNS: Record<string, RegExp[]> = {
     /مطلوب/i, /wanted/i, /صيانة/i, /maintenance/i, /أخبار/i,
   ],
   navigation: [
-    /أريد\s+أدخل/i, /أبغى\s+أدخل/i, /بدي\s+أدخل/i, /بدك\s+توديني/i,
+    /أريد\s+أدخل/i, /اريد\s+أدخل/i, /اريد\s+ادخل/i, /ريد\s+أدخل/i, /ريد\s+ادخل/i,
+    /أبغى\s+أدخل/i, /ابغى\s+أدخل/i, /بدي\s+أدخل/i, /بدك\s+توديني/i,
+    /أريد\s+الدخول/i, /اريد\s+الدخول/i, /أبغى\s+الدخول/i, /بدي\s+الدخول/i,
+    /ودي\s+أدخل/i, /ودي\s+ادخل/i, /ودي\s+الدخول/i,
+    /أقدر\s+أدخل/i, /ممكن\s+أدخل/i, /خليني\s+أدخل/i, /خلّيني\s+أدخل/i,
     /وين\s+صفحة/i, /وين\s+ألاقي/i, /وين\s+أروح/i, /وين\s+هيا/i,
     /كيف\s+أروح/i, /كيف\s+أدخل/i, /كيف\s+أوصل/i, /كيف\s+أروح\s+ل/i,
     /نقلني/i, /وديني/i, /خذني/i, /روح\s+ني/i,
     /افتح\s+صفحة/i, /ادخلي\s+على/i, /اروح\s+على/i,
-    /صفحة\s+المفضلة/i, /صفحة\s+الجراج/i, /صفحة\s+المطلوب/i,
+    /صفحة\s+المفضل[ةه]/i, /صفحة\s+الجراج/i, /صفحة\s+المطلوب/i,
     /صفحة\s+المقارنة/i, /صفحة\s+المزادات/i, /صفحة\s+المنتدى/i,
     /صفحة\s+الورش/i, /صفحة\s+اللوحات/i, /صفحة\s+القطع/i,
     /الملف\s+الشخصي/i, /ملفي/i, /بروفايلي/i,
@@ -877,7 +881,7 @@ export const NAVIGATION_PAGES: NavigationPage[] = [
   { url: '/my-cars', labelAr: 'إعلاناتي', labelEn: 'My Listings', requiresAuth: true, requiresAdmin: false, keywords: ['إعلاناتي', 'إعلاناتي', 'my listings', 'إعلاناتي أنا'] },
 
   // ── المفضلة ──
-  { url: '/favorites', labelAr: 'المفضلة', labelEn: 'Favorites', requiresAuth: true, requiresAdmin: false, keywords: ['المفضلة', 'المفضّلة', 'المحفوظة', 'favorites', 'حفظ'] },
+  { url: '/favorites', labelAr: 'المفضلة', labelEn: 'Favorites', requiresAuth: true, requiresAdmin: false, keywords: ['المفضلة', 'المفضّلة', 'المفضله', 'المحفوظة', 'favorites', 'حفظ'] },
 
   // ── الجراج ──
   { url: '/my-garage', labelAr: 'الجراج', labelEn: 'My Garage', requiresAuth: true, requiresAdmin: false, keywords: ['الجراج', 'جراجي', 'سياراتي', 'my garage', 'السيارات الشخصية'] },

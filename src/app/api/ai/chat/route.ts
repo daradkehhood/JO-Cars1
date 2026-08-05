@@ -51,7 +51,14 @@ function extractRefCode(query: string): string | null {
 
 // ── Navigation: detect target page from user query ──
 function detectTargetPage(query: string): NavigationPage | null {
-  const q = query.toLowerCase().trim();
+  // Normalize Arabic: ة→ه, أ/إ/آ→ا, ى→ي
+  const normalize = (s: string) => s
+    .toLowerCase()
+    .replace(/[\u0629]/g, 'ه')   // ة marbuta → ه
+    .replace(/[\u0621\u0622\u0623\u0625]/g, 'ا') // أ إ آ → ا
+    .replace(/[\u0649]/g, 'ي')   // ى → ي
+    .trim();
+  const q = normalize(query);
 
   // Direct URL match
   const urlMatch = q.match(/\/([a-z\-\/]+)/i);
@@ -68,12 +75,12 @@ function detectTargetPage(query: string): NavigationPage | null {
   for (const page of NAVIGATION_PAGES) {
     let score = 0;
     for (const keyword of page.keywords) {
-      const kw = keyword.toLowerCase();
+      const kw = normalize(keyword);
       if (q.includes(kw)) {
         score += kw.length;
       }
     }
-    if (q.includes(page.labelAr.toLowerCase())) {
+    if (q.includes(normalize(page.labelAr))) {
       score += page.labelAr.length + 2;
     }
     if (score > bestScore) {
