@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import {
   Bot, Send, Sparkles, Car, ShoppingBag, Search, TrendingUp, Fuel, DollarSign, BarChart3,
   ArrowRight, Shield, Zap, ThumbsUp, ThumbsDown, Mic, Clock, RotateCcw, ChevronDown,
-  Settings, MessageSquare, Wrench,
+  Settings, MessageSquare, Wrench, ImagePlus, Loader2, CheckCircle2, Upload,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -96,6 +96,15 @@ const personalityQuestions = [
   { id: 'q5', text: 'كيف تنظّم يومك؟', options: [{ label: '📋 كل شي مخطط ومرتب', value: 'A' }, { label: '🎲 عشوائي وتفاجئ نفسي', value: 'B' }, { label: '👥 مع الأهل والأصدقاء', value: 'C' }] },
 ];
 
+// ── Car Listing Flow ──
+type CarFlowStep = 'brand' | 'model' | 'year_km' | 'fuel_trans' | 'color_drivetrain' | 'condition_price' | 'city_desc' | 'phone' | 'images' | 'done';
+const CAR_FLOW_STEP_LABELS: Record<CarFlowStep, string> = {
+  brand: 'الماركة', model: 'الموديل', year_km: 'السنة والممشى', fuel_trans: 'الوقود والجير',
+  color_drivetrain: 'اللون والدفع', condition_price: 'الحالة والسعر', city_desc: 'المدينة والوصف',
+  phone: 'الهاتف', images: 'الصور', done: '✅ مكتمل',
+};
+const CAR_FLOW_STEPS: CarFlowStep[] = ['brand', 'model', 'year_km', 'fuel_trans', 'color_drivetrain', 'condition_price', 'city_desc', 'phone', 'images', 'done'];
+
 const quickActions = [
   { label: 'مطابقة الروح', icon: Zap, action: '__personality_match__' },
   { label: 'مساعد شراء', icon: ShoppingBag, action: 'عندي 9000 دينار وأريد سيارة عائلية اقتصادية' },
@@ -133,6 +142,13 @@ export default function AIPage() {
   const [selectedModel, setSelectedModel] = useState<AIModelId>('gpt-oss');
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
+  const [carFlowStep, setCarFlowStep] = useState<CarFlowStep | null>(null);
+  const [carFlowData, setCarFlowData] = useState<Record<string, string>>({});
+  const [carFlowImages, setCarFlowImages] = useState<string[]>([]);
+  const [carFlowResult, setCarFlowResult] = useState<any>(null);
+  const [isCreatingCar, setIsCreatingCar] = useState(false);
+  const [carFlowHint, setCarFlowHint] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const modelSelectorRef = useRef<HTMLDivElement>(null);
@@ -391,6 +407,22 @@ export default function AIPage() {
       return;
     }
 
+    // Handle car listing confirmation
+    if ((content === 'تأكيد الإنشاء' || content === 'إنشاء الإعلان') && carFlowStep === 'done') {
+      handleCreateCarListing();
+      return;
+    }
+
+    // Handle car listing cancel
+    if (content === 'إلغاء' && carFlowStep !== null && carFlowStep !== 'done') {
+      setCarFlowStep(null);
+      setCarFlowData({});
+      setCarFlowImages([]);
+      setCarFlowHint('');
+      botReply('❌ تم إلغاء إنشاء الإعلان. يمكنك البدء مرة أخرى في أي وقت.');
+      return;
+    }
+
     if (personalityStep !== null) {
       const answer = content.trim();
       if (!['A', 'B', 'C'].includes(answer)) {
@@ -470,6 +502,18 @@ export default function AIPage() {
                 streamSuggestions = data.suggestions || [];
                 streamIntent = data.intent || '';
                 streamNavigate = data.navigate || null;
+
+                // Update car flow state
+                if (data.carFlow) {
+                  setCarFlowStep(data.carFlow.step || null);
+                  if (data.carFlow.data) setCarFlowData(data.carFlow.data);
+                  if (data.carFlow.hint) setCarFlowHint(data.carFlow.hint);
+                  if (data.carFlow.images) setCarFlowImages(data.carFlow.images);
+                  // On done, set the full data
+                  if (data.carFlow.step === 'done' && data.carFlow.data) {
+                    setCarFlowData(data.carFlow.data);
+                  }
+                }
 
                 setMessages(prev => [...prev, {
                   id: botMsgId, type: 'bot', content: '',
@@ -559,7 +603,135 @@ export default function AIPage() {
         return prev;
       });
     }
-  }, [isTyping, mpStep, personalityStep, personalityAnswers, sessionId, selectedModel, botReply, advanceMp, fetchPersonalityMatch]);
+  }, [isTyping, mpStep, personalityStep, personalityAnswers, sessionId, selectedModel, botReply, advanceMp, fetchPersonalityMatch, carFlowStep, carFlowData, carFlowImages]);
+
+  // ── Image Upload for Car Flow ──
+  const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const maxImages = 20;
+    const maxSize = 5 * 1024 * 1024; // 5MB per image
+    const newImages: string[] = [];
+
+    Array.from(files).forEach((file) => {
+      if (carFlowImages.length + newImages.length >= maxImages) return;
+      if (file.size > maxSize) return;
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        setCarFlowImages(prev => [...prev, base64]);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  }, [carFlowImages.length]);
+
+  // ── Create Car Listing from Flow Data ──
+  const handleCreateCarListing = useCallback(async () => {
+    setIsCreatingCar(true);
+    try {
+      // Fetch brands to find brandId
+      const brandsRes = await fetch('/api/brands');
+      const brandsData = await brandsRes.json();
+      const brands = brandsData.data || brandsData.brands || [];
+      const matchedBrand = brands.find((b: any) =>
+        b.nameAr === carFlowData.brand || b.nameEn?.toLowerCase() === carFlowData.brand?.toLowerCase()
+      );
+
+      // Fetch models for this brand
+      let matchedModel = null;
+      if (matchedBrand) {
+        const modelsRes = await fetch(`/api/models?brandId=${matchedBrand.id}`);
+        const modelsData = await modelsRes.json();
+        const models = modelsData.data || modelsData.models || [];
+        matchedModel = models.find((m: any) =>
+          m.nameAr === carFlowData.model || m.nameEn?.toLowerCase() === carFlowData.model?.toLowerCase()
+        );
+      }
+
+      // Fetch cities to find cityId
+      const citiesRes = await fetch('/api/cities');
+      const citiesData = await citiesRes.json();
+      const cities = citiesData.data || citiesData.cities || [];
+      const matchedCity = cities.find((c: any) =>
+        c.nameAr === carFlowData.city || c.nameEn?.toLowerCase() === carFlowData.city?.toLowerCase()
+      );
+
+      if (!matchedBrand || !matchedModel || !matchedCity) {
+        botReply('❌ ما قدرت ألاقي بعض البيانات. تأكد من صحة الماركة والموديل والمدينة.', {
+          suggestions: ['إنشاء إعلان من جديد'],
+        });
+        setIsCreatingCar(false);
+        return;
+      }
+
+      // Build FormData
+      const formData = new FormData();
+      formData.append('brandId', matchedBrand.id);
+      formData.append('modelId', matchedModel.id);
+      formData.append('year', carFlowData.year || '2020');
+      formData.append('kilometers', carFlowData.kilometers || '0');
+      formData.append('fuelType', carFlowData.fuelType || 'PETROL');
+      formData.append('transmission', carFlowData.transmission || 'AUTOMATIC');
+      formData.append('color', carFlowData.color || 'أبيض');
+      formData.append('doors', '4');
+      formData.append('drivetrain', carFlowData.drivetrain || 'FWD');
+      formData.append('condition', carFlowData.condition || 'GOOD');
+      formData.append('description', carFlowData.description || `${carFlowData.brand} ${carFlowData.model} ${carFlowData.year}`);
+      formData.append('price', carFlowData.price || '0');
+      formData.append('cityId', matchedCity.id);
+      formData.append('phone', carFlowData.phone || '');
+
+      // Add images
+      carFlowImages.forEach((base64, i) => {
+        // Convert base64 data URI to File-like object
+        const [header, data] = base64.split(',');
+        const mime = header.match(/:(.*?);/)?.[1] || 'image/jpeg';
+        const binary = atob(data);
+        const array = new Uint8Array(binary.length);
+        for (let j = 0; j < binary.length; j++) array[j] = binary.charCodeAt(j);
+        const blob = new Blob([array], { type: mime });
+        const ext = mime.split('/')[1] || 'jpg';
+        const file = new File([blob], `car-image-${i}.${ext}`, { type: mime });
+        formData.append('images', file);
+      });
+
+      const token = typeof window !== 'undefined' ? localStorage.getItem('jo-cars-auth-token') : null;
+      const res = await fetch('/api/cars', {
+        method: 'POST',
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: formData,
+      });
+
+      const result = await res.json();
+      if (result.success && result.data?.car) {
+        setCarFlowResult(result.data.car);
+        botReply(`✅ **تم إنشاء الإعلان بنجاح!**\n\n📋 الرمز المرجعي: **${result.data.car.refCode || 'N/A'}**\n🔗 الرابط: /cars/${result.data.car.slug}\n\n💡 الإعلان في انتظار المراجعة من الإدارة.`, {
+          suggestions: ['عرض الإعلان', 'إنشاء إعلان آخر', 'العودة للرئيسية'],
+        });
+        // Auto-navigate after 2 seconds
+        setTimeout(() => router.push(`/cars/${result.data.car.slug}`), 2000);
+      } else {
+        const errorMsg = result.error || result.message || 'حدث خطأ غير معروف';
+        botReply(`❌ فشل إنشاء الإعلان: ${errorMsg}\n\nيمكنك المحاولة من صفحة "إضافة إعلان" مباشرة.`, {
+          suggestions: ['صفحة إضافة إعلان', 'إنشاء إعلان من جديد'],
+        });
+      }
+    } catch (err) {
+      botReply('❌ حدث خطأ أثناء إنشاء الإعلان. حاول مرة أخرى أو أضف الإعلان يدوياً.', {
+        suggestions: ['صفحة إضافة إعلان'],
+      });
+    } finally {
+      setIsCreatingCar(false);
+      setCarFlowStep(null);
+      setCarFlowData({});
+      setCarFlowImages([]);
+      setCarFlowHint('');
+    }
+  }, [carFlowData, carFlowImages, botReply, router]);
 
   const goToCar = useCallback((slug: string) => {
     router.push(`/cars/${slug}`);
@@ -582,6 +754,11 @@ export default function AIPage() {
     setLastSuggestions([]);
     clearConversationStorage();
     resetMp();
+    setCarFlowStep(null);
+    setCarFlowData({});
+    setCarFlowImages([]);
+    setCarFlowResult(null);
+    setCarFlowHint('');
   }, [resetMp]);
 
   // ── Engine Sound Recording ──
@@ -950,6 +1127,109 @@ export default function AIPage() {
             </div>
           )}
 
+          {/* Car Flow Progress */}
+          {carFlowStep !== null && carFlowStep !== 'done' && (
+            <div className="mt-4">
+              <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800/30 mb-3">
+                <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium text-center">
+                  🚗 إنشاء إعلان — {CAR_FLOW_STEP_LABELS[carFlowStep]}
+                </p>
+                {carFlowHint && (
+                  <p className="text-xs text-emerald-500 dark:text-emerald-400/70 text-center mt-1">{carFlowHint}</p>
+                )}
+                <div className="flex justify-center gap-1 mt-2">
+                  {CAR_FLOW_STEPS.filter(s => s !== 'done').map((step, i) => {
+                    const filledIdx = CAR_FLOW_STEPS.indexOf(carFlowStep);
+                    const current = step === carFlowStep;
+                    const filled = i < filledIdx;
+                    return (
+                      <div key={step} className={`h-1.5 rounded-full transition-all duration-300 ${current ? 'w-6 bg-emerald-500' : filled ? 'w-3 bg-emerald-300' : 'w-3 bg-gray-200 dark:bg-gray-700'}`} />
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Car Flow Done — Success Card */}
+          {carFlowStep === 'done' && (
+            <div className="mt-4">
+              <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800/30">
+                <div className="flex items-center gap-2 mb-3">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                  <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">ملخص الإعلان</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs mb-4">
+                  {Object.entries(carFlowData).filter(([_, v]) => v).map(([k, v]) => (
+                    <div key={k} className="bg-white dark:bg-gray-800 rounded-lg p-2 border border-emerald-100 dark:border-emerald-800/30">
+                      <span className="text-gray-500 text-[10px] block">{k}</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{v}</span>
+                    </div>
+                  ))}
+                </div>
+                {carFlowImages.length > 0 && (
+                  <div className="flex gap-2 mb-3 overflow-x-auto pb-2">
+                    {carFlowImages.slice(0, 5).map((img, i) => (
+                      <img key={i} src={img} alt="" className="w-16 h-16 rounded-lg object-cover border border-emerald-200 dark:border-emerald-700" />
+                    ))}
+                    {carFlowImages.length > 5 && (
+                      <div className="w-16 h-16 rounded-lg bg-emerald-100 dark:bg-emerald-800 flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-xs font-bold">
+                        +{carFlowImages.length - 5}
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleCreateCarListing}
+                    disabled={isCreatingCar}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                  >
+                    {isCreatingCar ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    {isCreatingCar ? 'جاري الإنشاء...' : 'تأكيد الإنشاء'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCarFlowStep(null);
+                      setCarFlowData({});
+                      setCarFlowImages([]);
+                      setCarFlowHint('');
+                    }}
+                    className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Car Flow Result Card */}
+          {carFlowResult && (
+            <div className="mt-4">
+              <div className="p-4 rounded-xl bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle2 className="w-5 h-5 text-green-500" />
+                  <p className="text-sm font-semibold text-green-700 dark:text-green-400">تم إنشاء الإعلان بنجاح!</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => router.push(`/cars/${carFlowResult.slug}`)}
+                    className="flex-1 px-4 py-2 rounded-xl bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors"
+                  >
+                    عرض الإعلان
+                  </button>
+                  <button
+                    onClick={() => setCarFlowResult(null)}
+                    className="px-4 py-2 rounded-xl border border-green-200 dark:border-green-700 text-sm text-green-600 hover:bg-green-50 dark:hover:bg-green-900/10 transition-colors"
+                  >
+                    إغلاق
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div ref={messagesEndRef} />
         </div>
       </div>
@@ -1019,6 +1299,28 @@ export default function AIPage() {
               <Mic className="w-5 h-5" />
             </button>
 
+            {/* Image Upload Button (Car Flow) */}
+            {carFlowStep !== null && carFlowStep !== 'done' && (
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+                  title="إرفاق صورة (اختياري)"
+                >
+                  <ImagePlus className="w-5 h-5" />
+                </button>
+              </>
+            )}
+
             {/* Text Input */}
             <input ref={inputRef} type="text" value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -1032,6 +1334,23 @@ export default function AIPage() {
               <Send className="w-5 h-5" />
             </button>
           </form>
+          {/* Image previews for car flow */}
+          {carFlowStep !== null && carFlowStep !== 'done' && carFlowImages.length > 0 && (
+            <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
+              {carFlowImages.map((img, i) => (
+                <div key={i} className="relative flex-shrink-0">
+                  <img src={img} alt="" className="w-14 h-14 rounded-lg object-cover border border-gray-200 dark:border-gray-700" />
+                  <button
+                    type="button"
+                    onClick={() => setCarFlowImages(prev => prev.filter((_, idx) => idx !== i))}
+                    className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center text-[10px] font-bold shadow"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -26,10 +26,99 @@ setInterval(() => {
       conversationStore.delete(key);
     }
   }
+  for (const [key, val] of carFlowStore.entries()) {
+    if (now - val.startedAt > CONVERSATION_TTL) {
+      carFlowStore.delete(key);
+    }
+  }
 }, 5 * 60 * 1000);
 
+// ── Car Listing Guided Flow ──
+type CarFlowStep = 'brand' | 'model' | 'year_km' | 'fuel_trans' | 'color_drivetrain' | 'condition_price' | 'city_desc' | 'phone' | 'images' | 'done';
+interface CarFlowState {
+  step: CarFlowStep;
+  data: Record<string, string>;
+  images: string[]; // base64 data URIs
+  startedAt: number;
+}
+const carFlowStore = new Map<string, CarFlowState>();
+
+const CAR_FLOW_QUESTIONS: Record<CarFlowStep, { text: string; hint?: string }> = {
+  brand: {
+    text: '🚗 ممتاز! يلا نبدأ نسوي لك إعلان.\n\n**ما هي ماركة السيارة؟**\n\nأمثلة: تويوتا، هوندا، بي ام دبليو، مرسيدس، كيا، هيونداي',
+    hint: 'ماركة السيارة (مثل: Toyota, Honda, BMW)',
+  },
+  model: {
+    text: '✅ حلو!\n\n**ما هو موديل السيارة؟**\n\nأمثلة: كامري، كورولا، سنترا، X5، C200',
+    hint: 'موديل السيارة (مثل: Camry, Corolla, X5)',
+  },
+  year_km: {
+    text: '👍 تمام!\n\n**ما هي سنة الصنع؟**\n\n(مثل: 2020)',
+    hint: 'سنة الصنع (مثل: 2020)',
+  },
+  fuel_trans: {
+    text: '⛽ **ما نوع الوقود؟**\n\n1️⃣ بنزين\n2️⃣ ديزل\n3️⃣ هايبرد\n4️⃣ كهربائي\n5️⃣ PHEV',
+    hint: 'اختر رقم: 1=بنزين, 2=ديزل, 3=هايبرد, 4=كهربائي, 5=PHEV',
+  },
+  color_drivetrain: {
+    text: '🎨 **ما لون السيارة؟**',
+    hint: 'لون السيارة (مثل: أبيض، أسود، فضي)',
+  },
+  condition_price: {
+    text: '⭐ **ما حالة السيارة؟**\n\n1️⃣ ممتازة\n2️⃣ جيدة جداً\n3️⃣ جيدة\n4️⃣ مقبولة\n5️⃣ تحتاج صيانة\n6️⃣ تحتاج فحص',
+    hint: 'حالة السيارة (1-6)',
+  },
+  city_desc: {
+    text: '🏙️ **ما هي المحافظة؟**\n\nأمثلة: عمان، الزرقاء، إربد، السلط، العقبة',
+    hint: 'اسم المحافظة',
+  },
+  phone: {
+    text: '📞 **ما هو رقم الهاتف للتواصل؟**\n\n(رقم أردني يبدأ بـ 07)',
+    hint: 'رقم الهاتف (مثل: 0791234567)',
+  },
+  images: {
+    text: '📸 **أرسل صور السيارة** (اختياري)\n\nارسل الصور في الرسالة التالية، أو اكتب "تخطي" للاستمرار بدون صور.\n\n💡 يمكنك إرسال صورة واحدة أو أكثر.',
+    hint: 'صور السيارة (base64) أو "تخطي"',
+  },
+  done: {
+    text: '',
+  },
+};
+
+const CAR_FLOW_STEPS: CarFlowStep[] = [
+  'brand', 'model', 'year_km', 'fuel_trans', 'color_drivetrain',
+  'condition_price', 'city_desc', 'phone', 'images', 'done',
+];
+
+function getCarFlowNextStep(current: CarFlowStep): CarFlowStep | null {
+  const idx = CAR_FLOW_STEPS.indexOf(current);
+  return idx >= 0 && idx < CAR_FLOW_STEPS.length - 1 ? CAR_FLOW_STEPS[idx + 1] : null;
+}
+
+function buildCarFlowSummary(data: Record<string, string>): string {
+  const fuelMap: Record<string, string> = { '1': 'بنزين ⛽', '2': 'ديزل 🛢️', '3': 'هايبرد 🔋', '4': 'كهربائية ⚡', '5': 'PHEV' };
+  const condMap: Record<string, string> = { '1': 'ممتازة ✨', '2': 'جيدة جداً 👍', '3': 'جيدة 👌', '4': 'مقبولة 🤏', '5': 'تحتاج صيانة 🔧', '6': 'تحتاج فحص ⚠️' };
+
+  return `📋 **ملخص الإعلان:**\n\n` +
+    `🚗 الماركة: ${data.brand || ''}\n` +
+    `📦 الموديل: ${data.model || ''}\n` +
+    `📅 السنة: ${data.year || ''}\n` +
+    `🛣️ الممشى: ${data.kilometers || ''} كم\n` +
+    `⛽ الوقود: ${fuelMap[data.fuelType] || data.fuelType || ''}\n` +
+    `🔄 الناقل: ${data.transmission || ''}\n` +
+    `🎨 اللون: ${data.color || ''}\n` +
+    `🏗️ الدفع: ${data.drivetrain || ''}\n` +
+    `⭐ الحالة: ${condMap[data.condition] || data.condition || ''}\n` +
+    `💰 السعر: ${data.price || ''} د.أ\n` +
+    `🏙️ المحافظة: ${data.city || ''}\n` +
+    `📝 الوصف: ${data.description || ''}\n` +
+    `📞 الهاتف: ${data.phone || ''}\n` +
+    (data.whatsapp ? `💬 واتساب: ${data.whatsapp}\n` : '') +
+    `\n💡 **اكتب "تأكيد" لإنشاء الإعلان، أو "إلغاء" للإلغاء.**`;
+}
+
 // ── Intent Detection ──
-type Intent = 'car_search' | 'workshop' | 'parts' | 'price_analysis' | 'engine_sound' | 'selling' | 'workshop_add' | 'negotiation' | 'ticket' | 'site_info' | 'ref_code' | 'navigation' | 'general';
+type Intent = 'car_search' | 'workshop' | 'parts' | 'price_analysis' | 'engine_sound' | 'car_listing' | 'selling' | 'workshop_add' | 'negotiation' | 'ticket' | 'site_info' | 'ref_code' | 'navigation' | 'general';
 
 function detectIntent(query: string): Intent {
   const q = query.toLowerCase();
@@ -505,6 +594,190 @@ export async function POST(request: NextRequest) {
         : buildSearchUrl(nlParsed, '/cars')
       : null;
 
+    // ── CAR LISTING FLOW: check if user is in an active flow ──
+    const activeCarFlow = carFlowStore.get(sid);
+    if (activeCarFlow && activeCarFlow.step !== 'done') {
+      const answer = query.trim();
+      const step = activeCarFlow.step;
+
+      // Allow cancel at any step
+      if (/^(إلغاء|الغاء|cancel|وقف|stop)$/i.test(answer)) {
+        carFlowStore.delete(sid);
+        const cancelMsg = '❌ تم إلغاء إنشاء الإعلان. يمكنك البدء مرة أخرى في أي وقت.';
+        conversation.push({ role: 'assistant', content: cancelMsg });
+        conversationStore.set(sid, conversation);
+        return Response.json({
+          success: true,
+          data: { message: cancelMsg, cars: [], intent: 'car_listing', suggestions: ['إنشاء إعلان جديد', 'البحث عن سيارة'], sessionId: sid },
+        });
+      }
+
+      // Handle each step
+      if (step === 'brand') {
+        activeCarFlow.data.brand = answer;
+        const next = getCarFlowNextStep(step);
+        if (next) { activeCarFlow.step = next; }
+      } else if (step === 'model') {
+        activeCarFlow.data.model = answer;
+        const next = getCarFlowNextStep(step);
+        if (next) { activeCarFlow.step = next; }
+      } else if (step === 'year_km') {
+        // User may provide year only, or year + km in one message
+        const yearMatch = answer.match(/(20\d{2}|19\d{2})/);
+        const kmMatch = answer.match(/(\d[\d,]*)\s*(?:كم|كيلومتر|km)?/i);
+        if (yearMatch) activeCarFlow.data.year = yearMatch[1];
+        if (kmMatch) activeCarFlow.data.kilometers = kmMatch[1].replace(/,/g, '');
+        // If only year given, ask for km next
+        if (!kmMatch && yearMatch) {
+          // Stay on same step but update the question
+          const encoder = new TextEncoder();
+          const kmMsg = '🛣️ **كم ممشى السيارة بالكيلومتر؟**\n\n(مثل: 90000)';
+          conversation.push({ role: 'assistant', content: kmMsg });
+          conversationStore.set(sid, conversation);
+          const stream = new ReadableStream({
+            start(controller) {
+              controller.enqueue(encoder.encode(`event: meta\ndata: ${JSON.stringify({ cars: [], suggestions: [], intent: 'car_listing', carFlow: { step: 'year_km', collecting: 'kilometers' } })}\n\n`));
+              controller.enqueue(encoder.encode(`event: token\ndata: ${JSON.stringify({ content: kmMsg })}\n\n`));
+              controller.enqueue(encoder.encode(`event: done\ndata: {}\n\n`));
+              controller.close();
+            },
+          });
+          return new Response(stream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' } });
+        }
+        const next = getCarFlowNextStep(step);
+        if (next) { activeCarFlow.step = next; }
+      } else if (step === 'fuel_trans') {
+        // User may provide fuel + transmission in one message
+        const fuelMap: Record<string, string> = { '1': 'PETROL', '2': 'DIESEL', '3': 'HYBRID', '4': 'ELECTRIC', '5': 'PLUGIN_HYBRID' };
+        const transMap: Record<string, string> = { '1': 'MANUAL', '2': 'AUTOMATIC', '3': 'CVT', '4': 'DCT', '5': 'SEMI_AUTOMATIC' };
+        const fuelMatch = answer.match(/[1-5]/);
+        if (fuelMatch) activeCarFlow.data.fuelType = fuelMap[fuelMatch[1]] || 'PETROL';
+        // Check for transmission
+        const transMatch = answer.match(/(?:أوتوماتيك|اتوماتيك|automatic|2)/i);
+        const manualMatch = answer.match(/(?:يدوي|manual|1)/i);
+        if (transMatch) activeCarFlow.data.transmission = 'AUTOMATIC';
+        else if (manualMatch) activeCarFlow.data.transmission = 'MANUAL';
+        // If only fuel given, ask for transmission next
+        if (!transMatch && !manualMatch && fuelMatch) {
+          const encoder = new TextEncoder();
+          const transMsg = '🔄 **ما نوع الناقل (الجير)؟**\n\n1️⃣ يدوي\n2️⃣ أوتوماتيك\n3️⃣ CVT\n4️⃣ DCT\n5️⃣ نصف أوتوماتيك';
+          conversation.push({ role: 'assistant', content: transMsg });
+          conversationStore.set(sid, conversation);
+          const stream = new ReadableStream({
+            start(controller) {
+              controller.enqueue(encoder.encode(`event: meta\ndata: ${JSON.stringify({ cars: [], suggestions: [], intent: 'car_listing', carFlow: { step: 'fuel_trans', collecting: 'transmission' } })}\n\n`));
+              controller.enqueue(encoder.encode(`event: token\ndata: ${JSON.stringify({ content: transMsg })}\n\n`));
+              controller.enqueue(encoder.encode(`event: done\ndata: {}\n\n`));
+              controller.close();
+            },
+          });
+          return new Response(stream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' } });
+        }
+        const next = getCarFlowNextStep(step);
+        if (next) { activeCarFlow.step = next; }
+      } else if (step === 'color_drivetrain') {
+        activeCarFlow.data.color = answer;
+        // Try to detect drivetrain
+        const driveMatch = answer.match(/(4wd|awd|fwd|rwd|دفع\s+رباعي|امامي|خلفي)/i);
+        if (driveMatch) {
+          const d = driveMatch[1].toLowerCase();
+          if (d.includes('4wd') || d.includes('رباعي')) activeCarFlow.data.drivetrain = 'FOUR_WD';
+          else if (d.includes('awd')) activeCarFlow.data.drivetrain = 'AWD';
+          else if (d.includes('fwd') || d.includes('امامي')) activeCarFlow.data.drivetrain = 'FWD';
+          else if (d.includes('rwd') || d.includes('خلفي')) activeCarFlow.data.drivetrain = 'RWD';
+        } else {
+          activeCarFlow.data.drivetrain = 'FWD'; // default
+        }
+        const next = getCarFlowNextStep(step);
+        if (next) { activeCarFlow.step = next; }
+      } else if (step === 'condition_price') {
+        const condMap: Record<string, string> = { '1': 'EXCELLENT', '2': 'VERY_GOOD', '3': 'GOOD', '4': 'FAIR', '5': 'NEEDS_MAINTENANCE', '6': 'NEEDS_INSPECTION' };
+        const condMatch = answer.match(/[1-6]/);
+        if (condMatch) activeCarFlow.data.condition = condMap[condMatch[1]] || 'GOOD';
+        // Also check for price in same message
+        const priceMatch = answer.match(/(\d[\d,]*)\s*(?:دينار|د\.أ)?/);
+        if (priceMatch && parseInt(priceMatch[1].replace(/,/g, '')) > 100) {
+          activeCarFlow.data.price = priceMatch[1].replace(/,/g, '');
+        }
+        if (!priceMatch || parseInt(priceMatch[1].replace(/,/g, '')) <= 100) {
+          // Ask for price
+          const encoder = new TextEncoder();
+          const priceMsg = '💰 **كم سعر البيع بالدينار الأردني؟**\n\n(مثل: 15000)';
+          conversation.push({ role: 'assistant', content: priceMsg });
+          conversationStore.set(sid, conversation);
+          const stream = new ReadableStream({
+            start(controller) {
+              controller.enqueue(encoder.encode(`event: meta\ndata: ${JSON.stringify({ cars: [], suggestions: [], intent: 'car_listing', carFlow: { step: 'condition_price', collecting: 'price' } })}\n\n`));
+              controller.enqueue(encoder.encode(`event: token\ndata: ${JSON.stringify({ content: priceMsg })}\n\n`));
+              controller.enqueue(encoder.encode(`event: done\ndata: {}\n\n`));
+              controller.close();
+            },
+          });
+          return new Response(stream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' } });
+        }
+        const next = getCarFlowNextStep(step);
+        if (next) { activeCarFlow.step = next; }
+      } else if (step === 'city_desc') {
+        activeCarFlow.data.city = answer;
+        // Auto-generate a description if user provided short answer
+        if (answer.length < 30) {
+          activeCarFlow.data.description = `${activeCarFlow.data.brand} ${activeCarFlow.data.model} ${activeCarFlow.data.year} — حالة ${activeCarFlow.data.condition || 'جيدة'} — ممشى ${activeCarFlow.data.kilometers || 'غير محدد'} كم`;
+        } else {
+          activeCarFlow.data.description = answer;
+        }
+        const next = getCarFlowNextStep(step);
+        if (next) { activeCarFlow.step = next; }
+      } else if (step === 'phone') {
+        activeCarFlow.data.phone = answer.replace(/[^0-9]/g, '');
+        const next = getCarFlowNextStep(step);
+        if (next) { activeCarFlow.step = next; }
+      } else if (step === 'images') {
+        // Check if user wants to skip
+        if (/^(تخطي|skip|بدون|no|لا|مافي)$/i.test(answer)) {
+          activeCarFlow.images = [];
+        }
+        // Images are collected via the frontend (base64 in the message)
+        // For now, treat the answer as skip or image data
+        const next = getCarFlowNextStep(step);
+        if (next) { activeCarFlow.step = next; }
+      }
+
+      // If flow is now done, show summary
+      if (activeCarFlow.step === 'done') {
+        const summary = buildCarFlowSummary(activeCarFlow.data);
+        conversation.push({ role: 'assistant', content: summary });
+        conversationStore.set(sid, conversation);
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream({
+          start(controller) {
+            controller.enqueue(encoder.encode(`event: meta\ndata: ${JSON.stringify({ cars: [], suggestions: ['تأكيد الإنشاء', 'إلغاء'], intent: 'car_listing', carFlow: { step: 'done', data: activeCarFlow.data, images: activeCarFlow.images } })}\n\n`));
+            controller.enqueue(encoder.encode(`event: token\ndata: ${JSON.stringify({ content: summary })}\n\n`));
+            controller.enqueue(encoder.encode(`event: done\ndata: {}\n\n`));
+            controller.close();
+          },
+        });
+        return new Response(stream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' } });
+      }
+
+      // Send next question
+      const nextQuestion = CAR_FLOW_QUESTIONS[activeCarFlow.step];
+      if (nextQuestion) {
+        carFlowStore.set(sid, activeCarFlow);
+        conversation.push({ role: 'assistant', content: nextQuestion.text });
+        conversationStore.set(sid, conversation);
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream({
+          start(controller) {
+            controller.enqueue(encoder.encode(`event: meta\ndata: ${JSON.stringify({ cars: [], suggestions: [], intent: 'car_listing', carFlow: { step: activeCarFlow.step, hint: nextQuestion.hint } })}\n\n`));
+            controller.enqueue(encoder.encode(`event: token\ndata: ${JSON.stringify({ content: nextQuestion.text })}\n\n`));
+            controller.enqueue(encoder.encode(`event: done\ndata: {}\n\n`));
+            controller.close();
+          },
+        });
+        return new Response(stream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' } });
+      }
+    }
+
     // ── REF CODE LOOKUP: fast path (non-streaming) ──
     if (intent === 'ref_code' && refCode) {
       const car = await fetchCarByRefCode(refCode);
@@ -615,6 +888,50 @@ export async function POST(request: NextRequest) {
         start(controller) {
           controller.enqueue(encoder.encode(`event: meta\ndata: ${JSON.stringify({ cars: [], suggestions: ['المفضلة', 'إعلاناتي', 'الجراج', 'ورش العمل'], intent: 'navigation' })}\n\n`));
           controller.enqueue(encoder.encode(`event: token\ndata: ${JSON.stringify({ content: fallbackNavMsg })}\n\n`));
+          controller.enqueue(encoder.encode(`event: done\ndata: {}\n\n`));
+          controller.close();
+        },
+      });
+      return new Response(stream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' } });
+    }
+
+    // ── CAR LISTING: start guided flow ──
+    if (intent === 'car_listing') {
+      // Check if user is logged in
+      if (!userName) {
+        const authMsg = '🔒 لإنشاء إعلان سيارة، تحتاج تسجيل دخول أولاً.\n\nسأنقلك الآن لصفحة تسجيل الدخول...';
+        conversation.push({ role: 'assistant', content: authMsg });
+        conversationStore.set(sid, conversation);
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream({
+          start(controller) {
+            controller.enqueue(encoder.encode(`event: meta\ndata: ${JSON.stringify({ cars: [], suggestions: ['إنشاء حساب جديد', 'العودة للرئيسية'], intent: 'car_listing', navigate: { url: '/auth/login', label: 'تسجيل الدخول' } })}\n\n`));
+            controller.enqueue(encoder.encode(`event: token\ndata: ${JSON.stringify({ content: authMsg })}\n\n`));
+            controller.enqueue(encoder.encode(`event: done\ndata: {}\n\n`));
+            controller.close();
+          },
+        });
+        return new Response(stream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' } });
+      }
+
+      // Start the car listing flow
+      const firstStep: CarFlowStep = 'brand';
+      carFlowStore.set(sid, {
+        step: firstStep,
+        data: {},
+        images: [],
+        startedAt: Date.now(),
+      });
+
+      const firstQuestion = CAR_FLOW_QUESTIONS[firstStep];
+      conversation.push({ role: 'assistant', content: firstQuestion.text });
+      conversationStore.set(sid, conversation);
+
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(encoder.encode(`event: meta\ndata: ${JSON.stringify({ cars: [], suggestions: ['إلغاء'], intent: 'car_listing', carFlow: { step: firstStep, hint: firstQuestion.hint } })}\n\n`));
+          controller.enqueue(encoder.encode(`event: token\ndata: ${JSON.stringify({ content: firstQuestion.text })}\n\n`));
           controller.enqueue(encoder.encode(`event: done\ndata: {}\n\n`));
           controller.close();
         },
