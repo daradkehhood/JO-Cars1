@@ -556,70 +556,70 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // ── NAVIGATION: fast path (non-streaming) ──
+    // ── NAVIGATION: fast path ──
     if (intent === 'navigation') {
       const targetPage = detectTargetPage(normalizedQuery);
       if (targetPage) {
-        // Auth check
         if (targetPage.requiresAuth && !userName) {
           const authMsg = `🔒 هذه الصفحة "${targetPage.labelAr}" تتطلب تسجيل دخول.\n\nسأنقلك الآن لصفحة تسجيل الدخول...`;
           conversation.push({ role: 'assistant', content: authMsg });
           conversationStore.set(sid, conversation);
-          return Response.json({
-            success: true,
-            data: {
-              message: authMsg,
-              cars: [],
-              intent: 'navigation',
-              navigate: { url: '/auth/login', label: 'تسجيل الدخول' },
-              suggestions: ['إنشاء حساب جديد', 'العودة للرئيسية'],
-              sessionId: sid,
+          const encoder = new TextEncoder();
+          const stream = new ReadableStream({
+            start(controller) {
+              controller.enqueue(encoder.encode(`event: meta\ndata: ${JSON.stringify({ cars: [], suggestions: ['إنشاء حساب جديد', 'العودة للرئيسية'], intent: 'navigation', navigate: { url: '/auth/login', label: 'تسجيل الدخول' } })}\n\n`));
+              controller.enqueue(encoder.encode(`event: token\ndata: ${JSON.stringify({ content: authMsg })}\n\n`));
+              controller.enqueue(encoder.encode(`event: done\ndata: {}\n\n`));
+              controller.close();
             },
           });
+          return new Response(stream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' } });
         }
 
-        // Admin check
         if (targetPage.requiresAdmin && userRole !== 'ADMIN') {
           const adminMsg = `⛔ صفحة "${targetPage.labelAr}" متاحة فقط لمدير الموقع.`;
           conversation.push({ role: 'assistant', content: adminMsg });
           conversationStore.set(sid, conversation);
-          return Response.json({
-            success: true,
-            data: { message: adminMsg, cars: [], intent: 'navigation', suggestions: ['العودة للرئيسية'], sessionId: sid },
+          const encoder = new TextEncoder();
+          const stream = new ReadableStream({
+            start(controller) {
+              controller.enqueue(encoder.encode(`event: meta\ndata: ${JSON.stringify({ cars: [], suggestions: ['العودة للرئيسية'], intent: 'navigation' })}\n\n`));
+              controller.enqueue(encoder.encode(`event: token\ndata: ${JSON.stringify({ content: adminMsg })}\n\n`));
+              controller.enqueue(encoder.encode(`event: done\ndata: {}\n\n`));
+              controller.close();
+            },
           });
+          return new Response(stream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' } });
         }
 
-        // Success: navigate
         const successMsg = `✅ سأنقلك الآن إلى صفحة "${targetPage.labelAr}"...`;
         conversation.push({ role: 'assistant', content: successMsg });
         conversationStore.set(sid, conversation);
-        return Response.json({
-          success: true,
-          data: {
-            message: successMsg,
-            cars: [],
-            intent: 'navigation',
-            navigate: { url: targetPage.url, label: targetPage.labelAr },
-            suggestions: ['العودة للرئيسية', 'المساعد الذكي'],
-            sessionId: sid,
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream({
+          start(controller) {
+            controller.enqueue(encoder.encode(`event: meta\ndata: ${JSON.stringify({ cars: [], suggestions: ['العودة للرئيسية', 'المساعد الذكي'], intent: 'navigation', navigate: { url: targetPage.url, label: targetPage.labelAr } })}\n\n`));
+            controller.enqueue(encoder.encode(`event: token\ndata: ${JSON.stringify({ content: successMsg })}\n\n`));
+            controller.enqueue(encoder.encode(`event: done\ndata: {}\n\n`));
+            controller.close();
           },
         });
+        return new Response(stream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' } });
       }
 
-      // Navigation intent detected but couldn't determine target page
       const fallbackNavMsg = `🤔 أي صفحة تريد أن أخذك إليها؟\n\nأمثلة:\n- المفضلة\n- إعلاناتي\n- الجراج\n- ورش العمل\n- قطع الغيار\n- المنتدى\n- الملف الشخصي\n\nاكتب اسم الصفحة وسأنقلك لها مباشرة!`;
       conversation.push({ role: 'assistant', content: fallbackNavMsg });
       conversationStore.set(sid, conversation);
-      return Response.json({
-        success: true,
-        data: {
-          message: fallbackNavMsg,
-          cars: [],
-          intent: 'navigation',
-          suggestions: ['المفضلة', 'إعلاناتي', 'الجراج', 'ورش العمل'],
-          sessionId: sid,
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(encoder.encode(`event: meta\ndata: ${JSON.stringify({ cars: [], suggestions: ['المفضلة', 'إعلاناتي', 'الجراج', 'ورش العمل'], intent: 'navigation' })}\n\n`));
+          controller.enqueue(encoder.encode(`event: token\ndata: ${JSON.stringify({ content: fallbackNavMsg })}\n\n`));
+          controller.enqueue(encoder.encode(`event: done\ndata: {}\n\n`));
+          controller.close();
         },
       });
+      return new Response(stream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' } });
     }
 
     // ── Fetch data in parallel ──
