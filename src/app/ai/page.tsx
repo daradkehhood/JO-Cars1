@@ -379,7 +379,8 @@ export default function AIPage() {
       id: Date.now().toString(), type: 'user', content: content.trim(), timestamp: new Date(),
     };
     setMessages(prev => [...prev, userMessage]);
-    setInput('');
+      setInput('');
+      setCarFlowImages([]);
 
     if (content === '__market_price__') {
       setMpStep('brand');
@@ -469,6 +470,7 @@ export default function AIPage() {
           model: selectedModel,
           userName: user?.name || null,
           userRole: user?.role || null,
+          images: carFlowImages.length > 0 ? carFlowImages : undefined,
         }),
         signal: abortController.signal,
       });
@@ -1299,27 +1301,28 @@ export default function AIPage() {
               <Mic className="w-5 h-5" />
             </button>
 
-            {/* Image Upload Button (Car Flow) */}
-            {carFlowStep !== null && carFlowStep !== 'done' && (
-              <>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  multiple
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
-                  title="إرفاق صورة (اختياري)"
-                >
-                  <ImagePlus className="w-5 h-5" />
-                </button>
-              </>
-            )}
+            {/* Image Upload Button — always visible */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              onChange={handleImageUpload}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all relative"
+              title="إرفاق صور"
+            >
+              <ImagePlus className="w-5 h-5" />
+              {carFlowImages.length > 0 && (
+                <span className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center">
+                  {carFlowImages.length}
+                </span>
+              )}
+            </button>
 
             {/* Text Input */}
             <input ref={inputRef} type="text" value={input}
@@ -1334,8 +1337,8 @@ export default function AIPage() {
               <Send className="w-5 h-5" />
             </button>
           </form>
-          {/* Image previews for car flow */}
-          {carFlowStep !== null && carFlowStep !== 'done' && carFlowImages.length > 0 && (
+          {/* Image previews — always show when images are attached */}
+          {carFlowImages.length > 0 && (
             <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
               {carFlowImages.map((img, i) => (
                 <div key={i} className="relative flex-shrink-0">

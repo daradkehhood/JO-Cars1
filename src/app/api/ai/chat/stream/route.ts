@@ -568,7 +568,7 @@ export async function POST(request: NextRequest) {
       }, { status: 429 });
     }
 
-    const { messages, sessionId, model: requestedModel, userName, userRole } = await request.json();
+    const { messages, sessionId, model: requestedModel, userName, userRole, images } = await request.json();
     const modelId: AIModelId = (requestedModel && ['glm', 'minimax', 'mistral', 'gpt-oss'].includes(requestedModel))
       ? requestedModel : DEFAULT_MODEL;
     const query = messages?.[messages.length - 1]?.content || '';
@@ -732,12 +732,15 @@ export async function POST(request: NextRequest) {
         const next = getCarFlowNextStep(step);
         if (next) { activeCarFlow.step = next; }
       } else if (step === 'images') {
-        // Check if user wants to skip
-        if (/^(تخطي|skip|بدون|no|لا|مافي)$/i.test(answer)) {
-          activeCarFlow.images = [];
+        // Accept images from the request body (base64 data URIs)
+        if (images && Array.isArray(images) && images.length > 0) {
+          activeCarFlow.images = images;
+        } else {
+          // Check if user wants to skip
+          if (/^(تخطي|skip|بدون|no|لا|مافي)$/i.test(answer)) {
+            activeCarFlow.images = [];
+          }
         }
-        // Images are collected via the frontend (base64 in the message)
-        // For now, treat the answer as skip or image data
         const next = getCarFlowNextStep(step);
         if (next) { activeCarFlow.step = next; }
       }
