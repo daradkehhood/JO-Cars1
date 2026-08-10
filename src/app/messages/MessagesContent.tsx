@@ -137,7 +137,14 @@ export default function MessagesContent() {
   }, [user?.id, conversations]);
 
   const scrollToBottom = (smooth = true) => {
-    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'instant' }), 100);
+    setTimeout(() => {
+      if (chatContainerRef.current) {
+        chatContainerRef.current.scrollTo({
+          top: chatContainerRef.current.scrollHeight,
+          behavior: smooth ? 'smooth' : 'instant',
+        });
+      }
+    }, 50);
   };
 
   useEffect(() => {
@@ -367,9 +374,9 @@ export default function MessagesContent() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col justify-between text-gray-900 dark:text-gray-100">
       <Header />
 
-      <main className="container-custom max-w-[1400px] mx-auto px-0 sm:px-4 py-0 sm:py-6 flex-1 w-full">
+      <main className="container-custom max-w-[1400px] mx-auto px-2 sm:px-4 pt-20 sm:pt-24 pb-6 flex-1 w-full flex flex-col justify-center">
         {/* Main Messenger Box */}
-        <div className="card overflow-hidden shadow-2xl border border-gray-200 dark:border-emerald-500/20 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl h-[calc(100vh-130px)] min-h-[650px] rounded-none sm:rounded-3xl flex">
+        <div className="card overflow-hidden shadow-2xl border border-gray-200 dark:border-emerald-500/20 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl h-[calc(100vh-160px)] min-h-[620px] max-h-[850px] rounded-2xl sm:rounded-3xl flex">
 
           {/* Conversations Sidebar */}
           <div className={`w-full md:w-[380px] shrink-0 border-l border-gray-200 dark:border-gray-800/80 flex flex-col ${showList ? 'flex' : 'hidden md:flex'} bg-gray-50/50 dark:bg-gray-900/50`}>
