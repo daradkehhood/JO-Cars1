@@ -153,6 +153,12 @@ export default function ProfilePage() {
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activeTab === 'cars' ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
                   <Edit className="w-4 h-4" /> سياراتي
                 </button>
+                {(user?.role === 'DEALER' || user?.role === 'TRADER' || user?.role === 'ADMIN' || user?.dealerName) && (
+                  <Link href="/dealer/dashboard"
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 transition-all mt-2">
+                    <Store className="w-4 h-4" /> لوحة التاجر والإنتاجية 🏪
+                  </Link>
+                )}
                 <a href={`/profile/${user?.id}`} target="_blank"
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
                   <Eye className="w-4 h-4" /> عرض الملف العام
