@@ -749,26 +749,26 @@ ${conversationContext}
 
         if (intent === 'car_search' || intent === 'general') {
           if (cars.length > 0) {
-            aiResponse = `${greeting}\n\nإليك أبرز السيارات المتاحة حالياً في السوق الأردني وفقاً لطلبك:\n\n` +
+            aiResponse = greeting + '\n\nإليك أبرز السيارات المتاحة حالياً في السوق الأردني وفقاً لطلبك:\n\n' +
               cars.slice(0, 5).map((car: any, i: number) =>
-                `${i + 1}. **${car.brand?.nameAr || ''} ${car.model?.nameAr || ''} ${car.year}**\n   💵 السعر: **${car.price.toLocaleString()} د.أ** | 📍 ${car.city?.nameAr || 'الأردن'}\n   🏷️ الرمز المرجعي: \`${car.refCode || 'N/A'}\``
+                `${i + 1}. **${car.brand?.nameAr || ''} ${car.model?.nameAr || ''} ${car.year}**\n   💵 السعر: **${car.price.toLocaleString()} د.أ** | 📍 ${car.city?.nameAr || 'الأردن'}\n   🏷️ الرمز المرجعي: ${car.refCode || 'N/A'}`
               ).join('\n\n') +
-              `\n\n💡 يمكنك السؤال عن أي سيارة باستخدام **الرمز المرجعي** أو استكشاف **حاسبة الجمارك والترخيص** و**حاسبة التمويل**.`;
+              '\n\n💡 يمكنك السؤال عن أي سيارة باستخدام الرمز المرجعي أو استكشاف حاسبة الجمارك والترخيص وحاسبة التمويل.';
           } else {
-            aiResponse = `${greeting}\n\nأنا مساعدك الذكي المتخصص في سوق السيارات الأردني 🇯🇴.\n\nكيف يمكنني مساعدتك اليوم؟\n- 🚗 البحث عن سيارات مستعملة أو جديدة\n- 💰 تخمين جمارك وترخيص السيارات (`/customs-calculator`)\n- 🏦 حساب أقساط التمويل للبنوك الأردنية (`/finance-calculator`)\n- 🔧 البحث عن ورش الصيانة وقطع الغيار`;
+            aiResponse = greeting + '\n\nأنا مساعدك الذكي المتخصص في سوق السيارات الأردني 🇯🇴.\n\nكيف يمكنني مساعدتك اليوم؟\n- 🚗 البحث عن سيارات مستعملة أو جديدة\n- 💰 تخمين جمارك وترخيص السيارات (/customs-calculator)\n- 🏦 حساب أقساط التمويل للبنوك الأردنية (/finance-calculator)\n- 🔧 البحث عن ورش الصيانة وقطع الغيار';
           }
         } else if (intent === 'workshop' && workshops.length > 0) {
-          aiResponse = `${greeting}\n\nإليك أفضل ورش الصيانة المتاحة المعتمدة:\n\n` +
+          aiResponse = greeting + '\n\nإليك أفضل ورش الصيانة المتاحة المعتمدة:\n\n' +
             workshops.slice(0, 5).map((w: any, i: number) =>
               `${i + 1}. **${w.name}** — 📍 ${w.address || 'الأردن'} | ⭐ ${w.rating || 5}/5`
             ).join('\n\n');
         } else if (intent === 'parts' && parts.length > 0) {
-          aiResponse = `${greeting}\n\nإليك أحدث قطع الغيار المتوفرة لدينا:\n\n` +
+          aiResponse = greeting + '\n\nإليك أحدث قطع الغيار المتوفرة لدينا:\n\n' +
             parts.slice(0, 5).map((p: any, i: number) =>
               `${i + 1}. **${p.title}** — 💵 ${p.price?.toLocaleString() || 'غير محدد'} د.أ | 📍 ${p.city?.nameAr || 'الأردن'}`
             ).join('\n\n');
         } else {
-          aiResponse = `${greeting}\n\nأنا جاهز لمساعدتك في كل ما يتعلق بالسيارات بالأردن! يمكنك السؤال عن أسعار السيارات، الجمارك والترخيص، أو البحث عن موديل معين.`;
+          aiResponse = greeting + '\n\nأنا جاهز لمساعدتك في كل ما يتعلق بالسيارات بالأردن! يمكنك السؤال عن أسعار السيارات، الجمارك والترخيص، أو البحث عن موديل معين.';
         }
       }
     }
