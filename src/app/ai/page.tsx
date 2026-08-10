@@ -126,7 +126,7 @@ const mpQuestions: Record<MpStep, string> = {
 
 export default function AIPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -470,7 +470,10 @@ export default function AIPage() {
           model: selectedModel,
           userName: user?.name || null,
           userRole: user?.role || null,
+          token: token || null,
           images: carFlowImages.length > 0 ? carFlowImages : undefined,
+          carFlowStep: carFlowStep || undefined,
+          carFlowData: carFlowStep ? carFlowData : undefined,
         }),
         signal: abortController.signal,
       });
@@ -563,6 +566,7 @@ export default function AIPage() {
             model: selectedModel,
             userName: user?.name || null,
             userRole: user?.role || null,
+            token: token || null,
           }),
           signal: fallbackAbort.signal,
         });

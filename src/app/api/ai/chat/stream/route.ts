@@ -573,7 +573,7 @@ export async function POST(request: NextRequest) {
       }, { status: 429 });
     }
 
-    const { messages, sessionId, model: requestedModel, userName, userRole, images } = await request.json();
+    const { messages, sessionId, model: requestedModel, userName, userRole, images, token: clientToken, carFlowStep: clientStep, carFlowData: clientData } = await request.json();
     const modelId: AIModelId = (requestedModel && ['glm', 'minimax', 'mistral', 'gpt-oss'].includes(requestedModel))
       ? requestedModel : DEFAULT_MODEL;
     const query = messages?.[messages.length - 1]?.content || '';
@@ -600,7 +600,12 @@ export async function POST(request: NextRequest) {
       : null;
 
     // ── CAR LISTING FLOW: check if user is in an active flow ──
-    const activeCarFlow = carFlowStore.get(sid);
+    // Priority: in-memory store (for same-request-instance) → client-provided state (stateless fallback)
+    let activeCarFlow = carFlowStore.get(sid);
+    if (!activeCarFlow && clientStep && clientData && clientStep !== 'done') {
+      // Reconstruct flow from client-provided state (stateless mode)
+      activeCarFlow = { step: clientStep, data: clientData, images: [], startedAt: Date.now() };
+    }
     if (activeCarFlow && activeCarFlow.step !== 'done') {
       const answer = query.trim();
       const step = activeCarFlow.step;
@@ -629,10 +634,15 @@ export async function POST(request: NextRequest) {
       } else if (step === 'year_km') {
         // User may provide year only, or year + km in one message
         const yearMatch = answer.match(/(20\d{2}|19\d{2})/);
-        const kmMatch = answer.match(/(\d[\d,]*)\s*(?:كم|كيلومتر|km)?/i);
+        // km match requires suffix (كم/كيلومتر/km) OR a number > 9999 that's NOT the year
+        const kmWithSuffix = answer.match(/(\d[\d,]*)\s*(?:كم|كيلومتر|km)/i);
+        const kmAlone = answer.match(/(\d[\d,]+)/);
+        const kmVal = kmAlone ? parseInt(kmAlone[1].replace(/,/g, '')) : 0;
+        const yearVal = yearMatch ? parseInt(yearMatch[1]) : 0;
+        const kmMatch = kmWithSuffix || (kmAlone && kmVal > 999 && kmVal !== yearVal ? kmAlone : null);
         if (yearMatch) activeCarFlow.data.year = yearMatch[1];
         if (kmMatch) activeCarFlow.data.kilometers = kmMatch[1].replace(/,/g, '');
-        // If only year given, ask for km next
+        // If only year given (no km), ask for km next
         if (!kmMatch && yearMatch) {
           // Stay on same step but update the question
           const encoder = new TextEncoder();
@@ -641,7 +651,7 @@ export async function POST(request: NextRequest) {
           conversationStore.set(sid, conversation);
           const stream = new ReadableStream({
             start(controller) {
-              controller.enqueue(encoder.encode(`event: meta\ndata: ${JSON.stringify({ cars: [], suggestions: [], intent: 'car_listing', carFlow: { step: 'year_km', collecting: 'kilometers' } })}\n\n`));
+              controller.enqueue(encoder.encode(`event: meta\ndata: ${JSON.stringify({ cars: [], suggestions: [], intent: 'car_listing', carFlow: { step: 'year_km', collecting: 'kilometers', data: activeCarFlow.data } })}\n\n`));
               controller.enqueue(encoder.encode(`event: token\ndata: ${JSON.stringify({ content: kmMsg })}\n\n`));
               controller.enqueue(encoder.encode(`event: done\ndata: {}\n\n`));
               controller.close();
@@ -670,7 +680,7 @@ export async function POST(request: NextRequest) {
           conversationStore.set(sid, conversation);
           const stream = new ReadableStream({
             start(controller) {
-              controller.enqueue(encoder.encode(`event: meta\ndata: ${JSON.stringify({ cars: [], suggestions: [], intent: 'car_listing', carFlow: { step: 'fuel_trans', collecting: 'transmission' } })}\n\n`));
+              controller.enqueue(encoder.encode(`event: meta\ndata: ${JSON.stringify({ cars: [], suggestions: [], intent: 'car_listing', carFlow: { step: 'fuel_trans', collecting: 'transmission', data: activeCarFlow.data } })}\n\n`));
               controller.enqueue(encoder.encode(`event: token\ndata: ${JSON.stringify({ content: transMsg })}\n\n`));
               controller.enqueue(encoder.encode(`event: done\ndata: {}\n\n`));
               controller.close();
@@ -712,7 +722,7 @@ export async function POST(request: NextRequest) {
           conversationStore.set(sid, conversation);
           const stream = new ReadableStream({
             start(controller) {
-              controller.enqueue(encoder.encode(`event: meta\ndata: ${JSON.stringify({ cars: [], suggestions: [], intent: 'car_listing', carFlow: { step: 'condition_price', collecting: 'price' } })}\n\n`));
+              controller.enqueue(encoder.encode(`event: meta\ndata: ${JSON.stringify({ cars: [], suggestions: [], intent: 'car_listing', carFlow: { step: 'condition_price', collecting: 'price', data: activeCarFlow.data } })}\n\n`));
               controller.enqueue(encoder.encode(`event: token\ndata: ${JSON.stringify({ content: priceMsg })}\n\n`));
               controller.enqueue(encoder.encode(`event: done\ndata: {}\n\n`));
               controller.close();
@@ -776,7 +786,7 @@ export async function POST(request: NextRequest) {
         const encoder = new TextEncoder();
         const stream = new ReadableStream({
           start(controller) {
-            controller.enqueue(encoder.encode(`event: meta\ndata: ${JSON.stringify({ cars: [], suggestions: [], intent: 'car_listing', carFlow: { step: activeCarFlow.step, hint: nextQuestion.hint } })}\n\n`));
+            controller.enqueue(encoder.encode(`event: meta\ndata: ${JSON.stringify({ cars: [], suggestions: [], intent: 'car_listing', carFlow: { step: activeCarFlow.step, hint: nextQuestion.hint, data: activeCarFlow.data } })}\n\n`));
             controller.enqueue(encoder.encode(`event: token\ndata: ${JSON.stringify({ content: nextQuestion.text })}\n\n`));
             controller.enqueue(encoder.encode(`event: done\ndata: {}\n\n`));
             controller.close();
@@ -905,8 +915,9 @@ export async function POST(request: NextRequest) {
 
     // ── CAR LISTING: start guided flow ──
     if (intent === 'car_listing') {
-      // Check if user is logged in
-      if (!userName) {
+      // Check if user is logged in — accept userName OR clientToken
+      const isLoggedIn = userName || clientToken;
+      if (!isLoggedIn) {
         const authMsg = '🔒 لإنشاء إعلان سيارة، تحتاج تسجيل دخول أولاً.\n\nسأنقلك الآن لصفحة تسجيل الدخول...';
         conversation.push({ role: 'assistant', content: authMsg });
         conversationStore.set(sid, conversation);
@@ -1127,10 +1138,11 @@ export async function POST(request: NextRequest) {
         'X-Accel-Buffering': 'no',
       },
     });
-  } catch {
+  } catch (err: any) {
+    console.error('[AI Chat Stream] Fatal error:', err?.message, err?.stack);
     return Response.json({
       success: true,
-      data: { message: 'عذراً، حدث خطأ. جرب تكتب سؤالك بطريقة ثانية.', cars: [], intent: 'general', suggestions: ['بحث عن سيارة', 'مساعد شراء'] },
+      data: { message: 'عذراً، حدث خطأ. جرب تكتب سؤالك بطريقة ثانية.', cars: [], intent: 'general', suggestions: ['بحث عن سيارة', 'مساعد شراء'], _error: err?.message },
     });
   }
 }
