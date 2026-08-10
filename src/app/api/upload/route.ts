@@ -17,6 +17,21 @@ function isCloudinaryConfigured(): boolean {
   );
 }
 
+function isValidMagicBytes(buffer: Buffer): boolean {
+  if (buffer.length < 4) return false;
+  // JPEG: FF D8 FF
+  if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) return true;
+  // PNG: 89 50 4E 47
+  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) return true;
+  // GIF: 47 49 46 38 ('GIF8')
+  if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x38) return true;
+  // WEBP: 52 49 46 46 (RIFF) ... WEBP
+  if (buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 && buffer.length >= 12) {
+    if (buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) return true;
+  }
+  return false;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const user = await authenticateRequest(request);
@@ -51,6 +66,10 @@ export async function POST(request: NextRequest) {
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+
+    if (!isValidMagicBytes(buffer)) {
+      return NextResponse.json({ success: false, error: 'محتوى الملف لا يطابق توقيع الصور المسموحة (Magic Bytes Error)' }, { status: 400 });
+    }
 
     // Preferred: Cloudinary (persistent across deploys, CDN-served)
     if (isCloudinaryConfigured()) {

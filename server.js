@@ -57,11 +57,11 @@ const handle = app.getRequestHandler();
 // non-interactive prompt errors out and blocks startup intermittently.
 const { execSync } = require('child_process');
 try {
-  log('INFO', 'Running prisma db push...');
-  execSync('./node_modules/.bin/prisma db push --skip-generate --accept-data-loss', { stdio: 'inherit', timeout: 30000 });
-  log('INFO', 'Prisma db push completed');
+  log('INFO', 'Running safe prisma db push check...');
+  execSync('./node_modules/.bin/prisma db push --skip-generate', { stdio: 'inherit', timeout: 30000 });
+  log('INFO', 'Prisma db sync completed safely');
 } catch (e) {
-  log('WARN', 'Prisma db push failed (non-fatal, will retry on first request)', e.message);
+  log('WARN', 'Prisma db push check failed (non-fatal, database remains intact)', e.message);
 }
 
 app.prepare().then(() => {

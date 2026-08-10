@@ -95,8 +95,9 @@ export function Header() {
   ];
 
   const secondaryLinks = [
+    { href: '/customs-calculator', label: 'حاسبة الجمارك', icon: Calculator },
+    { href: '/finance-calculator', label: 'تمويل البنوك', icon: DollarSign },
     { href: '/dealers', label: 'الوكلاء', icon: Store },
-    { href: '/financing', label: 'التمويل', icon: Calculator },
     { href: '/ai', label: 'المساعد الذكي', icon: Bot },
     { href: '/car-finder', label: 'هل تناسبني؟', icon: Car },
     { href: '/resale-value', label: 'قيمة إعادة البيع', icon: DollarSign },

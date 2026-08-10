@@ -30,6 +30,8 @@ import { RatingModal } from '@/components/ratings/RatingModal';
 import type { Car } from '@/types';
 import { fetchWithRetry } from '@/lib/fetch-retry';
 import toast from 'react-hot-toast';
+import WhatsAppShareButton from '@/components/ui/WhatsAppShareButton';
+import JordanianInspectionReport from '@/components/cars/JordanianInspectionReport';
 
 const AuctionSection = lazy(() => import('@/components/auctions/AuctionSection').then(m => ({ default: m.AuctionSection })));
 const CarHistorySection = lazy(() => import('@/components/cars/CarHistorySection').then(m => ({ default: m.CarHistorySection })));
@@ -443,7 +445,7 @@ export default function CarDetailPage() {
                       واتساب
                     </Button>
                   )}
-                  <Button variant="ghost" icon={<Share2 className="w-4 h-4" />} onClick={handleShare}>مشاركة</Button>
+                  <WhatsAppShareButton title={`${car.brand?.nameAr || ''} ${car.model?.nameAr || ''}`} price={car.price} year={car.year} city={car.city?.nameAr} />
                   <Button variant="ghost" icon={<Flag className="w-4 h-4" />} onClick={() => setReportOpen(true)}>إبلاغ</Button>
                   <Link href={`/cars/${car.slug || car.id}/report`} target="_blank">
                     <Button variant="ghost" icon={<BarChart3 className="w-4 h-4" />}>تقرير السيارة</Button>
@@ -516,6 +518,11 @@ export default function CarDetailPage() {
             {/* Customs Calculator */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
               <CustomsCalculator year={car.year} engineCapacity={car.engineCapacity ?? null} price={car.price} />
+            </motion.div>
+
+            {/* Jordanian Inspection Report */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <JordanianInspectionReport score={car.aiConditionReport || '7 جيد'} />
             </motion.div>
 
             {/* Car History (Carfax) */}
