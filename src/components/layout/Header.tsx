@@ -95,19 +95,23 @@ export function Header() {
   ];
 
   const secondaryLinks = [
+    { href: '/jordan-traffic-violations', label: 'ترخيص ومخالفات السير', icon: ShieldCheck },
+    { href: '/free-zone-calculator', label: 'شحن وتخليص المنطقة الحرة', icon: Calculator },
+    { href: '/ai/inspection-analyzer', label: 'محلل فحص الشواصي بالـ AI', icon: Cpu },
+    { href: '/ev-charging-jordan', label: 'محطات الشحن الكهربائي', icon: Zap },
     { href: '/swap-calculator', label: 'حاسبة البدل والمقاصة', icon: GitCompare },
     { href: '/customs-calculator', label: 'حاسبة الجمارك', icon: Calculator },
     { href: '/finance-calculator', label: 'تمويل البنوك', icon: DollarSign },
-    { href: '/dealers', label: 'الوكلاء', icon: Store },
+    { href: '/dealers', label: 'الوكلاء والمعارض', icon: Store },
     { href: '/ai', label: 'المساعد الذكي', icon: Bot },
-    { href: '/car-finder', label: 'هل تناسبني؟', icon: Car },
+    { href: '/car-finder', label: 'مستشار السيارات', icon: Car },
     { href: '/resale-value', label: 'قيمة إعادة البيع', icon: DollarSign },
-    { href: '/maintenance', label: 'الصيانة', icon: Wrench },
-    { href: '/my-garage', label: 'مرآبي', icon: Wrench },
-    { href: '/wanted', label: 'مطلوب', icon: Tag },
-    { href: '/plates', label: 'لوحات', icon: BadgePercent },
-    { href: '/news', label: 'الأخبار', icon: Newspaper },
-    ...(isAuthenticated ? [{ href: '/tickets', label: 'التذاكر', icon: Ticket }] : []),
+    { href: '/maintenance', label: 'الصيانة والورش', icon: Wrench },
+    { href: '/my-garage', label: 'مرآبي الشخصي', icon: Wrench },
+    { href: '/wanted', label: 'سيارات مطلوبة', icon: Tag },
+    { href: '/plates', label: 'لوحات ميزة', icon: BadgePercent },
+    { href: '/news', label: 'أخبار السيارات', icon: Newspaper },
+    ...(isAuthenticated ? [{ href: '/tickets', label: 'الدعم والتذاكر', icon: Ticket }] : []),
   ];
 
   const desktopUserMenuItems = [
