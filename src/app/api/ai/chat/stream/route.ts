@@ -121,7 +121,12 @@ function buildCarFlowSummary(data: Record<string, string>): string {
 type Intent = 'car_search' | 'workshop' | 'parts' | 'price_analysis' | 'engine_sound' | 'car_listing' | 'selling' | 'workshop_add' | 'negotiation' | 'ticket' | 'site_info' | 'ref_code' | 'navigation' | 'general';
 
 function detectIntent(query: string): Intent {
-  const q = query.toLowerCase();
+  // Normalize Arabic: أ/إ/آ → ا, ة → ه, ى → ي, then lowercase
+  const q = query
+    .replace(/[أإآءٱ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .toLowerCase();
   if (/[A-Z]{1,3}\d{1,4}-[A-Z]{3}/i.test(q.trim()) || /^[A-Z]\d{2,3}-[A-Z]{3}$/i.test(q.trim())) {
     return 'ref_code';
   }
