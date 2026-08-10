@@ -277,14 +277,16 @@ export function Header() {
         </div>
       </header>
 
-      {/* "More" dropdown */}
+      {/* "More" dropdown — Shows 4 items initially, scrolls gradually */}
       {moreOpen && (
         <div
           ref={moreMenuRef}
-          className="fixed z-[70] w-60 rounded-xl border border-surface-700/60 bg-surface-800 shadow-soft-xl overflow-hidden"
+          className="fixed z-[70] w-64 rounded-2xl border border-surface-700/80 bg-surface-800/95 backdrop-blur-xl shadow-soft-2xl overflow-hidden flex flex-col"
         >
-          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gold-100 opacity-80" />
-          <div className="p-1.5">
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gold-100 opacity-90" />
+          
+          {/* Scrollable Container — Fits 4 items initially (~180px) */}
+          <div className="p-1.5 max-h-[184px] overflow-y-auto scroll-smooth divide-y divide-surface-700/30">
             {secondaryLinks.map((link) => {
               const Icon = link.icon;
               const active = pathname === link.href || pathname.startsWith(link.href + '/');
@@ -294,17 +296,27 @@ export function Header() {
                   href={link.href}
                   onClick={() => setMoreOpen(false)}
                   className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200',
+                    'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200',
                     active
-                      ? 'text-accent-300 bg-accent-500/15'
-                      : 'text-surface-400 hover:bg-surface-700/50'
+                      ? 'text-accent-300 bg-accent-500/20 font-bold'
+                      : 'text-surface-300 hover:text-white hover:bg-surface-700/60'
                   )}
                 >
-                  <Icon className="w-4 h-4" />
-                  {link.label}
+                  <Icon className="w-4 h-4 text-accent-400 shrink-0" />
+                  <span className="truncate">{link.label}</span>
                 </Link>
               );
             })}
+          </div>
+
+          {/* Gradual Scroll Indicator Footer */}
+          <div className="px-3 py-1.5 bg-surface-900/90 border-t border-surface-700/60 text-[10px] font-bold text-surface-400 flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-gold-100">
+              <ChevronDown className="w-3.5 h-3.5 animate-bounce" /> مرر لأسفل لرؤية باقي الصفحات
+            </span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-surface-700 text-surface-300">
+              {secondaryLinks.length} صفحة
+            </span>
           </div>
         </div>
       )}
