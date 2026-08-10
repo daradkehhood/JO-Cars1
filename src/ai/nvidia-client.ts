@@ -27,49 +27,47 @@ export interface AIModelInfo {
 export const AI_MODELS: Record<AIModelId, AIModelInfo> = {
   glm: {
     id: 'glm',
-    model: 'z-ai/glm-5.2',
-    nameAr: 'GLM 5.2',
-    nameEn: 'GLM 5.2',
-    description: 'نموذج سريع ومتوازن — الأفضل للمحادثات العامة',
+    model: 'meta/llama-3.1-70b-instruct',
+    nameAr: 'Llama 3.1 70B',
+    nameEn: 'Llama 3.1 70B',
+    description: 'نموذج ذكي وسريع جداً للمحادثات والاستشارات العامة',
     maxTokens: 4096,
     temperature: 0.7,
     topP: 1,
   },
   minimax: {
     id: 'minimax',
-    model: 'minimaxai/minimax-m3',
-    nameAr: 'MiniMax M3',
-    nameEn: 'MiniMax M3',
-    description: 'نموذج قوي للنصوص الطويلة — الأفضل للتحليل المعمّق',
+    model: 'meta/llama-3.3-70b-instruct',
+    nameAr: 'Llama 3.3 70B',
+    nameEn: 'Llama 3.3 70B',
+    description: 'نموذج فائق القوة للتحليل المعمّق ومقارنة الأسعار',
     maxTokens: 8192,
-    temperature: 1,
+    temperature: 0.7,
     topP: 0.95,
   },
   mistral: {
     id: 'mistral',
-    model: 'mistralai/mistral-medium-3.5-128b',
-    nameAr: 'Mistral Medium',
-    nameEn: 'Mistral Medium 3.5',
-    description: 'نموذج ذكي مع reasoning — الأفضل للأسئلة المعقدة',
-    maxTokens: 16384,
+    model: 'mistralai/mistral-7b-instruct-v0.3',
+    nameAr: 'Mistral 7B',
+    nameEn: 'Mistral 7B',
+    description: 'نموذج سريع ومختصر للإجابات السريعة',
+    maxTokens: 4096,
     temperature: 0.7,
     topP: 1,
-    reasoning: true,
   },
   'gpt-oss': {
     id: 'gpt-oss',
-    model: 'openai/gpt-oss-120b',
-    nameAr: 'GPT OSS 120B',
-    nameEn: 'GPT OSS 120B',
-    description: 'نموذج OpenAI مفتوح المصدر — الأفضل للإجابات الدقيقة',
+    model: 'meta/llama-3.1-70b-instruct',
+    nameAr: 'Llama 3.1 70B',
+    nameEn: 'Llama 3.1 70B',
+    description: 'النموذج الرئيسي لاستشارات السيارات والأسعار والتوصيات',
     maxTokens: 4096,
-    temperature: 1,
+    temperature: 0.7,
     topP: 1,
-    reasoning: true,
   },
 };
 
-export const DEFAULT_MODEL: AIModelId = 'gpt-oss';
+export const DEFAULT_MODEL: AIModelId = 'glm';
 
 let client: OpenAI | null = null;
 
@@ -128,8 +126,8 @@ export async function chatCompletion(
     temperature = modelInfo.temperature,
     maxTokens = Math.min(modelInfo.maxTokens, 4096),
     topP = modelInfo.topP,
-    timeoutMs = 20000,
-    retries = 2,
+    timeoutMs = 5000,
+    retries = 1,
   } = options;
 
   let lastError: any = null;

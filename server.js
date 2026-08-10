@@ -58,7 +58,7 @@ const handle = app.getRequestHandler();
 const { execSync } = require('child_process');
 try {
   log('INFO', 'Running safe prisma db push check...');
-  execSync('./node_modules/.bin/prisma db push --skip-generate', { stdio: 'inherit', timeout: 30000 });
+  execSync('npx prisma db push --skip-generate', { stdio: 'inherit', timeout: 30000 });
   log('INFO', 'Prisma db sync completed safely');
 } catch (e) {
   log('WARN', 'Prisma db push check failed (non-fatal, database remains intact)', e.message);
