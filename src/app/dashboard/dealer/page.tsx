@@ -1,3 +1,5 @@
-import DealerDashboardPage from '@/app/dealer/dashboard/page';
+import { DealerDashboardComponent } from '@/components/dealer/DealerDashboardComponent';
 
-export default DealerDashboardPage;
+export default function Page() {
+  return <DealerDashboardComponent />;
+}

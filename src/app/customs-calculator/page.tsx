@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
 import { Calculator, ShieldCheck, Zap, Fuel, Sparkles, AlertCircle, Info, RefreshCw, FileText } from 'lucide-react';
 
 type FuelCategory = 'EV' | 'HYBRID' | 'PETROL';
