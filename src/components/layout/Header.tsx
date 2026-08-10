@@ -11,7 +11,7 @@ import {
   Search, User, Heart, MessageCircle, Plus, Moon, Sun,
   ChevronDown, LogOut, ShieldCheck, Bot, Wrench, DollarSign, Tag,
   BadgePercent, Newspaper, Car, Store, Bell, GitCompare, Ticket,
-  Calculator, Cpu,
+  Calculator, Cpu, Zap,
 } from 'lucide-react';
 
 export function Header() {
