@@ -522,7 +522,7 @@ export default function CarDetailPage() {
 
             {/* Jordanian Inspection Report */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <JordanianInspectionReport score={car.aiConditionReport || '7 جيد'} />
+              <JordanianInspectionReport score={(car as any).aiConditionReport || '7 جيد'} />
             </motion.div>
 
             {/* Car History (Carfax) */}
