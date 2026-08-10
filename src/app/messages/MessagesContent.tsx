@@ -6,28 +6,38 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageCircle, Send, ChevronLeft, Eye, Search, Smile, CheckCheck, Check,
-  ArrowDown, Image as ImageIcon, X, Loader2
+  ArrowDown, Image as ImageIcon, X, Loader2, Car, Sparkles, Filter, Phone,
+  Calculator, ShieldCheck, MapPin, ExternalLink, Zap, Paperclip, MoreVertical, RefreshCw
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { getSocket } from '@/lib/socket';
 import type { Conversation, Message } from '@/types';
 import toast from 'react-hot-toast';
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
+import Link from 'next/link';
+
+// Jordan Fast Reply Chips
+const QUICK_REPLIES = [
+  '💵 ما هو السعر النهائي من الآخر؟',
+  '📋 هل السيارة فحص كامل (7 جيد)؟',
+  '📍 أين موقع المعاينة والمعرض؟',
+  '🔁 هل تقبل البدل بسيارة أخرى؟',
+  '📸 هل يمكنك إرسال صور إضافية للداخلية والفرش؟',
+  '⚡ هل السعر شامل الجمارك والترخيص؟',
+];
 
 const EMOJI_DATA: Record<string, string[]> = {
-  'الوجوه': ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','😉','😊','😇','🥰','😍','🤩','😘','😗','😚','😙','🥲','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🥵','🥶','🥴','😵','🤯','🤠','🥳','🥸','😎','🤓','🧐','😕','😟','🙁','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','☠️','💩','🤡','👹','👺','👻','👽','👾','🤖'],
-  'اليدان': ['👋','🤚','🖐️','✋','🖖','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏'],
-  'الحيوانات': ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐻‍❄️','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🙈','🙉','🙊','🐒','🐔','🐧','🐦','🐤','🐣','🐥','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🪲','🪳','🦟','🦗','🕷️','🦂','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊'],
-  'الطعام': ['🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🥑','🍆','🥔','🥕','🌽','🌶️','🫑','🥒','🥬','🥦','🧄','🧅','🍄','🥜','🫘','🌰','🍞','🥐','🥖','🫓','🥨','🥯','🥞','🧇','🧀','🍖','🍗','🥩','🥓','🍔','🍟','🍕','🌭','🥪','🌮','🌯','🫔','🥙','🧆','🥚','🍳','🥘','🍲','🫕','🥣','🥗','🍿','🧈','🧂','🥫'],
-  'الرياضة': ['⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱','🪀','🏓','🏸','🏒','🥅','⛳','🪁','🏹','🎣','🤿','🥊','🥋','🎽','🛹','🛼','🛷','⛸️','🥌','🎿','🎯','🪃','🏆','🥇','🥈','🥉','🏅','🎖️','🏵️','🎗️','🎫','🎟️','🎪'],
-  'السفر': ['🚗','🚕','🚌','🏎️','🚓','🚑','🚒','🚐','🛻','🚚','🚛','🚜','🛵','🏍️','🛺','🚲','🛴','🛹','🛼','🚁','✈️','🛩️','🚀','🛸','🚢','⛵','🚤','🛥️','🏠','🏡','🏢','🏣','🏤','🏥','🏦','🏨','🏩','🏪','🏫','🏬','🏭','🏯','🏰'],
-  'الرموز': ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','☮️','✝️','☪️','🕉️','☸️','✡️','🔯','🕎','☯️','☦️','🛐','⛎','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓','🆔','⚛️','🉑','☢️','☣️','📴','📳','🈶','🈚','🈸','🈺','🈷️','✴️','🆚','💮','🉐','㊙️','㊗️','🈴','🈵','🈹','🈲','🅰️','🅱️','🆎','🆑','🅾️','🆘','❌','⭕','🛑','⛔','📛','🚫','💯','💢','♨️','🚷','🚯','🚳','🚱','🔞','📵','🚭'],
-  'الأجسام': ['👀','👁️','👅','👄','💋','🩸','👂','🦻','👃','🧠','🦷','🦴','🦵','🦶','🫀','🫁','💪','🫶'],
+  'المركبات 🚗': ['🚗','🏎️','🛻','🚙','🚌','🏍️','🛵','⚡','🔥','💎','👍','🤝'],
+  'الوجوه 😀': ['😀','😃','😄','😁','😆','😂','🤣','🙂','😉','😊','😇','🥰','😍','🤩','😘','🤔','😎','🥳','🤝','👍','👏','❤️','🔥'],
+  'الرموز 💎': ['❤️','💚','💙','🖤','🤍','💯','✅','⭐','🌟','💵','💰','🏷️','🔑','📍','📞','⚡'],
 };
 
 export default function MessagesContent() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConv, setActiveConv] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -36,12 +46,16 @@ export default function MessagesContent() {
   const [newMessage, setNewMessage] = useState('');
   const [showList, setShowList] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterTab, setFilterTab] = useState<'ALL' | 'UNREAD' | 'CARS'>('ALL');
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const [viewerImage, setViewerImage] = useState<string | null>(null);
+
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -63,48 +77,72 @@ export default function MessagesContent() {
     try {
       const res = await fetch(`/api/conversations/${convId}/messages`);
       const data = await res.json();
-      if (data.success) { setMessages(data.data || []); return true; }
+      if (data.success) {
+        setMessages(data.data || []);
+        return true;
+      }
       return false;
     } catch { return false; }
   }, []);
 
   useEffect(() => {
-    if (!isAuthenticated) { router.push('/auth/login'); return; }
-    fetchConversations().then((convs: Conversation[]) => {
-      setConversations(convs);
-      setLoading(false);
-      if (!initialDone.current && convIdParam) {
-        const found = convs.find((c: Conversation) => c.id === convIdParam);
-        if (found) {
-          initialDone.current = true;
-          setActiveConv(found);
-          setShowList(false);
-          fetchMessages(convIdParam);
+    if (_hydrated && !isAuthenticated) {
+      router.push('/auth/login');
+      return;
+    }
+    if (isAuthenticated) {
+      fetchConversations().then((convs: Conversation[]) => {
+        setConversations(convs);
+        setLoading(false);
+        if (!initialDone.current && convIdParam) {
+          const found = convs.find((c: Conversation) => c.id === convIdParam);
+          if (found) {
+            initialDone.current = true;
+            setActiveConv(found);
+            setShowList(false);
+            fetchMessages(convIdParam);
+          }
         }
-      }
-    });
-  }, [isAuthenticated, router, fetchConversations, fetchMessages, convIdParam]);
+      });
+    }
+  }, [isAuthenticated, _hydrated, router, fetchConversations, fetchMessages, convIdParam]);
 
   useEffect(() => {
-    const socket = getSocket(user?.id);
+    if (!user?.id) return;
+    const socket = getSocket(user.id);
     const onOnline = (data: { userId: string }) => setOnlineUsers((prev) => new Set(prev).add(data.userId));
     const onOffline = (data: { userId: string }) => setOnlineUsers((prev) => { const n = new Set(prev); n.delete(data.userId); return n; });
     socket.on('user-online', onOnline);
     socket.on('user-offline', onOffline);
+
     conversations.forEach((conv) => {
       const otherId = conv.buyerId === user?.id ? conv.sellerId : conv.buyerId;
       if (otherId) socket.emit('check-online', otherId);
     });
+
     socket.on('user-status', (data: { userId: string; online: boolean }) => {
-      setOnlineUsers((prev) => { const n = new Set(prev); if (data.online) n.add(data.userId); else n.delete(data.userId); return n; });
+      setOnlineUsers((prev) => {
+        const n = new Set(prev);
+        if (data.online) n.add(data.userId);
+        else n.delete(data.userId);
+        return n;
+      });
     });
-    return () => { socket.off('user-online', onOnline); socket.off('user-offline', onOffline); socket.off('user-status'); };
+
+    return () => {
+      socket.off('user-online', onOnline);
+      socket.off('user-offline', onOffline);
+      socket.off('user-status');
+    };
   }, [user?.id, conversations]);
 
   const scrollToBottom = (smooth = true) => {
     setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'instant' }), 100);
   };
-  useEffect(() => { scrollToBottom(false); }, [messages]);
+
+  useEffect(() => {
+    scrollToBottom(false);
+  }, [messages]);
 
   const handleScroll = () => {
     const container = chatContainerRef.current;
@@ -114,10 +152,14 @@ export default function MessagesContent() {
   };
 
   useEffect(() => {
-    const socket = getSocket(user?.id);
+    if (!user?.id) return;
+    const socket = getSocket(user.id);
     const onMsg = (data: Message) => {
       if (activeConv && data.conversationId === activeConv.id) {
-        setMessages((prev) => { if (prev.some((m) => m.id === data.id)) return prev; return [...prev, data]; });
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === data.id)) return prev;
+          return [...prev, data];
+        });
         scrollToBottom();
       }
       fetchConversations();
@@ -127,13 +169,20 @@ export default function MessagesContent() {
     socket.on('message-received', onMsg);
     socket.on('user-typing', onTyping);
     socket.on('user-stop-typing', onStopTyping);
-    return () => { socket.off('message-received', onMsg); socket.off('user-typing', onTyping); socket.off('user-stop-typing', onStopTyping); };
+    return () => {
+      socket.off('message-received', onMsg);
+      socket.off('user-typing', onTyping);
+      socket.off('user-stop-typing', onStopTyping);
+    };
   }, [activeConv, fetchConversations, user?.id]);
 
   useEffect(() => {
-    const socket = getSocket(user?.id);
+    if (!user?.id) return;
+    const socket = getSocket(user.id);
     if (activeConv) socket.emit('join-conversation', activeConv.id);
-    return () => { if (activeConv) socket.emit('leave-conversation', activeConv.id); };
+    return () => {
+      if (activeConv) socket.emit('leave-conversation', activeConv.id);
+    };
   }, [activeConv?.id, user?.id]);
 
   const openConversation = async (conv: Conversation) => {
@@ -145,9 +194,9 @@ export default function MessagesContent() {
   };
 
   const emitTyping = (isTyping: boolean) => {
-    const socket = getSocket(user?.id);
-    if (!activeConv) return;
-    if (isTyping) socket.emit('typing', { conversationId: activeConv.id, userId: user?.id });
+    if (!activeConv || !user?.id) return;
+    const socket = getSocket(user.id);
+    if (isTyping) socket.emit('typing', { conversationId: activeConv.id, userId: user.id });
     else socket.emit('stop-typing', { conversationId: activeConv.id });
   };
 
@@ -158,25 +207,46 @@ export default function MessagesContent() {
     typingTimeoutRef.current = setTimeout(() => { emitTyping(false); typingTimeoutRef.current = null; }, 1500);
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !activeConv) return;
+    if (!file) return;
+    setSelectedImageFile(file);
+    const reader = new FileReader();
+    reader.onload = () => setImagePreviewUrl(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const cancelImagePreview = () => {
+    setSelectedImageFile(null);
+    setImagePreviewUrl(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const uploadAndSendImage = async () => {
+    if (!selectedImageFile || !activeConv) return;
     setUploadingImage(true);
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', selectedImageFile);
       const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
       const uploadData = await uploadRes.json();
-      if (!uploadData.success) { toast.error('فشل رفع الصورة'); return; }
+      if (!uploadData.success) {
+        toast.error('فشل رفع الصورة');
+        return;
+      }
       const imageUrl = uploadData.data?.url;
       if (imageUrl) {
         const caption = newMessage.trim();
         const content = caption ? `IMG:${imageUrl}\n${caption}` : `IMG:${imageUrl}`;
         setNewMessage('');
+        cancelImagePreview();
         await sendMessage(content);
       }
-    } catch { toast.error('فشل رفع الصورة'); }
-    finally { setUploadingImage(false); if (fileInputRef.current) fileInputRef.current.value = ''; }
+    } catch {
+      toast.error('حدث خطأ أثناء الرفع');
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const sendMessage = async (content: string) => {
@@ -189,7 +259,12 @@ export default function MessagesContent() {
       const res = await fetch('/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: finalContent, receiverId, carId: activeConv.carId, conversationId: activeConv.id }),
+        body: JSON.stringify({
+          content: finalContent,
+          receiverId,
+          carId: activeConv.carId,
+          conversationId: activeConv.id,
+        }),
       });
       const data = await res.json();
       if (data.success) {
@@ -199,30 +274,58 @@ export default function MessagesContent() {
         fetchConversations();
         scrollToBottom();
       } else {
-        toast.error('فشل الإرسال');
+        toast.error('فشل إرسال الرسالة');
         setNewMessage(finalContent);
       }
     } catch {
       toast.error('فشل الإرسال');
       setNewMessage(finalContent);
-    } finally { setSending(false); }
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleSend = () => {
+    if (selectedImageFile) {
+      uploadAndSendImage();
+      return;
+    }
     if (!newMessage.trim()) return;
     sendMessage(newMessage);
   };
 
-  if (!isAuthenticated) return null;
+  const handleQuickReply = (text: string) => {
+    setNewMessage(text);
+    inputRef.current?.focus();
+  };
+
+  if (!_hydrated || loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col justify-between">
+        <Header />
+        <div className="flex-1 flex items-center justify-center py-20">
+          <div className="text-center">
+            <div className="animate-spin w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-3" />
+            <p className="text-sm font-semibold text-gray-500">جاري فتح مركز الرسائل...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   const otherParticipant = (conv: Conversation) => conv.buyerId === user?.id ? conv.seller : conv.buyer;
   const isUserOnline = (userId?: string) => userId ? onlineUsers.has(userId) : false;
 
   const filteredConversations = conversations.filter(conv => {
-    if (!searchQuery) return true;
     const other = otherParticipant(conv);
     const q = searchQuery.toLowerCase();
-    return other?.name?.toLowerCase().includes(q) || conv.car?.brand?.nameAr?.includes(q) || conv.car?.model?.nameAr?.includes(q);
+    const matchesSearch = !searchQuery || other?.name?.toLowerCase().includes(q) || conv.car?.brand?.nameAr?.includes(q) || conv.car?.model?.nameAr?.includes(q);
+    if (!matchesSearch) return false;
+
+    if (filterTab === 'UNREAD') return (conv.unreadCount || 0) > 0;
+    if (filterTab === 'CARS') return !!conv.car;
+    return true;
   });
 
   const getTimeLabel = (date: string) => {
@@ -256,352 +359,571 @@ export default function MessagesContent() {
     if (!msg) return 'اضغط لبدء المحادثة';
     const { imageUrl, text } = parseMessageContent(msg.content);
     if (imageUrl && text) return `📷 ${text}`;
-    if (imageUrl) return '📷 صورة';
+    if (imageUrl) return '📷 صورة مرفقة';
     return msg.content;
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-[80vh] flex items-center justify-center" style={{ backgroundColor: '#1a1b26' }}>
-        <div className="text-center">
-          <div className="animate-spin w-10 h-10 border-4 border-[#0084ff] border-t-transparent rounded-full mx-auto mb-3" />
-          <p className="text-sm text-gray-400">جاري تحميل المحادثات...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen">
-      <div className="container-custom max-w-[1400px] mx-auto">
-        <div className="rounded-none md:rounded-2xl overflow-hidden shadow-2xl" style={{ backgroundColor: '#18191a', height: '100vh' }}>
-          <div className="flex h-full">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col justify-between text-gray-900 dark:text-gray-100">
+      <Header />
 
-            {/* Sidebar */}
-            <div className={`border-l border-[#3a3b3c]/50 flex flex-col ${showList ? 'flex' : 'hidden md:flex'}`}
-              style={{ width: '360px', minWidth: '360px', backgroundColor: '#18191a' }}>
-              <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid #3a3b3c' }}>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-bold text-white">الرسائل</h2>
-                  {unreadTotal > 0 && (
-                    <span className="px-2 py-0.5 bg-[#0084ff] text-white text-xs font-bold rounded-full">{unreadTotal}</span>
-                  )}
-                </div>
-              </div>
-              <div className="px-3 py-2">
-                <div className="relative">
-                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#b0b3b8]" />
-                  <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="بحث في المحادثات..."
-                    className="w-full pr-9 pl-4 py-2 rounded-full text-sm outline-none placeholder:text-[#b0b3b8]"
-                    style={{ backgroundColor: '#3a3b3c', color: '#e4e6eb' }} />
-                </div>
-              </div>
-              <div className="flex-1 overflow-y-auto">
-                {filteredConversations.length === 0 ? (
-                  <div className="p-8 text-center">
-                    <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: '#3a3b3c' }}>
-                      <MessageCircle className="w-7 h-7 text-[#b0b3b8]" />
-                    </div>
-                    <p className="text-sm font-medium text-[#b0b3b8]">لا توجد محادثات</p>
+      <main className="container-custom max-w-[1400px] mx-auto px-0 sm:px-4 py-0 sm:py-6 flex-1 w-full">
+        {/* Main Messenger Box */}
+        <div className="card overflow-hidden shadow-2xl border border-gray-200 dark:border-emerald-500/20 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl h-[calc(100vh-130px)] min-h-[650px] rounded-none sm:rounded-3xl flex">
+
+          {/* Conversations Sidebar */}
+          <div className={`w-full md:w-[380px] shrink-0 border-l border-gray-200 dark:border-gray-800/80 flex flex-col ${showList ? 'flex' : 'hidden md:flex'} bg-gray-50/50 dark:bg-gray-900/50`}>
+            
+            {/* Sidebar Header */}
+            <div className="p-4 border-b border-gray-200 dark:border-gray-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+                    <MessageCircle className="w-5 h-5" />
                   </div>
-                ) : (
-                  filteredConversations.map((conv) => {
-                    const other = otherParticipant(conv);
-                    const isActive = activeConv?.id === conv.id;
-                    const hasUnread = (conv.unreadCount || 0) > 0;
-                    const otherOnline = isUserOnline(other?.id);
-                    return (
-                      <button key={conv.id} onClick={() => openConversation(conv)}
-                        className="w-full text-right px-3 py-2.5 flex items-center gap-3 transition-colors duration-150"
-                        style={{
-                          backgroundColor: isActive ? '#0084ff' : 'transparent',
-                          borderRight: hasUnread && !isActive ? '3px solid #0084ff' : '3px solid transparent',
-                        }}
-                        onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.backgroundColor = '#3a3b3c'; }}
-                        onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.backgroundColor = 'transparent'; }}>
-                        <div className="relative flex-shrink-0">
-                          <div className="w-14 h-14 rounded-full flex items-center justify-center text-white text-lg font-bold"
-                            style={{ backgroundColor: other?.image ? 'transparent' : '#0084ff' }}>
-                            {other?.image ? (
-                              <img src={other.image} alt="" className="w-14 h-14 rounded-full object-cover" />
-                            ) : (other?.name?.charAt(0) || 'U')}
-                          </div>
-                          {otherOnline && (
-                            <div className="absolute bottom-0 right-0 w-4 h-4 bg-[#31a24c] rounded-full border-[3px]" style={{ borderColor: '#18191a' }} />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-0.5">
-                            <p className="text-[15px] truncate" style={{ color: hasUnread ? '#ffffff' : '#e4e6eb', fontWeight: hasUnread ? '700' : '400' }}>
-                              {other?.name}
-                            </p>
-                            {conv.lastMessage && (
-                              <span className="text-xs flex-shrink-0 ml-2" style={{ color: hasUnread ? '#0084ff' : '#b0b3b8' }}>
-                                {getTimeLabel(String(conv.lastMessage.createdAt))}
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[13px] truncate" style={{ color: hasUnread ? '#e4e6eb' : '#b0b3b8', fontWeight: hasUnread ? '600' : '400' }}>
-                            {getLastMsgPreview(conv.lastMessage)}
-                          </p>
-                          {conv.car && (
-                            <div className="mt-1">
-                              <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ backgroundColor: isActive ? 'rgba(255,255,255,0.15)' : '#3a3b3c', color: isActive ? '#fff' : '#b0b3b8' }}>
-                                🚗 {conv.car.brand?.nameAr} {conv.car.model?.nameAr}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })
+                  <div>
+                    <h2 className="text-lg font-black text-gray-900 dark:text-white">المحادثات المباشرة</h2>
+                    <p className="text-[11px] text-gray-500">سوق Cars JO المعتمد 🇯🇴</p>
+                  </div>
+                </div>
+                {unreadTotal > 0 && (
+                  <span className="px-2.5 py-0.5 bg-emerald-500 text-white text-xs font-black rounded-full shadow-lg shadow-emerald-500/20 animate-pulse">
+                    {unreadTotal} جديد
+                  </span>
                 )}
+              </div>
+
+              {/* Search Box */}
+              <div className="relative">
+                <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="ابحث بالاسم أو اسم السيارة..."
+                  className="w-full pr-10 pl-4 py-2 rounded-2xl text-xs bg-white dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700/60 focus:border-emerald-500 outline-none transition-all shadow-sm"
+                />
+              </div>
+
+              {/* Filter Tabs */}
+              <div className="flex items-center gap-1.5 pt-1">
+                <button
+                  onClick={() => setFilterTab('ALL')}
+                  className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    filterTab === 'ALL'
+                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+                      : 'bg-gray-200/70 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  الكل ({conversations.length})
+                </button>
+                <button
+                  onClick={() => setFilterTab('UNREAD')}
+                  className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    filterTab === 'UNREAD'
+                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+                      : 'bg-gray-200/70 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  غير مقروء ({unreadTotal})
+                </button>
+                <button
+                  onClick={() => setFilterTab('CARS')}
+                  className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    filterTab === 'CARS'
+                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+                      : 'bg-gray-200/70 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  السيارات 🚗
+                </button>
               </div>
             </div>
 
-            {/* Chat Area */}
-            <div className={`flex-1 flex flex-col ${!showList ? 'flex' : 'hidden md:flex'}`} style={{ backgroundColor: '#242526' }}>
-              {activeConv ? (
-                <>
-                  {/* Header */}
-                  <div className="px-4 py-2.5 flex items-center gap-3" style={{ backgroundColor: '#242526', borderBottom: '1px solid #3a3b3c' }}>
-                    <button className="md:hidden p-1.5 rounded-lg" style={{ color: '#0084ff' }} onClick={() => setShowList(true)}>
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <div className="relative cursor-pointer" onClick={() => router.push(`/profile/${otherParticipant(activeConv)?.id}`)}>
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                        style={{ backgroundColor: otherParticipant(activeConv)?.image ? 'transparent' : '#0084ff' }}>
-                        {otherParticipant(activeConv)?.image ? (
-                          <img src={otherParticipant(activeConv)?.image || ''} alt="" className="w-10 h-10 rounded-full object-cover" />
-                        ) : (otherParticipant(activeConv)?.name?.charAt(0) || 'U')}
-                      </div>
-                      {isUserOnline(otherParticipant(activeConv)?.id) && (
-                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#31a24c] rounded-full border-2" style={{ borderColor: '#242526' }} />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[15px] font-semibold text-white truncate">{otherParticipant(activeConv)?.name}</p>
-                      <p className="text-xs" style={{ color: isUserOnline(otherParticipant(activeConv)?.id) ? '#31a24c' : '#b0b3b8' }}>
-                        {isUserOnline(otherParticipant(activeConv)?.id) ? 'متصل الآن' : 'غير متصل'}
-                      </p>
-                    </div>
-                    {activeConv.car && (
-                      <button onClick={() => router.push(`/cars/${activeConv.car?.slug || activeConv.carId}`)}
-                        className="p-2 rounded-lg" style={{ color: '#0084ff' }} title="عرض السيارة">
-                        <Eye className="w-5 h-5" />
-                      </button>
-                    )}
+            {/* Conversations List */}
+            <div className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800/50">
+              {filteredConversations.length === 0 ? (
+                <div className="p-8 text-center my-auto">
+                  <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-400 flex items-center justify-center mx-auto mb-3">
+                    <MessageCircle className="w-6 h-6" />
                   </div>
-
-                  {/* Messages */}
-                  <div ref={chatContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-4 py-3" style={{ backgroundColor: '#242526' }}>
-                    <div dir="rtl" className="space-y-1">
-                      {messages.length > 0 && (
-                        <div className="text-center py-3 mb-2">
-                          <span className="text-[11px] px-3 py-1 rounded-full" style={{ backgroundColor: '#3a3b3c', color: '#b0b3b8' }}>بداية المحادثة</span>
-                        </div>
-                      )}
-
-                      {(() => {
-                        let lastDate = '';
-                        return messages.map((msg, i) => {
-                          const isMine = msg.senderId === user?.id;
-                          const msgDate = new Date(msg.createdAt).toLocaleDateString('ar-JO');
-                          const showDate = msgDate !== lastDate;
-                          if (showDate) lastDate = msgDate;
-                          const showTimeSepar = i === 0 || (new Date(msg.createdAt).getTime() - new Date(messages[i - 1].createdAt).getTime() > 300000);
-
-                          const { imageUrl, text } = parseMessageContent(msg.content);
-
-                          return (
-                            <div key={msg.id}>
-                              {showDate && (
-                                <div className="text-center py-2">
-                                  <span className="text-[11px] px-3 py-1 rounded-full" style={{ backgroundColor: '#3a3b3c', color: '#b0b3b8' }}>
-                                    {new Date(msg.createdAt).toLocaleDateString('ar-JO', { weekday: 'long', month: 'short', day: 'numeric' })}
-                                  </span>
-                                </div>
-                              )}
-                              <div className={`flex ${isMine ? 'justify-start' : 'justify-end'} ${showTimeSepar && i > 0 ? 'mt-3' : 'mt-0.5'}`}>
-                                {!isMine && (
-                                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold ml-2 mt-auto mb-0.5 flex-shrink-0"
-                                    style={{ backgroundColor: otherParticipant(activeConv)?.image ? 'transparent' : '#0084ff' }}>
-                                    {otherParticipant(activeConv)?.image ? (
-                                      <img src={otherParticipant(activeConv)?.image || ''} alt="" className="w-7 h-7 rounded-full object-cover" />
-                                    ) : (otherParticipant(activeConv)?.name?.charAt(0) || 'U')}
-                                  </div>
-                                )}
-                                <div className={`max-w-[65%] flex flex-col`}>
-                                  {showTimeSepar && i > 0 && (
-                                    <span className="text-[10px] text-center w-full mb-1" style={{ color: '#b0b3b8' }}>
-                                      {new Date(msg.createdAt).toLocaleTimeString('ar-JO', { hour: '2-digit', minute: '2-digit' })}
-                                    </span>
-                                  )}
-
-                                  {imageUrl ? (
-                                    <div className="mb-1">
-                                      <img src={imageUrl} alt=""
-                                        className="max-w-[280px] max-h-[300px] rounded-xl cursor-pointer hover:opacity-90 transition-opacity shadow-lg object-cover"
-                                        onClick={() => setViewerImage(imageUrl)} />
-                                      {text && (
-                                        <div className="mt-1 px-3 py-2 rounded-2xl text-[15px] leading-relaxed" style={{
-                                          backgroundColor: isMine ? '#0084ff' : '#3a3b3c', color: '#e4e6eb',
-                                          borderBottomRightRadius: isMine ? '4px' : '18px', borderBottomLeftRadius: isMine ? '18px' : '4px',
-                                        }}>
-                                          <p>{text}</p>
-                                        </div>
-                                      )}
-                                    </div>
-                                  ) : text ? (
-                                    <div className="px-3 py-2 rounded-2xl text-[15px] leading-relaxed" style={{
-                                      backgroundColor: isMine ? '#0084ff' : '#3a3b3c', color: '#e4e6eb',
-                                      borderBottomRightRadius: isMine ? '4px' : '18px', borderBottomLeftRadius: isMine ? '18px' : '4px',
-                                    }}>
-                                      <p>{text}</p>
-                                    </div>
-                                  ) : null}
-
-                                  <div className="flex items-center gap-1 mt-0.5 px-1">
-                                    <span className="text-[10px]" style={{ color: '#b0b3b8' }}>
-                                      {new Date(msg.createdAt).toLocaleTimeString('ar-JO', { hour: '2-digit', minute: '2-digit' })}
-                                    </span>
-                                    {isMine && (
-                                      <span style={{ color: msg.read ? '#0084ff' : '#b0b3b8' }}>
-                                        {msg.read ? <CheckCheck className="w-3.5 h-3.5" /> : <Check className="w-3.5 h-3.5" />}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        });
-                      })()}
-
-                      {typingUsers.size > 0 && otherParticipant(activeConv)?.id && typingUsers.has(otherParticipant(activeConv).id) && (
-                        <div className="flex justify-end mt-2">
-                          <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold ml-2 flex-shrink-0"
-                            style={{ backgroundColor: otherParticipant(activeConv)?.image ? 'transparent' : '#0084ff' }}>
-                            {otherParticipant(activeConv)?.image ? (
-                              <img src={otherParticipant(activeConv)?.image || ''} alt="" className="w-7 h-7 rounded-full object-cover" />
-                            ) : (otherParticipant(activeConv)?.name?.charAt(0) || 'U')}
-                          </div>
-                          <div className="px-4 py-3 rounded-2xl" style={{ backgroundColor: '#3a3b3c', borderBottomLeftRadius: '4px' }}>
-                            <div className="flex items-center gap-1">
-                              <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: '#b0b3b8', animationDelay: '0ms' }} />
-                              <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: '#b0b3b8', animationDelay: '150ms' }} />
-                              <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: '#b0b3b8', animationDelay: '300ms' }} />
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      <div ref={chatEndRef} />
-                    </div>
-                  </div>
-
-                  {/* Scroll to bottom */}
-                  <AnimatePresence>
-                    {showScrollBtn && (
-                      <motion.button initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
-                        onClick={() => scrollToBottom()}
-                        className="absolute bottom-20 left-1/2 -translate-x-1/2 w-10 h-10 rounded-full flex items-center justify-center shadow-lg z-10"
-                        style={{ backgroundColor: '#3a3b3c', color: '#e4e6eb', border: '1px solid #4e4f50' }}>
-                        <ArrowDown className="w-4 h-4" />
-                      </motion.button>
-                    )}
-                  </AnimatePresence>
-
-                  {/* Input */}
-                  <div className="relative">
-                    {/* Emoji Picker */}
-                    <AnimatePresence>
-                      {showEmoji && (
-                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
-                          className="absolute bottom-full right-3 z-30 mb-2">
-                          <div className="rounded-2xl shadow-2xl overflow-hidden" style={{ backgroundColor: '#18191a', border: '1px solid #3a3b3c', width: '340px' }}>
-                            <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: '1px solid #3a3b3c' }}>
-                              <span className="text-sm font-bold text-white">إيموجي</span>
-                              <button onClick={() => setShowEmoji(false)} className="p-1 rounded-lg hover:bg-[#3a3b3c] transition-colors" style={{ color: '#b0b3b8' }}>
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
-                            <div className="overflow-y-auto" style={{ maxHeight: '320px' }}>
-                              {Object.entries(EMOJI_DATA).map(([category, emojis]) => (
-                                <div key={category} className="px-3 py-2">
-                                  <p className="text-[11px] font-bold mb-1.5" style={{ color: '#b0b3b8' }}>{category}</p>
-                                  <div className="flex flex-wrap gap-0.5">
-                                    {emojis.map((emoji, idx) => (
-                                      <button key={idx}
-                                        className="w-9 h-9 flex items-center justify-center text-xl rounded-lg hover:bg-[#3a3b3c] transition-colors"
-                                        onClick={() => { setNewMessage((prev) => prev + emoji); inputRef.current?.focus(); }}>
-                                        {emoji}
-                                      </button>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-
-                    <div className="relative px-3 py-2.5 flex items-center gap-2" style={{ backgroundColor: '#242526', borderTop: '1px solid #3a3b3c' }}>
-                      <button onClick={() => setShowEmoji(!showEmoji)} className="p-2 rounded-full flex-shrink-0 hover:bg-[#3a3b3c] transition-colors" style={{ color: '#0084ff' }}>
-                        <Smile className="w-6 h-6" />
-                      </button>
-                      <button onClick={() => fileInputRef.current?.click()} disabled={uploadingImage}
-                        className="p-2 rounded-full flex-shrink-0 disabled:opacity-50 hover:bg-[#3a3b3c] transition-colors" style={{ color: '#0084ff' }}>
-                        {uploadingImage ? <Loader2 className="w-6 h-6 animate-spin" /> : <ImageIcon className="w-6 h-6" />}
-                      </button>
-                      <input ref={fileInputRef} type="file" accept="image/*" className="absolute w-0 h-0 opacity-0 overflow-hidden" onChange={handleImageUpload} />
-                      <div className="flex-1 relative">
-                        <input ref={inputRef} value={newMessage} onChange={handleInputChange}
-                          onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
-                          placeholder="Aa"
-                          className="w-full rounded-full px-4 py-2.5 text-[15px] outline-none placeholder:text-[#b0b3b8]"
-                          style={{ backgroundColor: '#3a3b3c', color: '#e4e6eb' }} />
-                      </div>
-                      <motion.button whileTap={{ scale: 0.9 }} onClick={handleSend} disabled={sending || !newMessage.trim()}
-                        className="p-2.5 rounded-full flex-shrink-0 transition-colors"
-                        style={{ color: newMessage.trim() ? '#0084ff' : '#3a3b3c' }}>
-                        {sending ? <Loader2 className="w-6 h-6 animate-spin" /> : <Send className="w-6 h-6" />}
-                      </motion.button>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="h-full flex items-center justify-center" style={{ backgroundColor: '#242526' }}>
-                  <div className="text-center">
-                    <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-5" style={{ backgroundColor: '#3a3b3c' }}>
-                      <MessageCircle className="w-12 h-12" style={{ color: '#0084ff' }} />
-                    </div>
-                    <h3 className="text-2xl font-bold text-white mb-2">الرسائل</h3>
-                    <p className="text-sm max-w-xs mx-auto" style={{ color: '#b0b3b8' }}>أرسل رسائل وصور لمن تريد</p>
-                  </div>
+                  <p className="text-xs font-bold text-gray-500">لا توجد محادثات مطابقة حالياً</p>
                 </div>
+              ) : (
+                filteredConversations.map((conv) => {
+                  const other = otherParticipant(conv);
+                  const isActive = activeConv?.id === conv.id;
+                  const hasUnread = (conv.unreadCount || 0) > 0;
+                  const otherOnline = isUserOnline(other?.id);
+
+                  return (
+                    <button
+                      key={conv.id}
+                      onClick={() => openConversation(conv)}
+                      className={`w-full text-right p-3.5 flex items-center gap-3.5 transition-all relative ${
+                        isActive
+                          ? 'bg-emerald-50/80 dark:bg-emerald-950/30 border-r-4 border-emerald-500'
+                          : 'hover:bg-gray-100/60 dark:hover:bg-gray-800/40'
+                      }`}
+                    >
+                      {/* Avatar */}
+                      <div className="relative shrink-0">
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-base font-black shadow-md overflow-hidden">
+                          {other?.image ? (
+                            <img src={other.image} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <span>{other?.name?.charAt(0) || 'U'}</span>
+                          )}
+                        </div>
+                        {otherOnline && (
+                          <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white dark:border-gray-900 shadow-sm" title="متصل الآن" />
+                        )}
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className={`text-xs truncate ${hasUnread ? 'font-black text-gray-900 dark:text-white' : 'font-bold text-gray-700 dark:text-gray-200'}`}>
+                            {other?.name || 'مستخدم Cars JO'}
+                          </h4>
+                          {conv.lastMessage && (
+                            <span className={`text-[10px] shrink-0 ${hasUnread ? 'font-bold text-emerald-600 dark:text-emerald-400' : 'text-gray-400'}`}>
+                              {getTimeLabel(String(conv.lastMessage.createdAt))}
+                            </span>
+                          )}
+                        </div>
+
+                        <p className={`text-xs truncate ${hasUnread ? 'font-bold text-emerald-700 dark:text-emerald-300' : 'text-gray-500 dark:text-gray-400'}`}>
+                          {getLastMsgPreview(conv.lastMessage)}
+                        </p>
+
+                        {conv.car && (
+                          <div className="mt-1.5 flex items-center gap-1">
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100/80 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-bold truncate max-w-[200px]">
+                              🚗 {conv.car.brand?.nameAr} {conv.car.model?.nameAr} ({conv.car.price.toLocaleString('ar-JO')} د.أ)
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {hasUnread && !isActive && (
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 shadow-sm shadow-emerald-500/50" />
+                      )}
+                    </button>
+                  );
+                })
               )}
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Full-screen image viewer */}
+          {/* Active Chat Main Panel */}
+          <div className={`flex-1 flex flex-col ${!showList ? 'flex' : 'hidden md:flex'} bg-white dark:bg-gray-900 relative`}>
+            {activeConv ? (
+              <>
+                {/* Chat Top Header */}
+                <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/80 backdrop-blur-md flex items-center justify-between gap-3 z-10">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <button
+                      className="md:hidden p-2 rounded-xl bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                      onClick={() => setShowList(true)}
+                    >
+                      <ChevronLeft className="w-5 h-5 rotate-180" />
+                    </button>
+
+                    <div
+                      className="relative cursor-pointer shrink-0"
+                      onClick={() => router.push(`/profile/${otherParticipant(activeConv)?.id}`)}
+                    >
+                      <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-black overflow-hidden shadow">
+                        {otherParticipant(activeConv)?.image ? (
+                          <img src={otherParticipant(activeConv)?.image || ''} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span>{otherParticipant(activeConv)?.name?.charAt(0) || 'U'}</span>
+                        )}
+                      </div>
+                      {isUserOnline(otherParticipant(activeConv)?.id) && (
+                        <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white dark:border-gray-900" />
+                      )}
+                    </div>
+
+                    <div className="min-w-0">
+                      <h3
+                        onClick={() => router.push(`/profile/${otherParticipant(activeConv)?.id}`)}
+                        className="text-sm font-black text-gray-900 dark:text-white truncate cursor-pointer hover:text-emerald-500 transition-colors"
+                      >
+                        {otherParticipant(activeConv)?.name}
+                      </h3>
+                      <p className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                        {isUserOnline(otherParticipant(activeConv)?.id) ? (
+                          <>
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                            متصل الآن في Cars JO
+                          </>
+                        ) : (
+                          <span className="text-gray-400 font-normal">غير متصل حالياً</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {otherParticipant(activeConv)?.phone && (
+                      <a
+                        href={`tel:${otherParticipant(activeConv)?.phone}`}
+                        className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-100 transition-colors"
+                      >
+                        <Phone className="w-4 h-4" />
+                        <span className="hidden sm:inline">اتصال هاتف</span>
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                {/* Attached Vehicle Context Banner */}
+                {activeConv.car && (
+                  <div className="p-3 bg-gradient-to-r from-emerald-900/10 via-teal-900/10 to-slate-900/10 dark:from-emerald-950/40 dark:to-teal-950/40 border-b border-emerald-500/20 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-14 h-12 rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-800 shrink-0 border border-emerald-500/30 shadow-sm">
+                        <img
+                          src={activeConv.car.images?.[0]?.url || 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=300&q=80'}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-500 text-white">سيارة المحادثة</span>
+                          <h4 className="text-xs font-bold text-gray-900 dark:text-white truncate">
+                            {activeConv.car.brand?.nameAr} {activeConv.car.model?.nameAr} {activeConv.car.year}
+                          </h4>
+                        </div>
+                        <p className="text-xs font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
+                          {activeConv.car.price?.toLocaleString('ar-JO')} د.أ
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Link
+                        href={`/customs-calculator?year=${activeConv.car.year}&price=${activeConv.car.price}`}
+                        className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-[11px] font-bold border border-gray-200 dark:border-gray-700 hover:border-emerald-500 transition-colors hidden sm:flex items-center gap-1"
+                        title="حاسبة الجمارك"
+                      >
+                        <Calculator className="w-3.5 h-3.5 text-emerald-500" /> الجمارك
+                      </Link>
+                      <Link
+                        href={`/cars/${activeConv.car.slug || activeConv.carId}`}
+                        className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-md shadow-emerald-600/20 flex items-center gap-1"
+                      >
+                        <Eye className="w-3.5 h-3.5" /> معاينة الإعلان
+                      </Link>
+                    </div>
+                  </div>
+                )}
+
+                {/* Messages Stream Window */}
+                <div
+                  ref={chatContainerRef}
+                  onScroll={handleScroll}
+                  className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50/30 dark:bg-gray-950/40"
+                >
+                  {messages.length === 0 ? (
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto mb-3">
+                        <Sparkles className="w-8 h-8" />
+                      </div>
+                      <h4 className="text-sm font-bold text-gray-900 dark:text-white">بداية محادثة جديدة</h4>
+                      <p className="text-xs text-gray-500 mt-1">ابدأ بالتفاوض أو استخدم أزرار الرد السريع بالأسفل!</p>
+                    </div>
+                  ) : (
+                    (() => {
+                      let lastDate = '';
+                      return messages.map((msg, i) => {
+                        const isMine = msg.senderId === user?.id;
+                        const msgDate = new Date(msg.createdAt).toLocaleDateString('ar-JO');
+                        const showDate = msgDate !== lastDate;
+                        if (showDate) lastDate = msgDate;
+
+                        const { imageUrl, text } = parseMessageContent(msg.content);
+
+                        return (
+                          <div key={msg.id} className="space-y-2">
+                            {showDate && (
+                              <div className="text-center my-3">
+                                <span className="text-[10px] font-bold px-3 py-1 rounded-full bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+                                  {new Date(msg.createdAt).toLocaleDateString('ar-JO', { weekday: 'long', month: 'short', day: 'numeric' })}
+                                </span>
+                              </div>
+                            )}
+
+                            <div className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
+                              {!isMine && (
+                                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden shadow-sm">
+                                  {otherParticipant(activeConv)?.image ? (
+                                    <img src={otherParticipant(activeConv)?.image || ''} alt="" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <span>{otherParticipant(activeConv)?.name?.charAt(0) || 'U'}</span>
+                                  )}
+                                </div>
+                              )}
+
+                              <div className={`max-w-[75%] sm:max-w-[65%] space-y-1 ${isMine ? 'items-end' : 'items-start'}`}>
+                                {imageUrl ? (
+                                  <div className="space-y-1">
+                                    <img
+                                      src={imageUrl}
+                                      alt="مرفق صورة"
+                                      className="max-w-[260px] sm:max-w-[320px] max-h-[300px] rounded-2xl cursor-pointer hover:opacity-90 transition-all shadow-md border border-gray-200 dark:border-gray-700 object-cover"
+                                      onClick={() => setViewerImage(imageUrl)}
+                                    />
+                                    {text && (
+                                      <div className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-medium leading-relaxed shadow-sm ${
+                                        isMine
+                                          ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-br-none'
+                                          : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700/60 rounded-bl-none'
+                                      }`}>
+                                        <p>{text}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-medium leading-relaxed shadow-sm ${
+                                    isMine
+                                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-br-none'
+                                      : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700/60 rounded-bl-none'
+                                  }`}>
+                                    <p>{text}</p>
+                                  </div>
+                                )}
+
+                                <div className={`flex items-center gap-1 text-[10px] text-gray-400 px-1 ${isMine ? 'justify-end' : 'justify-start'}`}>
+                                  <span>{new Date(msg.createdAt).toLocaleTimeString('ar-JO', { hour: '2-digit', minute: '2-digit' })}</span>
+                                  {isMine && (
+                                    <span className={msg.read ? 'text-emerald-500 font-bold' : 'text-gray-400'}>
+                                      {msg.read ? <CheckCheck className="w-3.5 h-3.5" /> : <Check className="w-3.5 h-3.5" />}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()
+                  )}
+
+                  {/* Typing Indicator */}
+                  {typingUsers.size > 0 && otherParticipant(activeConv)?.id && typingUsers.has(otherParticipant(activeConv)!.id) && (
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-xs font-bold">
+                        💬
+                      </div>
+                      <div className="px-3 py-2 rounded-2xl bg-gray-200 dark:bg-gray-800 text-gray-500 text-xs flex items-center gap-1.5">
+                        <span>يكتب الآن</span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce delay-150" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce delay-300" />
+                      </div>
+                    </div>
+                  )}
+
+                  <div ref={chatEndRef} />
+                </div>
+
+                {/* Scroll to Bottom Floating Button */}
+                <AnimatePresence>
+                  {showScrollBtn && (
+                    <motion.button
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      onClick={() => scrollToBottom()}
+                      className="absolute bottom-36 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full bg-emerald-600 text-white text-xs font-bold shadow-xl flex items-center gap-1 z-20"
+                    >
+                      <ArrowDown className="w-3.5 h-3.5" />
+                      الرسائل الحديثة
+                    </motion.button>
+                  )}
+                </AnimatePresence>
+
+                {/* Fast Reply Chips */}
+                <div className="px-3 py-2 bg-gray-100/60 dark:bg-gray-900/60 border-t border-gray-200 dark:border-gray-800 flex items-center gap-2 overflow-x-auto no-scrollbar">
+                  <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 shrink-0 flex items-center gap-1">
+                    <Zap className="w-3 h-3" /> رد سريع:
+                  </span>
+                  {QUICK_REPLIES.map((reply, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleQuickReply(reply)}
+                      className="px-3 py-1 rounded-full bg-white dark:bg-gray-800 hover:bg-emerald-500 hover:text-white text-gray-700 dark:text-gray-300 text-xs font-medium border border-gray-200 dark:border-gray-700 shrink-0 transition-all shadow-sm"
+                    >
+                      {reply}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Selected Image Preview Box */}
+                {imagePreviewUrl && (
+                  <div className="p-3 bg-emerald-950/20 border-t border-emerald-500/30 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <img src={imagePreviewUrl} alt="" className="w-12 h-12 rounded-xl object-cover border border-emerald-500" />
+                      <div>
+                        <p className="text-xs font-bold text-emerald-400">تم اختيار صورة للإرسال</p>
+                        <p className="text-[10px] text-gray-400">انقر إرسال للمشاركة بداخل الشات</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={cancelImagePreview}
+                      className="p-1.5 rounded-xl bg-gray-800 text-gray-400 hover:text-white"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Input Bar */}
+                <div className="p-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 relative">
+                  
+                  {/* Emoji Picker Popover */}
+                  <AnimatePresence>
+                    {showEmoji && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="absolute bottom-full right-3 z-30 mb-2 w-80 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl overflow-hidden"
+                      >
+                        <div className="p-2 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+                          <span className="text-xs font-bold text-gray-900 dark:text-white">اختر إيموجي</span>
+                          <button onClick={() => setShowEmoji(false)} className="p-1 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="max-h-60 overflow-y-auto p-2 space-y-2">
+                          {Object.entries(EMOJI_DATA).map(([cat, emojis]) => (
+                            <div key={cat}>
+                              <span className="text-[10px] font-bold text-gray-400">{cat}</span>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {emojis.map((em, idx) => (
+                                  <button
+                                    key={idx}
+                                    onClick={() => { setNewMessage((prev) => prev + em); inputRef.current?.focus(); }}
+                                    className="w-8 h-8 text-base rounded-lg hover:bg-emerald-500/20 flex items-center justify-center transition-colors"
+                                  >
+                                    {em}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setShowEmoji(!showEmoji)}
+                      className="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-emerald-500 transition-colors"
+                      title="إيموجي"
+                    >
+                      <Smile className="w-5 h-5" />
+                    </button>
+
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingImage}
+                      className="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-emerald-500 transition-colors disabled:opacity-50"
+                      title="إرفاق صورة"
+                    >
+                      {uploadingImage ? <Loader2 className="w-5 h-5 animate-spin text-emerald-500" /> : <ImageIcon className="w-5 h-5" />}
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleFileSelect}
+                    />
+
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      value={newMessage}
+                      onChange={handleInputChange}
+                      onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
+                      placeholder="اكتب رسالتك هنا..."
+                      className="flex-1 px-4 py-2.5 rounded-2xl bg-gray-100 dark:bg-gray-800 text-xs sm:text-sm text-gray-900 dark:text-white placeholder:text-gray-400 outline-none border border-transparent focus:border-emerald-500 transition-all"
+                    />
+
+                    <button
+                      onClick={handleSend}
+                      disabled={sending || (!newMessage.trim() && !selectedImageFile)}
+                      className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold shadow-lg shadow-emerald-600/30 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 transition-all flex items-center gap-1.5"
+                    >
+                      {sending ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <span>إرسال</span>
+                          <Send className="w-4 h-4" />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="h-full flex items-center justify-center p-8 bg-gray-50/50 dark:bg-gray-950/50">
+                <div className="text-center max-w-sm">
+                  <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center mx-auto mb-4 shadow-xl shadow-emerald-500/20">
+                    <MessageCircle className="w-10 h-10" />
+                  </div>
+                  <h3 className="text-xl font-black text-gray-900 dark:text-white mb-1">مركز الرسائل والمحادثات 🇯🇴</h3>
+                  <p className="text-xs text-gray-500 leading-relaxed mb-4">
+                    حدد أي محادثة من القائمة الجانبية لبدء التواصل المباشر مع البائع أو المشتري بالتفاوض على أسعار السيارات!
+                  </p>
+                  <Link
+                    href="/cars"
+                    className="btn btn-emerald px-5 py-2.5 text-xs font-bold shadow-lg shadow-emerald-600/20 inline-flex items-center gap-2"
+                  >
+                    <Car className="w-4 h-4" /> استكشاف السيارات المتاحة
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+
+        </div>
+      </main>
+
+      {/* Fullscreen Lightbox Modal */}
       <AnimatePresence>
         {viewerImage && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.9)' }}
-            onClick={() => setViewerImage(null)}>
-            <button className="absolute top-4 left-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-50"
-              onClick={() => setViewerImage(null)}>
-              <X className="w-6 h-6 text-white" />
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
+            onClick={() => setViewerImage(null)}
+          >
+            <button
+              onClick={() => setViewerImage(null)}
+              className="absolute top-4 left-4 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+            >
+              <X className="w-6 h-6" />
             </button>
-            <img src={viewerImage} alt="" className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl"
-              onClick={(e) => e.stopPropagation()} />
+            <img
+              src={viewerImage}
+              alt=""
+              className="max-w-[90vw] max-h-[90vh] object-contain rounded-2xl shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
           </motion.div>
         )}
       </AnimatePresence>
+
+      <Footer />
     </div>
   );
 }
