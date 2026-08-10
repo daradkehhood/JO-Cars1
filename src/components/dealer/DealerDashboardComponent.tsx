@@ -28,7 +28,8 @@ interface DealerCar {
 }
 
 export function DealerDashboardComponent() {
-  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { user, isAuthenticated, _hydrated } = useAuth();
+  const authLoading = !_hydrated;
   const [cars, setCars] = useState<DealerCar[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingBanner, setEditingBanner] = useState(false);
