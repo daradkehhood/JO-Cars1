@@ -37,49 +37,51 @@ function geoBlockApi(): NextResponse {
   );
 }
 
+function applySecurityHeaders(response: NextResponse): NextResponse {
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
+  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  return response;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Block path traversal attempts
   if (pathname.includes('..') || pathname.includes('%2e%2e') || pathname.includes('%252e%252e')) {
-    return NextResponse.json({ error: 'Invalid path' }, { status: 400 });
+    return applySecurityHeaders(NextResponse.json({ error: 'Invalid path' }, { status: 400 }));
   }
 
   // Block common attack vectors
   const blockedPatterns = ['/wp-admin', '/wp-login', '/phpmyadmin', '/.env', '/.git', '/config', '/backup'];
   if (blockedPatterns.some(p => pathname.toLowerCase().startsWith(p))) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  }
-
-  // Always allow these routes
-  if (pathname.startsWith('/api/') || pathname.startsWith('/_next/') || pathname.startsWith('/uploads/') ||
-      pathname === '/favicon.ico' || /\.(ico|png|jpg|jpeg|gif|svg|css|js|woff2?)$/i.test(pathname)) {
-    return NextResponse.next();
+    return applySecurityHeaders(NextResponse.json({ error: 'Not found' }, { status: 404 }));
   }
 
   if (process.env.GEO_RESTRICT_JORDAN === 'true') {
     const forwarded = request.headers.get('x-forwarded-for');
     const ip = forwarded?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || '127.0.0.1';
 
-    if (ip === '127.0.0.1' || ip === '::1' || ip.startsWith('192.168.') || ip.startsWith('10.')) {
-      return NextResponse.next();
-    }
-
-    try {
-      const res = await fetch(`http://ip-api.com/json/${ip}?fields=countryCode`, {
-        signal: AbortSignal.timeout(3000),
-      });
-      const data = await res.json();
-      if (data.countryCode !== 'JO') {
-        if (pathname.startsWith('/api/')) {
-          return geoBlockApi();
+    if (ip !== '127.0.0.1' && ip !== '::1' && !ip.startsWith('192.168.') && !ip.startsWith('10.')) {
+      try {
+        const res = await fetch(`http://ip-api.com/json/${ip}?fields=countryCode`, {
+          signal: AbortSignal.timeout(3000),
+        });
+        const data = await res.json();
+        if (data.countryCode !== 'JO') {
+          if (pathname.startsWith('/api/')) {
+            return applySecurityHeaders(geoBlockApi());
+          }
+          return applySecurityHeaders(geoBlockPage());
         }
-        return geoBlockPage();
-      }
-    } catch {}
+      } catch {}
+    }
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+  return applySecurityHeaders(response);
 }
 
 export const config = {

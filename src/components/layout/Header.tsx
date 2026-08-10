@@ -95,6 +95,7 @@ export function Header() {
   ];
 
   const secondaryLinks = [
+    { href: '/swap-calculator', label: 'حاسبة البدل والمقاصة', icon: GitCompare },
     { href: '/customs-calculator', label: 'حاسبة الجمارك', icon: Calculator },
     { href: '/finance-calculator', label: 'تمويل البنوك', icon: DollarSign },
     { href: '/dealers', label: 'الوكلاء', icon: Store },
