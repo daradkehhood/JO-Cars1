@@ -80,10 +80,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, data: { url: result.secure_url, provider: 'cloudinary' } });
     }
 
-    // Fallback: store as base64 data URI in database (persistent across deploys)
-    const base64 = buffer.toString('base64');
-    const dataUri = `data:${file.type};base64,${base64}`;
-    return NextResponse.json({ success: true, data: { url: dataUri, provider: 'data-uri' } });
+    // Try local upload first for fast clean URL
+    try {
+      const fileName = `msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+      await mkdir(uploadsDir, { recursive: true });
+      const filePath = path.join(uploadsDir, fileName);
+      await writeFile(filePath, buffer);
+      return NextResponse.json({ success: true, data: { url: `/uploads/${fileName}`, provider: 'local' } });
+    } catch {
+      // Fallback: store as base64 data URI in database
+      const base64 = buffer.toString('base64');
+      const dataUri = `data:${file.type};base64,${base64}`;
+      return NextResponse.json({ success: true, data: { url: dataUri, provider: 'data-uri' } });
+    }
   } catch (err) {
     console.error('Upload error:', err);
     return NextResponse.json({ success: false, error: 'فشل رفع الملف' }, { status: 500 });

@@ -75,7 +75,7 @@ export const carSchema = z.object({
 });
 
 export const messageSchema = z.object({
-  content: z.string().min(1, 'الرسالة مطلوبة').max(2000),
+  content: z.string().min(1, 'الرسالة مطلوبة').max(10000000),
   receiverId: z.string().min(1),
   carId: z.string().optional(),
 });
